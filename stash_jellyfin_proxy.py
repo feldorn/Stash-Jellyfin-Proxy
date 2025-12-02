@@ -34,23 +34,45 @@ STASH_URL = "https://stash.feldorn.com"
 STASH_API_KEY = ""  # Real Stash API key from Settings -> Security -> API Key
 PROXY_BIND = "0.0.0.0"
 PROXY_PORT = 8096
-SJS_USER_PASSWORD = "infuse12345"
-SJS_USER_ID = "user-1"
+# User credentials for Infuse authentication (matches .scripts.conf variable names)
+SJS_USER = "chris"
+SJS_PASSWORD = "infuse12345"
 
-# Load Config
-if os.path.isfile(CONFIG_FILE):
-    try:
-        with open(CONFIG_FILE, 'r') as f:
-            exec(f.read())
-    except Exception as e:
-        print(f"Error loading config file {CONFIG_FILE}: {e}", file=sys.stderr)
-        sys.exit(1)
+# Load Config - parses .scripts.conf which uses KEY="value" format
+def load_config(filepath):
+    """Load configuration from a shell-style config file."""
+    config = {}
+    if os.path.isfile(filepath):
+        try:
+            with open(filepath, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    # Skip comments and empty lines
+                    if not line or line.startswith('#'):
+                        continue
+                    # Parse KEY=value or KEY="value" format
+                    if '=' in line:
+                        key, _, value = line.partition('=')
+                        key = key.strip()
+                        value = value.strip().strip('"').strip("'")
+                        config[key] = value
+        except Exception as e:
+            print(f"Error loading config file {filepath}: {e}", file=sys.stderr)
+    return config
+
+_config = load_config(CONFIG_FILE)
+if _config:
+    STASH_URL = _config.get("STASH_URL", STASH_URL)
+    STASH_API_KEY = _config.get("STASH_API_KEY", STASH_API_KEY)
+    SJS_USER = _config.get("SJS_USER", SJS_USER)
+    SJS_PASSWORD = _config.get("SJS_PASSWORD", SJS_PASSWORD)
+    print(f"Loaded config from {CONFIG_FILE}: user={SJS_USER}")
 else:
-    print(f"Warning: Config file {CONFIG_FILE} not found. Using defaults/env vars.")
+    print(f"Warning: Config file {CONFIG_FILE} not found or empty. Using defaults/env vars.")
     STASH_URL = os.getenv("STASH_URL", STASH_URL)
     STASH_API_KEY = os.getenv("STASH_API_KEY", STASH_API_KEY)
-    SJS_USER_PASSWORD = os.getenv("SJS_USER_PASSWORD", SJS_USER_PASSWORD)
-    SJS_USER_ID = os.getenv("SJS_USER_ID", SJS_USER_ID)
+    SJS_USER = os.getenv("SJS_USER", SJS_USER)
+    SJS_PASSWORD = os.getenv("SJS_PASSWORD", SJS_PASSWORD)
 
 # Session management for cookie-based auth
 STASH_SESSION = None  # Will hold requests.Session with auth cookies
@@ -95,8 +117,8 @@ def get_stash_session():
     
     STASH_SESSION = requests.Session()
     
-    # Use STASH_API_KEY if set, otherwise use SJS_USER_PASSWORD
-    api_key = STASH_API_KEY if STASH_API_KEY else SJS_USER_PASSWORD
+    # Use STASH_API_KEY if set, otherwise use SJS_PASSWORD
+    api_key = STASH_API_KEY if STASH_API_KEY else SJS_PASSWORD
     if api_key:
         STASH_SESSION.headers["ApiKey"] = api_key
         logger.info(f"Session configured with ApiKey header")
@@ -283,17 +305,17 @@ async def endpoint_authenticate_by_name(request):
     
     logger.info(f"Auth attempt for user: {username}")
     
-    # Accept config key OR simple "password" string if user puts it there
-    if pw == SJS_USER_PASSWORD:
-        logger.info("Auth SUCCESS")
+    # Accept config password
+    if pw == SJS_PASSWORD:
+        logger.info(f"Auth SUCCESS for user {SJS_USER}")
         return JSONResponse({
             "User": {
                 "Name": username,
-                "Id": SJS_USER_ID,
+                "Id": SJS_USER,
                 "Policy": {"IsAdministrator": True}
             },
             "SessionInfo": {
-                "UserId": SJS_USER_ID,
+                "UserId": SJS_USER,
                 "IsActive": True
             },
             "AccessToken": ACCESS_TOKEN,
@@ -306,7 +328,7 @@ async def endpoint_authenticate_by_name(request):
 async def endpoint_users(request):
     return JSONResponse([{
         "Name": "Stash User",
-        "Id": SJS_USER_ID,
+        "Id": SJS_USER,
         "HasPassword": True,
         "Policy": {"IsAdministrator": True, "EnableContentDeletion": False}
     }])
@@ -315,7 +337,7 @@ async def endpoint_user_by_id(request):
     # Return user profile
     return JSONResponse({
         "Name": "Stash User",
-        "Id": SJS_USER_ID,
+        "Id": SJS_USER,
         "HasPassword": True,
         "HasConfiguredPassword": True,
         "HasConfiguredEasyPassword": False,
@@ -493,8 +515,13 @@ async def endpoint_items(request):
     # Sort parameters
     sort_field, sort_direction = get_stash_sort_params(request)
     
-    # Debug: Log all query params
-    logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, StartIndex: {start_index}, Limit: {limit}, Sort: {sort_field} {sort_direction}")
+    # Check for PersonIds parameter (Infuse uses this when clicking on a person)
+    person_ids = request.query_params.get("PersonIds") or request.query_params.get("personIds")
+    
+    # Debug: Log ALL query params to understand what Infuse is sending
+    all_params = dict(request.query_params)
+    logger.info(f"Items endpoint - ALL PARAMS: {all_params}")
+    logger.info(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, PersonIds: {person_ids}, StartIndex: {start_index}, Limit: {limit}, Sort: {sort_field} {sort_direction}")
     
     items = []
     total_count = 0
@@ -512,6 +539,43 @@ async def endpoint_items(request):
             if scene:
                 items.append(format_jellyfin_item(scene))
         total_count = len(items)
+    
+    elif person_ids:
+        # Infuse uses PersonIds parameter to filter by person/performer
+        # Extract the numeric ID from person-123 or just 123 format
+        person_id = person_ids.split(',')[0]  # Take first if multiple
+        if person_id.startswith("person-"):
+            performer_id = person_id.replace("person-", "")
+        elif person_id.startswith("performer-"):
+            performer_id = person_id.replace("performer-", "")
+        else:
+            performer_id = person_id
+        
+        logger.info(f"PersonIds filter: fetching scenes for performer {performer_id}")
+        
+        # Get count for this performer
+        count_q = """query CountScenes($pid: [ID!]) { 
+            findScenes(scene_filter: {performers: {value: $pid, modifier: INCLUDES}}) { count } 
+        }"""
+        count_res = stash_query(count_q, {"pid": [performer_id]})
+        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        
+        # Calculate page
+        page = (start_index // limit) + 1
+        
+        q = f"""query FindScenes($pid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{ 
+            findScenes(
+                scene_filter: {{performers: {{value: $pid, modifier: INCLUDES}}}}, 
+                filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+            ) {{ 
+                scenes {{ {scene_fields} }} 
+            }} 
+        }}"""
+        res = stash_query(q, {"pid": [performer_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        logger.info(f"PersonIds filter: returned {len(scenes)} scenes (page {page}, total {total_count})")
+        for s in scenes:
+            items.append(format_jellyfin_item(s, parent_id=f"person-{performer_id}"))
     
     elif parent_id == "root-scenes":
         # Calculate page number from startIndex (Stash uses 1-indexed pages)
@@ -1100,7 +1164,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.6 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.7 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
