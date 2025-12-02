@@ -1,0 +1,51 @@
+2025-12-02 16:56:53,201 - hypercorn.access - INFO - 192.168.0.233:49153 - - [02/Dec/2025:16:56:53 -0600] "GET /Items/scene-37644/PlaybackInfo 1.1" 500 33
+2025-12-02 16:56:53,217 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/scene-37644 from 192.168.0.233
+2025-12-02 16:56:53,234 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0168s
+2025-12-02 16:56:53,235 - hypercorn.access - INFO - 192.168.0.233:49153 - - [02/Dec/2025:16:56:53 -0600] "GET /Users/chris/Items/scene-37644 1.1" 200 1353
+2025-12-02 16:56:53,236 - stash-jellyfin-proxy - INFO - INCOMING: GET /MediaSegments/scene-37644 from 192.168.0.233
+2025-12-02 16:56:53,236 - stash-jellyfin-proxy - WARNING - UNHANDLED ENDPOINT: GET /MediaSegments/scene-37644 - Query: {}
+2025-12-02 16:56:53,236 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 16:56:53,237 - hypercorn.access - INFO - 192.168.0.233:49154 - - [02/Dec/2025:16:56:53 -0600] "GET /MediaSegments/scene-37644 1.1" 200 48
+2025-12-02 16:56:53,248 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37644/stream from 192.168.0.233
+2025-12-02 16:56:53,248 - stash-jellyfin-proxy - INFO - Proxying stream for scene-37644 from https://stash.feldorn.com/scene/37644/stream
+2025-12-02 16:56:53,583 - stash-jellyfin-proxy - INFO - Stream response: 262131910 bytes, type=video/mp4
+2025-12-02 16:56:53,583 - stash-jellyfin-proxy - INFO - COMPLETED: 206 in 0.3353s
+2025-12-02 16:56:53,831 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/scene-37644/PlaybackInfo from 192.168.0.233
+2025-12-02 16:56:53,831 - stash-jellyfin-proxy - ERROR - FAILED: /Items/scene-37644/PlaybackInfo - name 'graphql_request' is not defined
+Traceback (most recent call last):
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 153, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 1179, in endpoint_playback_info
+    result = graphql_request(query, {"id": numeric_id})
+             ^^^^^^^^^^^^^^^
+NameError: name 'graphql_request' is not defined
+2025-12-02 16:56:53,834 - hypercorn.access - INFO - 192.168.0.233:49153 - - [02/Dec/2025:16:56:53 -0600] "GET /Items/scene-37644/PlaybackInfo 1.1" 500 33
+2025-

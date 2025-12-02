@@ -1176,8 +1176,9 @@ async def endpoint_playback_info(request):
     }
     """
     
-    result = graphql_request(query, {"id": numeric_id})
-    if not result or "findScene" not in result:
+    result = stash_query(query, {"id": numeric_id})
+    scene_data = result.get("data", {}).get("findScene") if result else None
+    if not scene_data:
         return JSONResponse({
             "MediaSources": [{
                 "Id": item_id,
@@ -1189,7 +1190,7 @@ async def endpoint_playback_info(request):
             "PlaySessionId": "session-1"
         })
     
-    scene = result["findScene"]
+    scene = scene_data
     files = scene.get("files", [])
     path = files[0].get("path", "") if files else ""
     captions = scene.get("captions") or []
@@ -1366,12 +1367,13 @@ async def endpoint_subtitle(request):
     """
     
     try:
-        result = graphql_request(query, {"id": numeric_id})
-        if not result or "findScene" not in result:
+        result = stash_query(query, {"id": numeric_id})
+        scene_data = result.get("data", {}).get("findScene") if result else None
+        if not scene_data:
             logger.error(f"Could not find scene {numeric_id} for subtitles")
             return JSONResponse({"error": "Scene not found"}, status_code=404)
         
-        captions = result["findScene"].get("captions", [])
+        captions = scene_data.get("captions") or []
         if not captions:
             logger.warning(f"No captions found for scene {numeric_id}")
             return JSONResponse({"error": "No subtitles"}, status_code=404)
@@ -1611,9 +1613,10 @@ async def endpoint_image(request):
             }
             """
             try:
-                gql_result = graphql_request(query, {"id": numeric_id})
-                if gql_result and "findGroup" in gql_result and gql_result["findGroup"]:
-                    front_image_path = gql_result["findGroup"].get("front_image_path")
+                gql_result = stash_query(query, {"id": numeric_id})
+                gql_data = gql_result.get("data", {}).get("findGroup") if gql_result else None
+                if gql_data:
+                    front_image_path = gql_data.get("front_image_path")
                     if front_image_path:
                         # Fetch the image using the path from GraphQL
                         import time as time_module
@@ -1717,7 +1720,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.24 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.25 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
