@@ -158,9 +158,10 @@ def check_stash_connection():
         logger.error("Please check STASH_URL and authentication in your config.")
         return False
 
-def pad_image_to_square(image_data: bytes, target_size: int = 400) -> Tuple[bytes, str]:
+def pad_image_to_portrait(image_data: bytes, target_width: int = 400, target_height: int = 600) -> Tuple[bytes, str]:
     """
-    Pad an image to a square aspect ratio with a dark background.
+    Pad an image to a portrait 2:3 aspect ratio with a dark background.
+    Uses contain+pad strategy: scales to fit within target, then pads the rest.
     Returns (image_bytes, content_type).
     """
     if not PILLOW_AVAILABLE:
@@ -181,31 +182,31 @@ def pad_image_to_square(image_data: bytes, target_size: int = 400) -> Tuple[byte
         elif img.mode != 'RGB':
             img = img.convert('RGB')
         
-        # Calculate dimensions for square padding
+        # Calculate scaling to fit within target while preserving aspect ratio
         width, height = img.size
-        max_dim = max(width, height)
         
-        # If image is already roughly square (within 10%), just resize
-        aspect_ratio = width / height
-        if 0.9 <= aspect_ratio <= 1.1:
-            # Already squarish, just resize
-            img = img.resize((target_size, target_size), Image.Resampling.LANCZOS)
-        else:
-            # Create a square canvas with dark background
-            square_size = max_dim
-            canvas = Image.new('RGB', (square_size, square_size), (20, 20, 20))
-            
-            # Paste the image centered
-            x_offset = (square_size - width) // 2
-            y_offset = (square_size - height) // 2
-            canvas.paste(img, (x_offset, y_offset))
-            
-            # Resize to target size
-            img = canvas.resize((target_size, target_size), Image.Resampling.LANCZOS)
+        # Scale to fit within the target dimensions (contain strategy)
+        scale_w = target_width / width
+        scale_h = target_height / height
+        scale = min(scale_w, scale_h)  # Use smaller scale to ensure it fits
+        
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        
+        # Resize the image
+        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Create the target canvas with dark background
+        canvas = Image.new('RGB', (target_width, target_height), (20, 20, 20))
+        
+        # Center the image on the canvas
+        x_offset = (target_width - new_width) // 2
+        y_offset = (target_height - new_height) // 2
+        canvas.paste(img, (x_offset, y_offset))
         
         # Save to bytes
         output = io.BytesIO()
-        img.save(output, format='JPEG', quality=85)
+        canvas.save(output, format='JPEG', quality=85)
         return output.getvalue(), "image/jpeg"
         
     except Exception as e:
@@ -1154,11 +1155,11 @@ async def endpoint_image(request):
     item_id = request.path_params.get("item_id")
     
     # Determine image URL and whether to resize based on item type
-    needs_square_resize = False
+    needs_portrait_resize = False
     if item_id.startswith("studio-"):
         numeric_id = item_id.replace("studio-", "")
         stash_img_url = f"{STASH_URL}/studio/{numeric_id}/image"
-        needs_square_resize = True  # Studio logos need square padding
+        needs_portrait_resize = True  # Studio logos need portrait padding for Infuse tiles
     elif item_id.startswith("performer-") or item_id.startswith("person-"):
         if item_id.startswith("performer-"):
             numeric_id = item_id.replace("performer-", "")
@@ -1186,7 +1187,7 @@ async def endpoint_image(request):
     }
     
     # Check cache for resized images
-    cache_key = (item_id, 400 if needs_square_resize else 0)
+    cache_key = (item_id, "portrait" if needs_portrait_resize else "original")
     if cache_key in IMAGE_CACHE:
         cached_data, cached_type = IMAGE_CACHE[cache_key]
         logger.debug(f"Cache hit for {item_id}")
@@ -1196,10 +1197,10 @@ async def endpoint_image(request):
     try:
         data, content_type, _ = fetch_from_stash(stash_img_url, timeout=30)
         
-        # Resize studio images to square for better display in Infuse
-        if needs_square_resize and PILLOW_AVAILABLE:
-            data, content_type = pad_image_to_square(data, target_size=400)
-            logger.info(f"Resized studio image to 400x400 square")
+        # Resize studio images to portrait 2:3 aspect ratio for Infuse tiles
+        if needs_portrait_resize and PILLOW_AVAILABLE:
+            data, content_type = pad_image_to_portrait(data, target_width=400, target_height=600)
+            logger.info(f"Resized studio image to 400x600 portrait (2:3)")
             
             # Cache the resized image
             if len(IMAGE_CACHE) >= IMAGE_CACHE_MAX_SIZE:
@@ -1263,7 +1264,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.9 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.10 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
