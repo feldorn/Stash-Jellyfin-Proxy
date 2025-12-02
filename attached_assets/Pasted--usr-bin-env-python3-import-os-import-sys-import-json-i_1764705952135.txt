@@ -498,12 +498,6 @@ async def endpoint_image(request):
     stash_img_url = f"{STASH_URL}/scene/{item_id}/screenshot"
     return RedirectResponse(url=stash_img_url)
 
-async def catch_all(request):
-    """Catch any unhandled routes and log them for debugging."""
-    logger.warning(f"UNHANDLED ENDPOINT: {request.method} {request.url.path} - Query: {dict(request.query_params)}")
-    # Return empty success to prevent errors
-    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
-
 # --- App Construction ---
 routes = [
     Route("/", endpoint_root),
@@ -524,7 +518,6 @@ routes = [
     Route("/Items/{item_id}/Images/Primary", endpoint_image),
     Route("/Items/{item_id}/Images/Thumb", endpoint_image),
     Route("/PlaybackInfo", endpoint_playback_info, methods=["POST", "GET"]),
-    Route("/{path:path}", catch_all),
 ]
 
 middleware = [
@@ -543,7 +536,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.4 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.3 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
