@@ -250,6 +250,23 @@ async def endpoint_grouping_options(request):
     # Infuse requests this and if it 404s, it shows "an error occurred"
     return JSONResponse([])
 
+async def endpoint_virtual_folders(request):
+    # Infuse requests library virtual folders
+    return JSONResponse([
+        {
+            "Name": "All Scenes",
+            "Locations": [],
+            "CollectionType": "movies",
+            "ItemId": "root-scenes"
+        },
+        {
+            "Name": "Studios",
+            "Locations": [],
+            "CollectionType": "movies",
+            "ItemId": "root-studios"
+        }
+    ])
+
 async def endpoint_items(request):
     user_id = request.path_params.get("user_id")
     parent_id = request.query_params.get("ParentId")
@@ -334,6 +351,7 @@ routes = [
     Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST"]),
     Route("/Users/{user_id}/Views", endpoint_user_views),
     Route("/Users/{user_id}/GroupingOptions", endpoint_grouping_options),
+    Route("/Library/VirtualFolders", endpoint_virtual_folders),
     Route("/Users/{user_id}/Items", endpoint_items),
     Route("/Users/{user_id}/Items/{item_id}", endpoint_item_details),
     Route("/Items", endpoint_items),
@@ -360,7 +378,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v1.2 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v1.3 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
