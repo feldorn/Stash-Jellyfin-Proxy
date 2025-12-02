@@ -409,9 +409,12 @@ async def endpoint_items(request):
             
     elif parent_id and parent_id.startswith("studio-"):
         studio_id = parent_id.replace("studio-", "")
-        q = """query FindScenes($sid: [ID!]) { findScenes(scene_filter: {studios: {value: $sid, modifier: INCLUDES}}, filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } } } }"""
+        # Simplified query without modifier - just filter by studio value
+        q = """query FindScenes($sid: [ID!]) { findScenes(scene_filter: {studios: {value: $sid}}, filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } } } }"""
         res = stash_query(q, {"sid": [studio_id]})
-        for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        logger.debug(f"Studio {studio_id} returned {len(scenes)} scenes")
+        for s in scenes:
             items.append(format_jellyfin_item(s, parent_id=parent_id))
             
     return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
@@ -510,28 +513,76 @@ def get_numeric_id(item_id: str) -> str:
     return item_id
 
 async def endpoint_stream(request):
+    """Proxy video stream from Stash with proper authentication."""
     item_id = request.path_params.get("item_id")
     numeric_id = get_numeric_id(item_id)
-    
-    # Build stream URL with API key for authentication
     stash_stream_url = f"{STASH_URL}/scene/{numeric_id}/stream"
-    if STASH_API_KEY:
-        stash_stream_url += f"?apikey={STASH_API_KEY}"
     
-    logger.info(f"Redirecting stream for {item_id} to Stash")
-    return RedirectResponse(url=stash_stream_url)
+    logger.info(f"Proxying stream for {item_id} from {stash_stream_url}")
+    
+    # Build headers for Stash request
+    headers = {}
+    if STASH_API_KEY:
+        headers["ApiKey"] = STASH_API_KEY
+    
+    # Forward Range header for seeking support
+    if "range" in request.headers:
+        headers["Range"] = request.headers["range"]
+    
+    try:
+        import urllib.request
+        req = urllib.request.Request(stash_stream_url, headers=headers)
+        
+        with urllib.request.urlopen(req, timeout=30) as response:
+            content_type = response.headers.get('Content-Type', 'video/mp4')
+            content_length = response.headers.get('Content-Length')
+            content_range = response.headers.get('Content-Range')
+            
+            # Read the entire response for small seeks, stream for full playback
+            data = response.read()
+            
+            from starlette.responses import Response
+            resp_headers = {"Accept-Ranges": "bytes"}
+            if content_length:
+                resp_headers["Content-Length"] = content_length
+            if content_range:
+                resp_headers["Content-Range"] = content_range
+            
+            status_code = 206 if content_range else 200
+            return Response(content=data, media_type=content_type, headers=resp_headers, status_code=status_code)
+            
+    except Exception as e:
+        logger.error(f"Stream proxy error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 async def endpoint_image(request):
+    """Proxy image from Stash with proper authentication."""
     item_id = request.path_params.get("item_id")
     numeric_id = get_numeric_id(item_id)
-    
-    # Build image URL with API key for authentication
     stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
-    if STASH_API_KEY:
-        stash_img_url += f"?apikey={STASH_API_KEY}"
     
-    logger.info(f"Redirecting image for {item_id} to Stash")
-    return RedirectResponse(url=stash_img_url)
+    logger.info(f"Proxying image for {item_id} from {stash_img_url}")
+    
+    # Build headers for Stash request
+    headers = {}
+    if STASH_API_KEY:
+        headers["ApiKey"] = STASH_API_KEY
+    
+    try:
+        import urllib.request
+        req = urllib.request.Request(stash_img_url, headers=headers)
+        
+        with urllib.request.urlopen(req, timeout=10) as response:
+            content_type = response.headers.get('Content-Type', 'image/jpeg')
+            image_data = response.read()
+            
+            from starlette.responses import Response
+            return Response(content=image_data, media_type=content_type)
+            
+    except Exception as e:
+        logger.error(f"Image proxy error: {e}")
+        # Return a 1x1 transparent pixel as fallback
+        return Response(content=b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', media_type='image/png')
 
 async def catch_all(request):
     """Catch any unhandled routes and log them for debugging."""
@@ -578,7 +629,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.8 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.9 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
