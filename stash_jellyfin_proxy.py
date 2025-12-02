@@ -369,8 +369,9 @@ async def endpoint_display_preferences(request):
 
 async def endpoint_items(request):
     user_id = request.path_params.get("user_id")
-    parent_id = request.query_params.get("ParentId")
-    ids = request.query_params.get("Ids")
+    # Handle both ParentId and parentId (Infuse uses lowercase)
+    parent_id = request.query_params.get("ParentId") or request.query_params.get("parentId")
+    ids = request.query_params.get("Ids") or request.query_params.get("ids")
     
     # Debug: Log all query params
     logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, All params: {dict(request.query_params)}")
@@ -528,7 +529,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.1 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.2 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
