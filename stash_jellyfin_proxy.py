@@ -26,6 +26,15 @@ except ImportError as e:
     print(f"Missing dependency: {e}. Please run: pip install hypercorn starlette requests")
     sys.exit(1)
 
+# Optional Pillow for image resizing (graceful fallback if not installed)
+try:
+    from PIL import Image
+    import io
+    PILLOW_AVAILABLE = True
+except ImportError:
+    PILLOW_AVAILABLE = False
+    print("Note: Pillow not installed. Studio images will not be resized. Install with: pip install Pillow")
+
 # --- Configuration Loading ---
 CONFIG_FILE = "/home/chris/.scripts.conf"
 
@@ -76,6 +85,10 @@ else:
 
 # Session management for cookie-based auth
 STASH_SESSION = None  # Will hold requests.Session with auth cookies
+
+# Image cache for resized studio/performer images (prevents repeated processing)
+IMAGE_CACHE = {}  # Key: (item_id, target_size), Value: (bytes, content_type)
+IMAGE_CACHE_MAX_SIZE = 100  # Max items to cache
 
 # --- Logging Setup ---
 # Configure root logger to output to console
@@ -144,6 +157,60 @@ def check_stash_connection():
         logger.error(f"❌ Failed to connect to Stash: {e}")
         logger.error("Please check STASH_URL and authentication in your config.")
         return False
+
+def pad_image_to_square(image_data: bytes, target_size: int = 400) -> Tuple[bytes, str]:
+    """
+    Pad an image to a square aspect ratio with a dark background.
+    Returns (image_bytes, content_type).
+    """
+    if not PILLOW_AVAILABLE:
+        return image_data, "image/jpeg"
+    
+    try:
+        # Open the image
+        img = Image.open(io.BytesIO(image_data))
+        
+        # Convert to RGB if necessary (handles PNG transparency, etc.)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            # Create a dark background for transparent images
+            background = Image.new('RGB', img.size, (20, 20, 20))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            img = background
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Calculate dimensions for square padding
+        width, height = img.size
+        max_dim = max(width, height)
+        
+        # If image is already roughly square (within 10%), just resize
+        aspect_ratio = width / height
+        if 0.9 <= aspect_ratio <= 1.1:
+            # Already squarish, just resize
+            img = img.resize((target_size, target_size), Image.Resampling.LANCZOS)
+        else:
+            # Create a square canvas with dark background
+            square_size = max_dim
+            canvas = Image.new('RGB', (square_size, square_size), (20, 20, 20))
+            
+            # Paste the image centered
+            x_offset = (square_size - width) // 2
+            y_offset = (square_size - height) // 2
+            canvas.paste(img, (x_offset, y_offset))
+            
+            # Resize to target size
+            img = canvas.resize((target_size, target_size), Image.Resampling.LANCZOS)
+        
+        # Save to bytes
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=85)
+        return output.getvalue(), "image/jpeg"
+        
+    except Exception as e:
+        logger.warning(f"Image padding failed: {e}, returning original")
+        return image_data, "image/jpeg"
 
 def stash_query(query: str, variables: Dict[str, Any] = None) -> Dict[str, Any]:
     try:
@@ -1082,21 +1149,27 @@ async def endpoint_stream(request):
 
 async def endpoint_image(request):
     """Proxy image from Stash with proper authentication. Handles scenes, studios, performers, and groups."""
+    global IMAGE_CACHE
+    
     item_id = request.path_params.get("item_id")
     
-    # Determine image URL based on item type
+    # Determine image URL and whether to resize based on item type
+    needs_square_resize = False
     if item_id.startswith("studio-"):
         numeric_id = item_id.replace("studio-", "")
         stash_img_url = f"{STASH_URL}/studio/{numeric_id}/image"
+        needs_square_resize = True  # Studio logos need square padding
     elif item_id.startswith("performer-") or item_id.startswith("person-"):
         if item_id.startswith("performer-"):
             numeric_id = item_id.replace("performer-", "")
         else:
             numeric_id = item_id.replace("person-", "")
         stash_img_url = f"{STASH_URL}/performer/{numeric_id}/image"
+        # Performer images are usually already portrait/square
     elif item_id.startswith("group-"):
         numeric_id = item_id.replace("group-", "")
         stash_img_url = f"{STASH_URL}/movie/{numeric_id}/front_image"
+        # Group images are usually movie posters (portrait)
     elif item_id.startswith("scene-"):
         numeric_id = item_id.replace("scene-", "")
         stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
@@ -1107,15 +1180,33 @@ async def endpoint_image(request):
     
     logger.info(f"Proxying image for {item_id} from {stash_img_url}")
     
-    # Cache control headers to help with Infuse caching issues
+    # Cache control headers
     cache_headers = {
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0"
+        "Cache-Control": "max-age=3600",  # Allow 1 hour cache for images
     }
+    
+    # Check cache for resized images
+    cache_key = (item_id, 400 if needs_square_resize else 0)
+    if cache_key in IMAGE_CACHE:
+        cached_data, cached_type = IMAGE_CACHE[cache_key]
+        logger.debug(f"Cache hit for {item_id}")
+        from starlette.responses import Response
+        return Response(content=cached_data, media_type=cached_type, headers=cache_headers)
     
     try:
         data, content_type, _ = fetch_from_stash(stash_img_url, timeout=30)
+        
+        # Resize studio images to square for better display in Infuse
+        if needs_square_resize and PILLOW_AVAILABLE:
+            data, content_type = pad_image_to_square(data, target_size=400)
+            logger.info(f"Resized studio image to 400x400 square")
+            
+            # Cache the resized image
+            if len(IMAGE_CACHE) >= IMAGE_CACHE_MAX_SIZE:
+                # Remove oldest entry (simple FIFO)
+                oldest_key = next(iter(IMAGE_CACHE))
+                del IMAGE_CACHE[oldest_key]
+            IMAGE_CACHE[cache_key] = (data, content_type)
         
         from starlette.responses import Response
         logger.info(f"Image response: {len(data)} bytes, type={content_type}")
@@ -1172,7 +1263,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.8 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.9 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
