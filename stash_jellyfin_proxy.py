@@ -76,6 +76,12 @@ if _config:
     SJS_USER = _config.get("SJS_USER", SJS_USER)
     SJS_PASSWORD = _config.get("SJS_PASSWORD", SJS_PASSWORD)
     print(f"Loaded config from {CONFIG_FILE}: user={SJS_USER}")
+    if STASH_API_KEY:
+        print(f"Stash API key configured (length: {len(STASH_API_KEY)} chars)")
+    else:
+        print("WARNING: STASH_API_KEY not set in config file!")
+        print("  Images will not load. Add STASH_API_KEY to your config file.")
+        print("  Get your API key from: Stash -> Settings -> Security -> API Key")
 else:
     print(f"Warning: Config file {CONFIG_FILE} not found or empty. Using defaults/env vars.")
     STASH_URL = os.getenv("STASH_URL", STASH_URL)
@@ -158,11 +164,13 @@ def get_stash_session():
     
     STASH_SESSION = requests.Session()
     
-    # Use STASH_API_KEY if set, otherwise use SJS_PASSWORD
-    api_key = STASH_API_KEY if STASH_API_KEY else SJS_PASSWORD
-    if api_key:
-        STASH_SESSION.headers["ApiKey"] = api_key
-        logger.info(f"Session configured with ApiKey header")
+    # Use STASH_API_KEY for authentication (required for image endpoints)
+    if STASH_API_KEY:
+        STASH_SESSION.headers["ApiKey"] = STASH_API_KEY
+        logger.info(f"Session configured with ApiKey header (key length: {len(STASH_API_KEY)})")
+    else:
+        logger.warning("No STASH_API_KEY configured - images will fail to load!")
+        logger.warning("Add STASH_API_KEY to your config file (get from Stash -> Settings -> Security)")
     
     return STASH_SESSION
 
@@ -1325,9 +1333,8 @@ async def endpoint_image(request):
         from starlette.responses import Response
         return Response(content=cached_data, media_type=cached_type, headers=cache_headers)
     
-    # Explicitly pass ApiKey header for image requests (some Stash endpoints need it)
-    api_key = STASH_API_KEY if STASH_API_KEY else SJS_PASSWORD
-    image_headers = {"ApiKey": api_key} if api_key else {}
+    # Explicitly pass ApiKey header for image requests (required for Stash image endpoints)
+    image_headers = {"ApiKey": STASH_API_KEY} if STASH_API_KEY else {}
     
     try:
         data, content_type, _ = fetch_from_stash(stash_img_url, extra_headers=image_headers, timeout=30)
@@ -1423,7 +1430,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.13 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.14 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
