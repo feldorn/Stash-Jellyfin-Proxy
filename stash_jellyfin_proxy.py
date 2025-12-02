@@ -410,7 +410,7 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
                 "IsTextSubtitleStream": True,
                 "SupportsExternalStream": True,
                 "DeliveryMethod": "External",
-                "DeliveryUrl": f"/Videos/{item_id}/Subtitles/{idx + 1}/0/Stream.{caption_type}"
+                "DeliveryUrl": f"Subtitles/{idx + 1}/0/Stream.{caption_type}"
             })
         
         item["HasSubtitles"] = len(captions) > 0
@@ -1245,7 +1245,7 @@ async def endpoint_playback_info(request):
             "IsTextSubtitleStream": True,
             "SupportsExternalStream": True,
             "DeliveryMethod": "External",
-            "DeliveryUrl": f"/Videos/{item_id}/Subtitles/{idx + 1}/0/Stream.{caption_type}"
+            "DeliveryUrl": f"Subtitles/{idx + 1}/0/Stream.{caption_type}"
         })
     
     logger.info(f"PlaybackInfo for {item_id}: {len(captions)} subtitles")
@@ -1730,7 +1730,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.26 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.27 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
