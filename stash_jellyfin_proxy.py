@@ -90,6 +90,37 @@ STASH_SESSION = None  # Will hold requests.Session with auth cookies
 IMAGE_CACHE = {}  # Key: (item_id, target_size), Value: (bytes, content_type)
 IMAGE_CACHE_MAX_SIZE = 100  # Max items to cache
 
+# Menu icons as simple SVG graphics (styled similar to Stash's icons)
+# These are served for root-scenes, root-studios, root-performers, root-groups
+MENU_ICONS = {
+    "root-scenes": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+        <rect width="400" height="600" fill="#1a1a2e"/>
+        <circle cx="200" cy="260" r="80" fill="none" stroke="#4a90d9" stroke-width="12"/>
+        <polygon points="180,230 180,290 230,260" fill="#4a90d9"/>
+        <text x="200" y="420" font-family="Arial, sans-serif" font-size="48" fill="#4a90d9" text-anchor="middle">SCENES</text>
+    </svg>""",
+    "root-studios": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+        <rect width="400" height="600" fill="#1a1a2e"/>
+        <rect x="120" y="200" width="160" height="120" rx="8" fill="none" stroke="#4a90d9" stroke-width="12"/>
+        <rect x="145" y="320" width="110" height="20" fill="#4a90d9"/>
+        <circle cx="200" cy="260" r="25" fill="#4a90d9"/>
+        <text x="200" y="420" font-family="Arial, sans-serif" font-size="48" fill="#4a90d9" text-anchor="middle">STUDIOS</text>
+    </svg>""",
+    "root-performers": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+        <rect width="400" height="600" fill="#1a1a2e"/>
+        <circle cx="200" cy="220" r="50" fill="none" stroke="#4a90d9" stroke-width="12"/>
+        <path d="M120,340 Q120,280 200,280 Q280,280 280,340 L280,360 L120,360 Z" fill="none" stroke="#4a90d9" stroke-width="12"/>
+        <text x="200" y="460" font-family="Arial, sans-serif" font-size="36" fill="#4a90d9" text-anchor="middle">PERFORMERS</text>
+    </svg>""",
+    "root-groups": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+        <rect width="400" height="600" fill="#1a1a2e"/>
+        <rect x="100" y="180" width="80" height="120" rx="4" fill="none" stroke="#4a90d9" stroke-width="8"/>
+        <rect x="160" y="200" width="80" height="120" rx="4" fill="none" stroke="#4a90d9" stroke-width="8"/>
+        <rect x="220" y="220" width="80" height="120" rx="4" fill="none" stroke="#4a90d9" stroke-width="8"/>
+        <text x="200" y="440" font-family="Arial, sans-serif" font-size="48" fill="#4a90d9" text-anchor="middle">GROUPS</text>
+    </svg>"""
+}
+
 # --- Logging Setup ---
 # Configure root logger to output to console
 logging.basicConfig(
@@ -451,7 +482,7 @@ async def endpoint_user_views(request):
                 "Type": "CollectionFolder",
                 "CollectionType": "movies",
                 "IsFolder": True,
-                "ImageTags": {},
+                "ImageTags": {"Primary": "icon"},
                 "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
             },
@@ -462,7 +493,7 @@ async def endpoint_user_views(request):
                 "Type": "CollectionFolder",
                 "CollectionType": "movies",
                 "IsFolder": True,
-                "ImageTags": {},
+                "ImageTags": {"Primary": "icon"},
                 "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
             },
@@ -473,7 +504,7 @@ async def endpoint_user_views(request):
                 "Type": "CollectionFolder",
                 "CollectionType": "movies",
                 "IsFolder": True,
-                "ImageTags": {},
+                "ImageTags": {"Primary": "icon"},
                 "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-performers"}
             },
@@ -484,7 +515,7 @@ async def endpoint_user_views(request):
                 "Type": "CollectionFolder",
                 "CollectionType": "movies",
                 "IsFolder": True,
-                "ImageTags": {},
+                "ImageTags": {"Primary": "icon"},
                 "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-groups"}
             }
@@ -824,10 +855,12 @@ async def endpoint_items(request):
                 "RecursiveItemCount": m.get("scene_count", 0),
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"}
             }
+            # Set ImageTags only if group has a front image
             if m.get("front_image_path"):
                 group_item["ImageTags"] = {"Primary": "img"}
             else:
-                group_item["ImageTags"] = {}
+                # No image - use placeholder icon similar to menu icons
+                group_item["ImageTags"] = {"Primary": "placeholder"}
             items.append(group_item)
     
     elif parent_id and parent_id.startswith("group-"):
@@ -1148,11 +1181,122 @@ async def endpoint_stream(request):
         logger.error(f"Stream proxy error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
+def generate_menu_icon(icon_type: str, width: int = 400, height: int = 600) -> Tuple[bytes, str]:
+    """Generate a PNG menu icon using Pillow drawing."""
+    if not PILLOW_AVAILABLE:
+        # Return the SVG as fallback
+        return MENU_ICONS.get(icon_type, "").encode('utf-8'), "image/svg+xml"
+    
+    try:
+        from PIL import ImageDraw
+        
+        # Create image with dark background
+        img = Image.new('RGB', (width, height), (26, 26, 46))
+        draw = ImageDraw.Draw(img)
+        
+        # Icon color (Stash-like blue)
+        icon_color = (74, 144, 217)  # #4a90d9
+        
+        # Draw different icons based on type
+        if icon_type == "root-scenes":
+            # Play button circle
+            draw.ellipse([120, 180, 280, 340], outline=icon_color, width=8)
+            # Play triangle
+            draw.polygon([(175, 220), (175, 300), (240, 260)], fill=icon_color)
+            
+        elif icon_type == "root-studios":
+            # Camera/studio icon
+            draw.rectangle([120, 200, 280, 320], outline=icon_color, width=8)
+            draw.ellipse([175, 230, 225, 280], fill=icon_color)
+            draw.rectangle([145, 320, 255, 340], fill=icon_color)
+            
+        elif icon_type == "root-performers":
+            # Person icon (head + body)
+            draw.ellipse([150, 160, 250, 260], outline=icon_color, width=8)
+            draw.arc([100, 260, 300, 400], 0, 180, fill=icon_color, width=8)
+            
+        elif icon_type == "root-groups":
+            # Stacked folders/movies
+            draw.rectangle([100, 180, 180, 300], outline=icon_color, width=6)
+            draw.rectangle([140, 200, 220, 320], outline=icon_color, width=6)
+            draw.rectangle([180, 220, 260, 340], outline=icon_color, width=6)
+        
+        # Add label text at bottom (simple, no font required)
+        label = icon_type.replace("root-", "").upper()
+        # Draw a simple underline as text indicator
+        text_y = 420
+        text_width = len(label) * 20
+        text_x = (width - text_width) // 2
+        draw.rectangle([text_x, text_y, text_x + text_width, text_y + 6], fill=icon_color)
+        
+        # Save as PNG
+        output = io.BytesIO()
+        img.save(output, format='PNG')
+        return output.getvalue(), "image/png"
+        
+    except Exception as e:
+        logger.warning(f"Menu icon generation failed: {e}")
+        return MENU_ICONS.get(icon_type, "").encode('utf-8'), "image/svg+xml"
+
+def generate_placeholder_icon(item_type: str = "group", width: int = 400, height: int = 600) -> Tuple[bytes, str]:
+    """Generate a placeholder icon for items without images."""
+    if not PILLOW_AVAILABLE:
+        # Return a simple dark image
+        return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', "image/png"
+    
+    try:
+        from PIL import ImageDraw
+        
+        # Create image with dark background
+        img = Image.new('RGB', (width, height), (30, 30, 35))
+        draw = ImageDraw.Draw(img)
+        
+        # Gray placeholder color
+        placeholder_color = (80, 80, 90)
+        
+        if item_type == "group":
+            # Film strip / movie icon
+            draw.rectangle([120, 200, 280, 360], outline=placeholder_color, width=6)
+            # Film holes on sides
+            for y in [220, 270, 320]:
+                draw.rectangle([130, y, 150, y+20], fill=placeholder_color)
+                draw.rectangle([250, y, 270, y+20], fill=placeholder_color)
+        else:
+            # Generic placeholder - question mark or film icon
+            draw.ellipse([140, 200, 260, 320], outline=placeholder_color, width=6)
+            draw.text((180, 230), "?", fill=placeholder_color)
+        
+        # Save as PNG
+        output = io.BytesIO()
+        img.save(output, format='PNG')
+        return output.getvalue(), "image/png"
+        
+    except Exception as e:
+        logger.warning(f"Placeholder icon generation failed: {e}")
+        return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', "image/png"
+
 async def endpoint_image(request):
-    """Proxy image from Stash with proper authentication. Handles scenes, studios, performers, and groups."""
+    """Proxy image from Stash with proper authentication. Handles scenes, studios, performers, groups, and menu icons."""
     global IMAGE_CACHE
     
     item_id = request.path_params.get("item_id")
+    
+    # Handle menu icons for root folders
+    if item_id in MENU_ICONS:
+        # Generate PNG icon using Pillow drawing
+        img_data, content_type = generate_menu_icon(item_id)
+        logger.info(f"Serving menu icon for {item_id}")
+        from starlette.responses import Response
+        return Response(content=img_data, media_type=content_type, headers={"Cache-Control": "max-age=86400"})
+    
+    # Check query params for placeholder flag (set when group has no front_image)
+    image_tag = request.query_params.get("tag", "")
+    if image_tag == "placeholder" and item_id.startswith("group-"):
+        # Generate placeholder icon for groups without images
+        img_data, content_type = generate_placeholder_icon("group")
+        logger.info(f"Serving placeholder icon for {item_id}")
+        from starlette.responses import Response
+        return Response(content=img_data, media_type=content_type, headers={"Cache-Control": "max-age=86400"})
     
     # Determine image URL and whether to resize based on item type
     needs_portrait_resize = False
@@ -1216,7 +1360,14 @@ async def endpoint_image(request):
     except Exception as e:
         logger.error(f"Image proxy error: {e}")
         from starlette.responses import Response
-        # Return transparent 1x1 PNG as fallback
+        
+        # For groups, return a placeholder icon instead of transparent pixel
+        if item_id.startswith("group-"):
+            img_data, content_type = generate_placeholder_icon("group")
+            logger.info(f"Serving placeholder icon for failed group image: {item_id}")
+            return Response(content=img_data, media_type=content_type, headers=cache_headers)
+        
+        # Return transparent 1x1 PNG as fallback for other types
         return Response(content=b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', media_type='image/png', headers=cache_headers)
 
 async def catch_all(request):
@@ -1264,7 +1415,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.10 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.11 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
