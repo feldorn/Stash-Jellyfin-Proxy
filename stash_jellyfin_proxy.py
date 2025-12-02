@@ -139,6 +139,11 @@ MENU_ICONS = {
         <rect x="80" y="200" width="100" height="160" rx="6" fill="none" stroke="#4a90d9" stroke-width="10"/>
         <rect x="150" y="240" width="100" height="160" rx="6" fill="none" stroke="#4a90d9" stroke-width="10"/>
         <rect x="220" y="280" width="100" height="160" rx="6" fill="none" stroke="#4a90d9" stroke-width="10"/>
+    </svg>""",
+    "root-tag": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+        <rect width="400" height="600" fill="#1a1a2e"/>
+        <path d="M120,220 L280,220 L320,300 L200,420 L80,300 Z" fill="none" stroke="#4a90d9" stroke-width="12" stroke-linejoin="round"/>
+        <circle cx="160" cy="280" r="20" fill="#4a90d9"/>
     </svg>"""
 }
 
@@ -550,54 +555,71 @@ async def endpoint_user_by_id(request):
     })
 
 async def endpoint_user_views(request):
+    items = [
+        {
+            "Name": "Scenes",
+            "Id": "root-scenes",
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
+        },
+        {
+            "Name": "Studios",
+            "Id": "root-studios",
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
+        },
+        {
+            "Name": "Performers",
+            "Id": "root-performers",
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-performers"}
+        },
+        {
+            "Name": "Groups",
+            "Id": "root-groups",
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-groups"}
+        }
+    ]
+    
+    # Add tag group folders
+    for tag_name in TAG_GROUPS:
+        tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
+        items.append({
+            "Name": tag_name,
+            "Id": tag_id,
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": tag_id}
+        })
+    
     return JSONResponse({
-        "Items": [
-            {
-                "Name": "Scenes",
-                "Id": "root-scenes",
-                "ServerId": SERVER_ID,
-                "Type": "CollectionFolder",
-                "CollectionType": "movies",
-                "IsFolder": True,
-                "ImageTags": {"Primary": "icon"},
-                "BackdropImageTags": [],
-                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
-            },
-            {
-                "Name": "Studios",
-                "Id": "root-studios",
-                "ServerId": SERVER_ID,
-                "Type": "CollectionFolder",
-                "CollectionType": "movies",
-                "IsFolder": True,
-                "ImageTags": {"Primary": "icon"},
-                "BackdropImageTags": [],
-                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
-            },
-            {
-                "Name": "Performers",
-                "Id": "root-performers",
-                "ServerId": SERVER_ID,
-                "Type": "CollectionFolder",
-                "CollectionType": "movies",
-                "IsFolder": True,
-                "ImageTags": {"Primary": "icon"},
-                "BackdropImageTags": [],
-                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-performers"}
-            },
-            {
-                "Name": "Groups",
-                "Id": "root-groups",
-                "ServerId": SERVER_ID,
-                "Type": "CollectionFolder",
-                "CollectionType": "movies",
-                "IsFolder": True,
-                "ImageTags": {"Primary": "icon"},
-                "BackdropImageTags": [],
-                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-groups"}
-            }
-        ],
-        "TotalRecordCount": 4
+        "Items": items,
+        "TotalRecordCount": len(items)
     })
 
 async def endpoint_grouping_options(request):
@@ -606,7 +628,7 @@ async def endpoint_grouping_options(request):
 
 async def endpoint_virtual_folders(request):
     # Infuse requests library virtual folders
-    return JSONResponse([
+    folders = [
         {
             "Name": "Scenes",
             "Locations": [],
@@ -631,7 +653,19 @@ async def endpoint_virtual_folders(request):
             "CollectionType": "movies",
             "ItemId": "root-groups"
         }
-    ])
+    ]
+    
+    # Add tag group folders
+    for tag_name in TAG_GROUPS:
+        tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
+        folders.append({
+            "Name": tag_name,
+            "Locations": [],
+            "CollectionType": "movies",
+            "ItemId": tag_id
+        })
+    
+    return JSONResponse(folders)
 
 async def endpoint_shows_nextup(request):
     # Infuse requests next up episodes - return empty
