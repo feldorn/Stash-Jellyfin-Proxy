@@ -137,8 +137,10 @@ def format_jellyfin_item(scene: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "Name": title,
+        "SortName": title,
         "Id": item_id,
         "ServerId": SERVER_ID,
+        "Etag": item_id,
         "Type": "Movie",
         "IsFolder": False,
         "MediaType": "Video",
@@ -146,6 +148,7 @@ def format_jellyfin_item(scene: Dict[str, Any]) -> Dict[str, Any]:
         "PremiereDate": f"{date}T00:00:00.0000000Z" if date else None,
         "DateCreated": f"{date}T00:00:00.0000000Z" if date else None,
         "Path": path,
+        "Overview": f"Scene from {studio}" if studio else "",
         "Studios": [{"Name": studio, "Id": "studio-1"}] if studio else [],
         "Genres": tags[:5] if tags else [],
         "Tags": [{"Name": t} for t in tags[:5]] if tags else [],
@@ -163,6 +166,10 @@ def format_jellyfin_item(scene: Dict[str, Any]) -> Dict[str, Any]:
         "IsHD": True,
         "VideoType": "VideoFile",
         "PrimaryImageAspectRatio": 1.78,
+        "ProviderIds": {},
+        "ChildCount": 0,
+        "RecursiveItemCount": 0,
+        "ParentId": "root-scenes",
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -529,7 +536,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.2 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.3 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
