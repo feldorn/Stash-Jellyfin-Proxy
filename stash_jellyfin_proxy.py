@@ -130,83 +130,62 @@ def extract_numeric_id(guid_id: str) -> str:
         return numeric if numeric else "0"
     return guid_id
 
-def format_jellyfin_item(scene: Dict[str, Any]) -> Dict[str, Any]:
+def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") -> Dict[str, Any]:
     raw_id = str(scene.get("id"))
-    item_id = make_guid(raw_id)
+    item_id = f"scene-{raw_id}"  # Simple ID format like studios use
     title = scene.get("title") or scene.get("code") or f"Scene {raw_id}"
     date = scene.get("date")
     files = scene.get("files", [])
     path = files[0].get("path") if files else ""
     duration = files[0].get("duration", 0) if files else 0
     studio = scene.get("studio", {}).get("name") if scene.get("studio") else None
-    tags = [t.get("name") for t in scene.get("tags", [])]
     
-    people = []
-    for p in scene.get("performers", []):
-        people.append({
-            "Name": p.get("name"),
-            "Id": make_guid(str(p.get("id"))),
-            "Type": "Actor",
-            "Role": "Performer"
-        })
-
-    return {
+    # Simplified item format - minimal fields for compatibility
+    item = {
         "Name": title,
         "SortName": title,
         "Id": item_id,
         "ServerId": SERVER_ID,
-        "Etag": item_id,
         "Type": "Movie",
         "IsFolder": False,
         "MediaType": "Video",
-        "ProductionYear": int(date[:4]) if date else None,
-        "PremiereDate": f"{date}T00:00:00.0000000Z" if date else None,
-        "DateCreated": f"{date}T00:00:00.0000000Z" if date else None,
-        "Path": path,
-        "Overview": f"Scene from {studio}" if studio else "",
-        "Studios": [{"Name": studio, "Id": "studio-1"}] if studio else [],
-        "Genres": tags[:5] if tags else [],
-        "Tags": [{"Name": t} for t in tags[:5]] if tags else [],
-        "People": people,
-        "ImageTags": {"Primary": "1"},
+        "ParentId": parent_id,
+        "ImageTags": {},
         "BackdropImageTags": [],
-        "Container": "mp4",
-        "SupportsSync": True,
-        "RunTimeTicks": int(duration * 10000000),
-        "PlayAccess": "Full",
-        "CanDownload": True,
-        "CanDelete": False,
-        "HasSubtitles": False,
-        "LocationType": "FileSystem",
-        "IsHD": True,
-        "VideoType": "VideoFile",
-        "PrimaryImageAspectRatio": 1.78,
-        "ProviderIds": {},
-        "ChildCount": 0,
-        "RecursiveItemCount": 0,
-        "ParentId": "root-scenes",
+        "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
             "IsFavorite": False,
             "Played": False,
             "Key": item_id
-        },
-        "MediaSources": [{
+        }
+    }
+    
+    # Add optional fields only if they exist
+    if date:
+        item["ProductionYear"] = int(date[:4])
+        item["PremiereDate"] = f"{date}T00:00:00.0000000Z"
+    
+    if studio:
+        item["Overview"] = f"Scene from {studio}"
+    
+    if path:
+        item["Path"] = path
+        item["LocationType"] = "FileSystem"
+        item["MediaSources"] = [{
             "Id": item_id,
             "Path": path,
             "Protocol": "Http",
             "Type": "Default",
             "Container": "mp4",
             "Name": title,
-            "IsRemote": False,
-            "RunTimeTicks": int(duration * 10000000),
             "SupportsDirectPlay": True,
             "SupportsDirectStream": True,
-            "SupportsTranscoding": False,
-            "DirectStreamUrl": f"/Videos/{item_id}/stream.mp4"
+            "SupportsTranscoding": False
         }]
-    }
+    
+    return item
 
 # --- API Endpoints ---
 
@@ -411,10 +390,10 @@ async def endpoint_items(request):
                 items.append(format_jellyfin_item(scene))
     
     elif parent_id == "root-scenes":
-        q = """query FindScenes { findScenes(filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } tags { name } performers { name id } } } }"""
+        q = """query FindScenes { findScenes(filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } } } }"""
         res = stash_query(q)
         for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
-            items.append(format_jellyfin_item(s))
+            items.append(format_jellyfin_item(s, parent_id="root-scenes"))
 
     elif parent_id == "root-studios":
         q = """query FindStudios { findStudios(filter: {per_page: 50, sort: "name", direction: ASC}) { studios { id name } } }"""
@@ -430,10 +409,10 @@ async def endpoint_items(request):
             
     elif parent_id and parent_id.startswith("studio-"):
         studio_id = parent_id.replace("studio-", "")
-        q = """query FindScenes($sid: [ID!]) { findScenes(scene_filter: {studios: {value: $sid, modifier: INCLUDES}}, filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } tags { name } performers { name id } } } }"""
+        q = """query FindScenes($sid: [ID!]) { findScenes(scene_filter: {studios: {value: $sid, modifier: INCLUDES}}, filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } } } }"""
         res = stash_query(q, {"sid": [studio_id]})
         for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
-            items.append(format_jellyfin_item(s))
+            items.append(format_jellyfin_item(s, parent_id=parent_id))
             
     return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
 
@@ -494,9 +473,13 @@ async def endpoint_item_details(request):
         # Return empty for resume/latest
         return JSONResponse({"Items": [], "TotalRecordCount": 0})
     
-    # Otherwise it's a scene ID - convert GUID to numeric for Stash query
-    numeric_id = extract_numeric_id(item_id)
-    q = """query FindScene($id: ID!) { findScene(id: $id) { id title code date files { path duration } studio { name } tags { name } performers { name id } } }"""
+    # Otherwise it's a scene ID (scene-123 format) - extract numeric for Stash query
+    if item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
+    else:
+        numeric_id = extract_numeric_id(item_id)
+    
+    q = """query FindScene($id: ID!) { findScene(id: $id) { id title code date files { path duration } studio { name } } }"""
     res = stash_query(q, {"id": numeric_id})
     scene = res.get("data", {}).get("findScene")
     if not scene:
@@ -515,18 +498,27 @@ async def endpoint_playback_info(request):
         "PlaySessionId": "session-1"
     })
 
+def get_numeric_id(item_id: str) -> str:
+    """Extract numeric ID from various formats: scene-123, studio-456, or GUID."""
+    if item_id.startswith("scene-"):
+        return item_id.replace("scene-", "")
+    elif item_id.startswith("studio-"):
+        return item_id.replace("studio-", "")
+    elif "-" in item_id:
+        # GUID format - extract numeric part
+        return extract_numeric_id(item_id)
+    return item_id
+
 async def endpoint_stream(request):
     item_id = request.path_params.get("item_id")
-    # Convert GUID back to numeric ID for Stash
-    numeric_id = extract_numeric_id(item_id)
+    numeric_id = get_numeric_id(item_id)
     stash_stream_url = f"{STASH_URL}/scene/{numeric_id}/stream"
     logger.info(f"Redirecting stream for {item_id} (numeric: {numeric_id}) to {stash_stream_url}")
     return RedirectResponse(url=stash_stream_url)
 
 async def endpoint_image(request):
     item_id = request.path_params.get("item_id")
-    # Convert GUID back to numeric ID for Stash
-    numeric_id = extract_numeric_id(item_id)
+    numeric_id = get_numeric_id(item_id)
     stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
     return RedirectResponse(url=stash_img_url)
 
@@ -575,7 +567,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.6 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.7 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     

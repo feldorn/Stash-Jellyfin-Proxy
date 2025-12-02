@@ -1,0 +1,148 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py --debug
+2025-12-02 14:12:28,392 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v2.6 ---
+2025-12-02 14:12:28,392 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-02 14:12:28,392 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-02 14:12:28,392 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-02 14:12:28,412 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-02 14:12:28,413 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-02 14:12:28,413 - hypercorn.error - INFO - Running on http://0.0.0.0:8096 (CTRL + C to quit)
+2025-12-02 14:12:29,606 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Views from 192.168.0.233
+2025-12-02 14:12:29,606 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0002s
+2025-12-02 14:12:29,606 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:29 -0600] "GET /Users/user-1/Views 1.1" 200 615
+2025-12-02 14:12:30,622 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/root-scenes from 192.168.0.233
+2025-12-02 14:12:30,623 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0010s
+2025-12-02 14:12:30,624 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:30 -0600] "GET /Users/user-1/Items/root-scenes 1.1" 200 355
+2025-12-02 14:12:30,631 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 14:12:30,632 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:30,632 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:30 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 14:12:30,638 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items from 192.168.0.233
+2025-12-02 14:12:30,639 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: root-scenes, Ids: None, All params: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-scenes', 'sortBy': 'IsFolder,SortName', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '0', 'limit': '50'}
+2025-12-02 14:12:30,690 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0520s
+2025-12-02 14:12:30,690 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:30 -0600] "GET /Users/user-1/Items 1.1" 200 94753
+2025-12-02 14:12:32,018 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Views from 192.168.0.233
+2025-12-02 14:12:32,019 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0009s
+2025-12-02 14:12:32,020 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Views 1.1" 200 615
+2025-12-02 14:12:32,752 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/root-studios from 192.168.0.233
+2025-12-02 14:12:32,753 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 14:12:32,754 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/root-studios 1.1" 200 351
+2025-12-02 14:12:32,759 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 14:12:32,759 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:32,760 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 14:12:32,765 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items from 192.168.0.233
+2025-12-02 14:12:32,766 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: root-studios, Ids: None, All params: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-studios', 'sortBy': 'IsFolder,SortName', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '0', 'limit': '50'}
+2025-12-02 14:12:32,791 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0262s
+2025-12-02 14:12:32,792 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items 1.1" 200 5653
+2025-12-02 14:12:32,816 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-367 from 192.168.0.233
+2025-12-02 14:12:32,817 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:32,817 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-367 1.1" 200 303
+2025-12-02 14:12:32,824 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-377 from 192.168.0.233
+2025-12-02 14:12:32,825 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:32,825 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-377 1.1" 200 303
+2025-12-02 14:12:32,833 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-147 from 192.168.0.233
+2025-12-02 14:12:32,834 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:32,834 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-147 1.1" 200 303
+2025-12-02 14:12:32,839 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-217 from 192.168.0.233
+2025-12-02 14:12:32,839 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:32,840 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-217 1.1" 200 303
+2025-12-02 14:12:32,847 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-291 from 192.168.0.233
+2025-12-02 14:12:32,847 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:32,848 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-291 1.1" 200 303
+2025-12-02 14:12:32,854 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-393 from 192.168.0.233
+2025-12-02 14:12:32,855 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:32,856 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-393 1.1" 200 303
+2025-12-02 14:12:32,862 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-421 from 192.168.0.233
+2025-12-02 14:12:32,862 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:32,863 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-421 1.1" 200 303
+2025-12-02 14:12:32,869 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-314 from 192.168.0.233
+2025-12-02 14:12:32,869 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 14:12:32,870 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-314 1.1" 200 303
+2025-12-02 14:12:32,875 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-478 from 192.168.0.233
+2025-12-02 14:12:32,876 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:32,876 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-478 1.1" 200 303
+2025-12-02 14:12:32,882 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-446 from 192.168.0.233
+2025-12-02 14:12:32,882 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:32,883 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-446 1.1" 200 303
+2025-12-02 14:12:32,888 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-148 from 192.168.0.233
+2025-12-02 14:12:32,889 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:32,890 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-148 1.1" 200 303
+2025-12-02 14:12:32,895 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-160 from 192.168.0.233
+2025-12-02 14:12:32,896 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:32,896 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-160 1.1" 200 303
+2025-12-02 14:12:32,993 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-120 from 192.168.0.233
+2025-12-02 14:12:32,993 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:32,994 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:32 -0600] "GET /Users/user-1/Items/studio-120 1.1" 200 303
+2025-12-02 14:12:33,001 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-179 from 192.168.0.233
+2025-12-02 14:12:33,002 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:33,002 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-179 1.1" 200 303
+2025-12-02 14:12:33,009 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-171 from 192.168.0.233
+2025-12-02 14:12:33,009 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:33,010 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-171 1.1" 200 303
+2025-12-02 14:12:33,017 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-81 from 192.168.0.233
+2025-12-02 14:12:33,018 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:33,019 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-81 1.1" 200 299
+2025-12-02 14:12:33,025 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-230 from 192.168.0.233
+2025-12-02 14:12:33,026 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:33,026 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-230 1.1" 200 303
+2025-12-02 14:12:33,032 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-190 from 192.168.0.233
+2025-12-02 14:12:33,033 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:33,033 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-190 1.1" 200 303
+2025-12-02 14:12:33,041 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-394 from 192.168.0.233
+2025-12-02 14:12:33,041 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:33,042 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-394 1.1" 200 303
+2025-12-02 14:12:33,049 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-525 from 192.168.0.233
+2025-12-02 14:12:33,049 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:33,049 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-525 1.1" 200 303
+2025-12-02 14:12:33,057 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-104 from 192.168.0.233
+2025-12-02 14:12:33,057 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:33,058 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:33 -0600] "GET /Users/user-1/Items/studio-104 1.1" 200 303
+2025-12-02 14:12:36,135 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-148 from 192.168.0.233
+2025-12-02 14:12:36,136 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0008s
+2025-12-02 14:12:36,137 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-148 1.1" 200 303
+2025-12-02 14:12:36,143 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-367 from 192.168.0.233
+2025-12-02 14:12:36,144 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:36,145 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-367 1.1" 200 303
+2025-12-02 14:12:36,152 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-377 from 192.168.0.233
+2025-12-02 14:12:36,153 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:36,153 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-377 1.1" 200 303
+2025-12-02 14:12:36,159 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-147 from 192.168.0.233
+2025-12-02 14:12:36,160 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,160 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-147 1.1" 200 303
+2025-12-02 14:12:36,165 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-217 from 192.168.0.233
+2025-12-02 14:12:36,166 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,167 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-217 1.1" 200 303
+2025-12-02 14:12:36,173 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-291 from 192.168.0.233
+2025-12-02 14:12:36,174 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,174 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-291 1.1" 200 303
+2025-12-02 14:12:36,179 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-393 from 192.168.0.233
+2025-12-02 14:12:36,179 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:36,180 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-393 1.1" 200 303
+2025-12-02 14:12:36,185 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-421 from 192.168.0.233
+2025-12-02 14:12:36,186 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,186 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-421 1.1" 200 303
+2025-12-02 14:12:36,191 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-314 from 192.168.0.233
+2025-12-02 14:12:36,192 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,192 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-314 1.1" 200 303
+2025-12-02 14:12:36,197 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-478 from 192.168.0.233
+2025-12-02 14:12:36,198 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:36,198 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-478 1.1" 200 303
+2025-12-02 14:12:36,202 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-446 from 192.168.0.233
+2025-12-02 14:12:36,202 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 14:12:36,203 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-446 1.1" 200 303
+2025-12-02 14:12:36,315 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-148 from 192.168.0.233
+2025-12-02 14:12:36,315 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 14:12:36,316 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-148 1.1" 200 303
+2025-12-02 14:12:36,322 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-160 from 192.168.0.233
+2025-12-02 14:12:36,323 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:36,323 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-160 1.1" 200 303
+2025-12-02 14:12:36,330 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-120 from 192.168.0.233
+2025-12-02 14:12:36,330 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,331 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-120 1.1" 200 303
+2025-12-02 14:12:36,338 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-179 from 192.168.0.233
+2025-12-02 14:12:36,339 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:12:36,339 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-179 1.1" 200 303
+2025-12-02 14:12:36,345 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-171 from 192.168.0.233
+2025-12-02 14:12:36,346 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:12:36,346 - hypercorn.access - INFO - 192.168.0.233:63960 - - [02/Dec/2025:14:12:36 -0600] "GET /Users/user-1/Items/studio-171 1.1" 200 303
+2025-12-02 14:12:36,352 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/studio-81 from 192.168.0.233
+2025-12-02 14:12:36,352 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-
