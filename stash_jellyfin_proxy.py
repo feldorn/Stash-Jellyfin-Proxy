@@ -372,6 +372,9 @@ async def endpoint_items(request):
     parent_id = request.query_params.get("ParentId")
     ids = request.query_params.get("Ids")
     
+    # Debug: Log all query params
+    logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, All params: {dict(request.query_params)}")
+    
     items = []
     
     if ids:
@@ -525,7 +528,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.0 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.1 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
