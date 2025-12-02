@@ -1,0 +1,168 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py --debug
+2025-12-02 14:16:29,852 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v2.7 ---
+2025-12-02 14:16:29,852 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-02 14:16:29,852 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-02 14:16:29,852 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-02 14:16:29,872 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-02 14:16:29,873 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-02 14:16:29,873 - hypercorn.error - INFO - Running on http://0.0.0.0:8096 (CTRL + C to quit)
+2025-12-02 14:16:32,141 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Views from 192.168.0.233
+2025-12-02 14:16:32,141 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0002s
+2025-12-02 14:16:32,141 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:32 -0600] "GET /Users/user-1/Views 1.1" 200 615
+2025-12-02 14:16:33,167 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/root-scenes from 192.168.0.233
+2025-12-02 14:16:33,167 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 14:16:33,168 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /Users/user-1/Items/root-scenes 1.1" 200 355
+2025-12-02 14:16:33,173 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 14:16:33,174 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 14:16:33,174 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 14:16:33,181 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items from 192.168.0.233
+2025-12-02 14:16:33,181 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: root-scenes, Ids: None, All params: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-scenes', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '0', 'limit': '50'}
+2025-12-02 14:16:33,221 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0401s
+2025-12-02 14:16:33,221 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /Users/user-1/Items 1.1" 200 52444
+2025-12-02 14:16:33,283 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37931 from 192.168.0.233
+2025-12-02 14:16:33,313 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0300s
+2025-12-02 14:16:33,314 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /Users/user-1/Items/scene-37931 1.1" 200 932
+2025-12-02 14:16:33,329 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37931/stream from 192.168.0.233
+2025-12-02 14:16:33,329 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37931 (numeric: 37931) to https://stash.feldorn.com/scene/37931/stream
+2025-12-02 14:16:33,329 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0003s
+2025-12-02 14:16:33,330 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:33 -0600] "GET /Videos/scene-37931/stream 1.1" 307 0
+2025-12-02 14:16:33,519 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37899 from 192.168.0.233
+2025-12-02 14:16:33,541 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0219s
+2025-12-02 14:16:33,541 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /Users/user-1/Items/scene-37899 1.1" 200 919
+2025-12-02 14:16:33,633 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37899/stream from 192.168.0.233
+2025-12-02 14:16:33,633 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37899 (numeric: 37899) to https://stash.feldorn.com/scene/37899/stream
+2025-12-02 14:16:33,634 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0009s
+2025-12-02 14:16:33,634 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:33 -0600] "GET /Videos/scene-37899/stream 1.1" 307 0
+2025-12-02 14:16:33,787 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37896 from 192.168.0.233
+2025-12-02 14:16:33,811 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0243s
+2025-12-02 14:16:33,812 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /Users/user-1/Items/scene-37896 1.1" 200 1388
+2025-12-02 14:16:33,821 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37896/stream from 192.168.0.233
+2025-12-02 14:16:33,821 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37896 (numeric: 37896) to https://stash.feldorn.com/scene/37896/stream
+2025-12-02 14:16:33,821 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:33,821 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:33 -0600] "GET /Videos/scene-37896/stream 1.1" 307 0
+2025-12-02 14:16:33,963 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37870 from 192.168.0.233
+2025-12-02 14:16:33,985 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0221s
+2025-12-02 14:16:33,985 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:33 -0600] "GET /Users/user-1/Items/scene-37870 1.1" 200 1191
+2025-12-02 14:16:33,991 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37870/stream from 192.168.0.233
+2025-12-02 14:16:33,991 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37870 (numeric: 37870) to https://stash.feldorn.com/scene/37870/stream
+2025-12-02 14:16:33,991 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:33,991 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:33 -0600] "GET /Videos/scene-37870/stream 1.1" 307 0
+2025-12-02 14:16:34,165 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37919 from 192.168.0.233
+2025-12-02 14:16:34,191 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0252s
+2025-12-02 14:16:34,191 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:34 -0600] "GET /Users/user-1/Items/scene-37919 1.1" 200 997
+2025-12-02 14:16:34,199 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37919/stream from 192.168.0.233
+2025-12-02 14:16:34,199 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37919 (numeric: 37919) to https://stash.feldorn.com/scene/37919/stream
+2025-12-02 14:16:34,199 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:34,199 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:34 -0600] "GET /Videos/scene-37919/stream 1.1" 307 0
+2025-12-02 14:16:34,335 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37806 from 192.168.0.233
+2025-12-02 14:16:34,357 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0219s
+2025-12-02 14:16:34,358 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:34 -0600] "GET /Users/user-1/Items/scene-37806 1.1" 200 1402
+2025-12-02 14:16:34,364 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37806/stream from 192.168.0.233
+2025-12-02 14:16:34,364 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37806 (numeric: 37806) to https://stash.feldorn.com/scene/37806/stream
+2025-12-02 14:16:34,364 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:34,364 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:34 -0600] "GET /Videos/scene-37806/stream 1.1" 307 0
+2025-12-02 14:16:34,508 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37695 from 192.168.0.233
+2025-12-02 14:16:34,530 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0222s
+2025-12-02 14:16:34,531 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:34 -0600] "GET /Users/user-1/Items/scene-37695 1.1" 200 927
+2025-12-02 14:16:34,538 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37695/stream from 192.168.0.233
+2025-12-02 14:16:34,538 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37695 (numeric: 37695) to https://stash.feldorn.com/scene/37695/stream
+2025-12-02 14:16:34,539 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:34,539 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:34 -0600] "GET /Videos/scene-37695/stream 1.1" 307 0
+2025-12-02 14:16:34,775 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37696 from 192.168.0.233
+2025-12-02 14:16:34,797 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0224s
+2025-12-02 14:16:34,797 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:34 -0600] "GET /Users/user-1/Items/scene-37696 1.1" 200 1140
+2025-12-02 14:16:34,808 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37696/stream from 192.168.0.233
+2025-12-02 14:16:34,808 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37696 (numeric: 37696) to https://stash.feldorn.com/scene/37696/stream
+2025-12-02 14:16:34,808 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:34,808 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:34 -0600] "GET /Videos/scene-37696/stream 1.1" 307 0
+2025-12-02 14:16:34,948 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37898 from 192.168.0.233
+2025-12-02 14:16:34,970 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0222s
+2025-12-02 14:16:34,970 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:34 -0600] "GET /Users/user-1/Items/scene-37898 1.1" 200 927
+2025-12-02 14:16:34,979 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37898/stream from 192.168.0.233
+2025-12-02 14:16:34,979 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37898 (numeric: 37898) to https://stash.feldorn.com/scene/37898/stream
+2025-12-02 14:16:34,979 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:34,979 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:34 -0600] "GET /Videos/scene-37898/stream 1.1" 307 0
+2025-12-02 14:16:35,201 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37694 from 192.168.0.233
+2025-12-02 14:16:35,232 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0305s
+2025-12-02 14:16:35,232 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:35 -0600] "GET /Users/user-1/Items/scene-37694 1.1" 200 1285
+2025-12-02 14:16:35,241 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37694/stream from 192.168.0.233
+2025-12-02 14:16:35,241 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37694 (numeric: 37694) to https://stash.feldorn.com/scene/37694/stream
+2025-12-02 14:16:35,241 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:35,241 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:35 -0600] "GET /Videos/scene-37694/stream 1.1" 307 0
+2025-12-02 14:16:35,378 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37805 from 192.168.0.233
+2025-12-02 14:16:35,400 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0222s
+2025-12-02 14:16:35,401 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:35 -0600] "GET /Users/user-1/Items/scene-37805 1.1" 200 942
+2025-12-02 14:16:35,407 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37805/stream from 192.168.0.233
+2025-12-02 14:16:35,407 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37805 (numeric: 37805) to https://stash.feldorn.com/scene/37805/stream
+2025-12-02 14:16:35,407 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:35,407 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:35 -0600] "GET /Videos/scene-37805/stream 1.1" 307 0
+2025-12-02 14:16:35,550 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37861 from 192.168.0.233
+2025-12-02 14:16:35,572 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0220s
+2025-12-02 14:16:35,572 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:35 -0600] "GET /Users/user-1/Items/scene-37861 1.1" 200 911
+2025-12-02 14:16:35,579 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37861/stream from 192.168.0.233
+2025-12-02 14:16:35,579 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37861 (numeric: 37861) to https://stash.feldorn.com/scene/37861/stream
+2025-12-02 14:16:35,579 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:35,580 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:35 -0600] "GET /Videos/scene-37861/stream 1.1" 307 0
+2025-12-02 14:16:35,814 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37656 from 192.168.0.233
+2025-12-02 14:16:35,836 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0222s
+2025-12-02 14:16:35,836 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:35 -0600] "GET /Users/user-1/Items/scene-37656 1.1" 200 1160
+2025-12-02 14:16:35,844 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37656/stream from 192.168.0.233
+2025-12-02 14:16:35,844 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37656 (numeric: 37656) to https://stash.feldorn.com/scene/37656/stream
+2025-12-02 14:16:35,844 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:35,844 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:35 -0600] "GET /Videos/scene-37656/stream 1.1" 307 0
+2025-12-02 14:16:35,985 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37802 from 192.168.0.233
+2025-12-02 14:16:36,009 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0236s
+2025-12-02 14:16:36,009 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:36 -0600] "GET /Users/user-1/Items/scene-37802 1.1" 200 1064
+2025-12-02 14:16:36,016 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37802/stream from 192.168.0.233
+2025-12-02 14:16:36,016 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37802 (numeric: 37802) to https://stash.feldorn.com/scene/37802/stream
+2025-12-02 14:16:36,016 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0003s
+2025-12-02 14:16:36,017 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:36 -0600] "GET /Videos/scene-37802/stream 1.1" 307 0
+2025-12-02 14:16:36,157 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37645 from 192.168.0.233
+2025-12-02 14:16:36,183 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0255s
+2025-12-02 14:16:36,183 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:36 -0600] "GET /Users/user-1/Items/scene-37645 1.1" 200 921
+2025-12-02 14:16:36,258 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37645/stream from 192.168.0.233
+2025-12-02 14:16:36,258 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37645 (numeric: 37645) to https://stash.feldorn.com/scene/37645/stream
+2025-12-02 14:16:36,258 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0009s
+2025-12-02 14:16:36,259 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:36 -0600] "GET /Videos/scene-37645/stream 1.1" 307 0
+2025-12-02 14:16:36,403 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37646 from 192.168.0.233
+2025-12-02 14:16:36,428 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0255s
+2025-12-02 14:16:36,428 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:36 -0600] "GET /Users/user-1/Items/scene-37646 1.1" 200 1241
+2025-12-02 14:16:36,436 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37646/stream from 192.168.0.233
+2025-12-02 14:16:36,437 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37646 (numeric: 37646) to https://stash.feldorn.com/scene/37646/stream
+2025-12-02 14:16:36,437 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:36,437 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:36 -0600] "GET /Videos/scene-37646/stream 1.1" 307 0
+2025-12-02 14:16:36,577 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37803 from 192.168.0.233
+2025-12-02 14:16:36,600 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0230s
+2025-12-02 14:16:36,601 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:36 -0600] "GET /Users/user-1/Items/scene-37803 1.1" 200 937
+2025-12-02 14:16:36,608 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37803/stream from 192.168.0.233
+2025-12-02 14:16:36,608 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37803 (numeric: 37803) to https://stash.feldorn.com/scene/37803/stream
+2025-12-02 14:16:36,608 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:36,608 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:36 -0600] "GET /Videos/scene-37803/stream 1.1" 307 0
+2025-12-02 14:16:36,785 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37701 from 192.168.0.233
+2025-12-02 14:16:36,820 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0350s
+2025-12-02 14:16:36,820 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:36 -0600] "GET /Users/user-1/Items/scene-37701 1.1" 200 930
+2025-12-02 14:16:36,825 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37701/stream from 192.168.0.233
+2025-12-02 14:16:36,825 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37701 (numeric: 37701) to https://stash.feldorn.com/scene/37701/stream
+2025-12-02 14:16:36,825 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:36,825 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:36 -0600] "GET /Videos/scene-37701/stream 1.1" 307 0
+2025-12-02 14:16:36,965 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37627 from 192.168.0.233
+2025-12-02 14:16:36,989 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0231s
+2025-12-02 14:16:36,989 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:36 -0600] "GET /Users/user-1/Items/scene-37627 1.1" 200 910
+2025-12-02 14:16:36,999 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37627/stream from 192.168.0.233
+2025-12-02 14:16:36,999 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37627 (numeric: 37627) to https://stash.feldorn.com/scene/37627/stream
+2025-12-02 14:16:37,000 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0004s
+2025-12-02 14:16:37,000 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:36 -0600] "GET /Videos/scene-37627/stream 1.1" 307 0
+2025-12-02 14:16:37,142 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37625 from 192.168.0.233
+2025-12-02 14:16:37,164 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0222s
+2025-12-02 14:16:37,164 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:37 -0600] "GET /Users/user-1/Items/scene-37625 1.1" 200 1102
+2025-12-02 14:16:37,173 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37625/stream from 192.168.0.233
+2025-12-02 14:16:37,173 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37625 (numeric: 37625) to https://stash.feldorn.com/scene/37625/stream
+2025-12-02 14:16:37,173 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:37,173 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:37 -0600] "GET /Videos/scene-37625/stream 1.1" 307 0
+2025-12-02 14:16:37,396 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/user-1/Items/scene-37610 from 192.168.0.233
+2025-12-02 14:16:37,418 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0222s
+2025-12-02 14:16:37,418 - hypercorn.access - INFO - 192.168.0.233:63965 - - [02/Dec/2025:14:16:37 -0600] "GET /Users/user-1/Items/scene-37610 1.1" 200 1208
+2025-12-02 14:16:37,424 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-37610/stream from 192.168.0.233
+2025-12-02 14:16:37,424 - stash-jellyfin-proxy - INFO - Redirecting stream for scene-37610 (numeric: 37610) to https://stash.feldorn.com/scene/37610/stream
+2025-12-02 14:16:37,425 - stash-jellyfin-proxy - INFO - COMPLETED: 307 in 0.0002s
+2025-12-02 14:16:37,425 - hypercorn.access - INFO - 192.168.0.233:58071 - - [02/Dec/2025:14:16:37 -0600] "GET /Videos/scene-37610/stream 1.1" 307 0

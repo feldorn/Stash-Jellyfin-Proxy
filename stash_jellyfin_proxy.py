@@ -150,7 +150,7 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "IsFolder": False,
         "MediaType": "Video",
         "ParentId": parent_id,
-        "ImageTags": {},
+        "ImageTags": {"Primary": "img"},  # Triggers image requests
         "BackdropImageTags": [],
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
@@ -512,14 +512,25 @@ def get_numeric_id(item_id: str) -> str:
 async def endpoint_stream(request):
     item_id = request.path_params.get("item_id")
     numeric_id = get_numeric_id(item_id)
+    
+    # Build stream URL with API key for authentication
     stash_stream_url = f"{STASH_URL}/scene/{numeric_id}/stream"
-    logger.info(f"Redirecting stream for {item_id} (numeric: {numeric_id}) to {stash_stream_url}")
+    if STASH_API_KEY:
+        stash_stream_url += f"?apikey={STASH_API_KEY}"
+    
+    logger.info(f"Redirecting stream for {item_id} to Stash")
     return RedirectResponse(url=stash_stream_url)
 
 async def endpoint_image(request):
     item_id = request.path_params.get("item_id")
     numeric_id = get_numeric_id(item_id)
+    
+    # Build image URL with API key for authentication
     stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
+    if STASH_API_KEY:
+        stash_img_url += f"?apikey={STASH_API_KEY}"
+    
+    logger.info(f"Redirecting image for {item_id} to Stash")
     return RedirectResponse(url=stash_img_url)
 
 async def catch_all(request):
@@ -567,7 +578,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v2.7 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.8 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
