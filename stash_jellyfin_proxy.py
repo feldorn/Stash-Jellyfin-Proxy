@@ -83,8 +83,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 # --- Stash GraphQL Client ---
 GRAPHQL_URL = f"{STASH_URL}/graphql-local" if not STASH_URL.endswith("/graphql-local") else STASH_URL
 
+# Create a persistent session with authentication
+STASH_SESSION = None
+
 def get_stash_session():
-    """Get or create a Stash session with proper authentication."""
+    """Get or create a Stash session with ApiKey authentication."""
     global STASH_SESSION
     
     if STASH_SESSION is not None:
@@ -92,44 +95,11 @@ def get_stash_session():
     
     STASH_SESSION = requests.Session()
     
-    # If we have a real API key, use it
-    if STASH_API_KEY:
-        logger.info("Using STASH_API_KEY for authentication")
-        STASH_SESSION.headers["ApiKey"] = STASH_API_KEY
-        return STASH_SESSION
-    
-    # Otherwise, try to authenticate with username/password to get session cookie
-    logger.info("No STASH_API_KEY set, attempting session-based login...")
-    
-    # Try login with password
-    try:
-        login_url = f"{STASH_URL}/login"
-        
-        # Stash uses a simple password-based login (no username for most setups)
-        # First try form-based login
-        login_data = {"password": SJS_USER_PASSWORD}
-        resp = STASH_SESSION.post(login_url, data=login_data, allow_redirects=True, timeout=10)
-        
-        # Check if we got cookies
-        if STASH_SESSION.cookies:
-            logger.info(f"Session login successful! Got cookies: {list(STASH_SESSION.cookies.keys())}")
-            return STASH_SESSION
-        
-        # Try JSON-based login
-        resp = STASH_SESSION.post(login_url, json=login_data, allow_redirects=True, timeout=10)
-        
-        if STASH_SESSION.cookies:
-            logger.info(f"JSON login successful! Got cookies: {list(STASH_SESSION.cookies.keys())}")
-            return STASH_SESSION
-        
-        # Try with ApiKey header as fallback (some endpoints may accept it)
-        logger.warning("Login didn't return cookies, falling back to ApiKey header with password")
-        STASH_SESSION.headers["ApiKey"] = SJS_USER_PASSWORD
-        
-    except Exception as e:
-        logger.error(f"Login failed: {e}")
-        # Fall back to using password as ApiKey
-        STASH_SESSION.headers["ApiKey"] = SJS_USER_PASSWORD
+    # Use STASH_API_KEY if set, otherwise use SJS_USER_PASSWORD
+    api_key = STASH_API_KEY if STASH_API_KEY else SJS_USER_PASSWORD
+    if api_key:
+        STASH_SESSION.headers["ApiKey"] = api_key
+        logger.info(f"Session configured with ApiKey header")
     
     return STASH_SESSION
 
@@ -147,17 +117,6 @@ def check_stash_connection():
         resp.raise_for_status()
         v = resp.json().get("data", {}).get("version", {}).get("version", "unknown")
         logger.info(f"✅ Connected to Stash! Version: {v}")
-        
-        # Now test media endpoint to see if auth works there too
-        test_media_url = f"{STASH_URL}/scene/1/screenshot"
-        media_resp = session.head(test_media_url, timeout=5, allow_redirects=True)
-        content_type = media_resp.headers.get('Content-Type', '')
-        if 'text/html' in content_type:
-            logger.warning("⚠️ Media endpoint returns HTML - authentication may not work for images/videos")
-            logger.warning("Consider adding STASH_API_KEY to your config (from Stash Settings → Security → API Key)")
-        else:
-            logger.info("✅ Media endpoint authentication working!")
-        
         return True
     except Exception as e:
         logger.error(f"❌ Failed to connect to Stash: {e}")
@@ -716,7 +675,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.2 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.3 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
