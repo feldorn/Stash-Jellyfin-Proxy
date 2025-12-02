@@ -480,16 +480,22 @@ async def endpoint_display_preferences(request):
 def get_stash_sort_params(request) -> Tuple[str, str]:
     """Map Jellyfin SortBy/SortOrder to Stash sort/direction."""
     # Get sort parameters from request
-    sort_by = request.query_params.get("SortBy") or request.query_params.get("sortBy") or "PremiereDate"
+    sort_by_raw = request.query_params.get("SortBy") or request.query_params.get("sortBy") or "PremiereDate"
     sort_order = request.query_params.get("SortOrder") or request.query_params.get("sortOrder") or "Descending"
     
+    # Infuse sends comma-separated list like "DateCreated,SortName,ProductionYear"
+    # Take the first field as the primary sort
+    sort_by = sort_by_raw.split(",")[0].strip()
+    
     # Map Jellyfin sort fields to Stash
+    # DateCreated = when item was added to library (maps to created_at in Stash)
+    # PremiereDate/ProductionYear = release date (maps to date in Stash)
     sort_mapping = {
         "SortName": "title",
         "Name": "title",
         "PremiereDate": "date",
-        "DateCreated": "date",
-        "DatePlayed": "date",
+        "DateCreated": "created_at",  # Date added to library
+        "DatePlayed": "last_played_at",
         "ProductionYear": "date",
         "Random": "random",
         "Runtime": "duration",
@@ -499,6 +505,8 @@ def get_stash_sort_params(request) -> Tuple[str, str]:
     
     stash_sort = sort_mapping.get(sort_by, "date")
     stash_direction = "ASC" if sort_order == "Ascending" else "DESC"
+    
+    logger.debug(f"Sort mapping: {sort_by_raw} -> {sort_by} -> {stash_sort} {stash_direction}")
     
     return stash_sort, stash_direction
 
@@ -1164,7 +1172,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.7 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.8 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
