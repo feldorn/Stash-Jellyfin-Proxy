@@ -1321,9 +1321,11 @@ async def endpoint_image(request):
     
     logger.info(f"Proxying image for {item_id} from {stash_img_url}")
     
-    # Cache control headers
+    # Cache control headers - disable caching for now to force refresh
     cache_headers = {
-        "Cache-Control": "max-age=3600",  # Allow 1 hour cache for images
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
     }
     
     # Check cache for resized images
@@ -1431,7 +1433,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.18 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.19 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
