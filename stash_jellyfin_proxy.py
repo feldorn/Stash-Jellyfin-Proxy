@@ -162,6 +162,14 @@ def format_jellyfin_item(scene: Dict[str, Any]) -> Dict[str, Any]:
         "LocationType": "FileSystem",
         "IsHD": True,
         "VideoType": "VideoFile",
+        "PrimaryImageAspectRatio": 1.78,
+        "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": False,
+            "Played": False,
+            "Key": item_id
+        },
         "MediaSources": [{
             "Id": item_id,
             "Path": path,
@@ -297,14 +305,22 @@ async def endpoint_user_views(request):
                 "Id": "root-scenes",
                 "ServerId": SERVER_ID,
                 "Type": "CollectionFolder",
-                "CollectionType": "movies"
+                "CollectionType": "movies",
+                "IsFolder": True,
+                "ImageTags": {},
+                "BackdropImageTags": [],
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
             },
             {
                 "Name": "Studios",
                 "Id": "root-studios",
                 "ServerId": SERVER_ID,
                 "Type": "CollectionFolder",
-                "CollectionType": "movies"
+                "CollectionType": "movies",
+                "IsFolder": True,
+                "ImageTags": {},
+                "BackdropImageTags": [],
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
             }
         ],
         "TotalRecordCount": 2
@@ -393,7 +409,7 @@ async def endpoint_items(request):
         for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
             items.append(format_jellyfin_item(s))
             
-    return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+    return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
 
 async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
@@ -410,7 +426,7 @@ async def endpoint_item_details(request):
             items.append(item)
         if items:
             logger.debug(f"First item sample: {json.dumps(items[0], default=str)}")
-        return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+        return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
     
     elif item_id == "root-studios":
         q = """query FindStudios { findStudios(filter: {per_page: 50, sort: "name", direction: ASC}) { studios { id name } } }"""
@@ -425,7 +441,7 @@ async def endpoint_item_details(request):
                 "CollectionType": "movies",
                 "ImageTags": {}
             })
-        return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+        return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
     
     elif item_id.startswith("studio-"):
         studio_id = item_id.replace("studio-", "")
@@ -434,7 +450,7 @@ async def endpoint_item_details(request):
         items = []
         for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
             items.append(format_jellyfin_item(s))
-        return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+        return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
     
     elif item_id in ("Resume", "Latest"):
         # Return empty for resume/latest
@@ -509,7 +525,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v1.8 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v2.0 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
