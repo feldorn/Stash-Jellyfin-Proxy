@@ -160,6 +160,9 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
     path = files[0].get("path") if files else ""
     duration = files[0].get("duration", 0) if files else 0
     studio = scene.get("studio", {}).get("name") if scene.get("studio") else None
+    description = scene.get("details") or ""  # Stash uses 'details' for description
+    tags = scene.get("tags", [])
+    performers = scene.get("performers", [])
     
     # Simplified item format - minimal fields for compatibility
     item = {
@@ -188,8 +191,23 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         item["ProductionYear"] = int(date[:4])
         item["PremiereDate"] = f"{date}T00:00:00.0000000Z"
     
+    # Build overview from description and/or studio
+    overview_parts = []
+    if description:
+        overview_parts.append(description)
     if studio:
-        item["Overview"] = f"Scene from {studio}"
+        overview_parts.append(f"Studio: {studio}")
+    if overview_parts:
+        item["Overview"] = "\n\n".join(overview_parts)
+    
+    # Add tags
+    if tags:
+        item["Tags"] = [t.get("name") for t in tags if t.get("name")]
+        item["Genres"] = item["Tags"][:5]  # Infuse may show genres
+    
+    # Add performers as "People" (Jellyfin format)
+    if performers:
+        item["People"] = [{"Name": p.get("name"), "Type": "Actor", "Id": f"performer-{p.get('id')}"} for p in performers if p.get("name")]
     
     if path:
         item["Path"] = path
@@ -395,57 +413,125 @@ async def endpoint_items(request):
     parent_id = request.query_params.get("ParentId") or request.query_params.get("parentId")
     ids = request.query_params.get("Ids") or request.query_params.get("ids")
     
+    # Pagination parameters
+    start_index = int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0)
+    limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 50)
+    
     # Debug: Log all query params
-    logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, All params: {dict(request.query_params)}")
+    logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, StartIndex: {start_index}, Limit: {limit}")
     
     items = []
+    total_count = 0
+    
+    # Full scene fields for queries
+    scene_fields = "id title code date details files { path duration } studio { name } tags { name } performers { name id }"
     
     if ids:
         # Specific items requested
         id_list = ids.split(',')
         for iid in id_list:
-            q = """query FindScene($id: ID!) { findScene(id: $id) { id title code date files { path duration } studio { name } tags { name } performers { name id } } }"""
+            q = f"""query FindScene($id: ID!) {{ findScene(id: $id) {{ {scene_fields} }} }}"""
             res = stash_query(q, {"id": iid})
             scene = res.get("data", {}).get("findScene")
             if scene:
                 items.append(format_jellyfin_item(scene))
+        total_count = len(items)
     
     elif parent_id == "root-scenes":
-        q = """query FindScenes { findScenes(filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } } } }"""
-        res = stash_query(q)
+        # Calculate page number from startIndex (Stash uses 1-indexed pages)
+        page = (start_index // limit) + 1
+        
+        # First get total count
+        count_q = """query { findScenes { count } }"""
+        count_res = stash_query(count_q)
+        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        
+        # Then get paginated scenes
+        q = f"""query FindScenes($page: Int!, $per_page: Int!) {{ 
+            findScenes(filter: {{page: $page, per_page: $per_page, sort: "date", direction: DESC}}) {{ 
+                scenes {{ {scene_fields} }} 
+            }} 
+        }}"""
+        res = stash_query(q, {"page": page, "per_page": limit})
         for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
             items.append(format_jellyfin_item(s, parent_id="root-scenes"))
 
     elif parent_id == "root-studios":
-        q = """query FindStudios { findStudios(filter: {per_page: 50, sort: "name", direction: ASC}) { studios { id name } } }"""
-        res = stash_query(q)
+        # Get total count
+        count_q = """query { findStudios { count } }"""
+        count_res = stash_query(count_q)
+        total_count = count_res.get("data", {}).get("findStudios", {}).get("count", 0)
+        
+        # Calculate page
+        page = (start_index // limit) + 1
+        
+        q = """query FindStudios($page: Int!, $per_page: Int!) { 
+            findStudios(filter: {page: $page, per_page: $per_page, sort: "name", direction: ASC}) { 
+                studios { id name image_path scene_count } 
+            } 
+        }"""
+        res = stash_query(q, {"page": page, "per_page": limit})
         for s in res.get("data", {}).get("findStudios", {}).get("studios", []):
-            items.append({
+            studio_item = {
                 "Name": s["name"],
                 "Id": f"studio-{s['id']}",
                 "ServerId": SERVER_ID,
                 "Type": "Folder",
-                "ImageTags": {}
-            })
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": s.get("scene_count", 0),
+                "RecursiveItemCount": s.get("scene_count", 0),
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"}
+            }
+            # Add image if available
+            if s.get("image_path"):
+                studio_item["ImageTags"] = {"Primary": "img"}
+            else:
+                studio_item["ImageTags"] = {}
+            items.append(studio_item)
             
     elif parent_id and parent_id.startswith("studio-"):
         studio_id = parent_id.replace("studio-", "")
-        # Simplified query without modifier - just filter by studio value
-        q = """query FindScenes($sid: [ID!]) { findScenes(scene_filter: {studios: {value: $sid}}, filter: {per_page: 50, sort: "date", direction: DESC}) { scenes { id title code date files { path duration } studio { name } } } }"""
-        res = stash_query(q, {"sid": [studio_id]})
+        
+        # Get count for this studio
+        count_q = """query CountScenes($sid: [ID!]) { 
+            findScenes(scene_filter: {studios: {value: $sid, modifier: INCLUDES}}) { count } 
+        }"""
+        count_res = stash_query(count_q, {"sid": [studio_id]})
+        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        
+        # Calculate page
+        page = (start_index // limit) + 1
+        
+        q = f"""query FindScenes($sid: [ID!], $page: Int!, $per_page: Int!) {{ 
+            findScenes(
+                scene_filter: {{studios: {{value: $sid, modifier: INCLUDES}}}}, 
+                filter: {{page: $page, per_page: $per_page, sort: "date", direction: DESC}}
+            ) {{ 
+                scenes {{ {scene_fields} }} 
+            }} 
+        }}"""
+        res = stash_query(q, {"sid": [studio_id], "page": page, "per_page": limit})
         scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-        logger.debug(f"Studio {studio_id} returned {len(scenes)} scenes")
+        logger.debug(f"Studio {studio_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
         for s in scenes:
             items.append(format_jellyfin_item(s, parent_id=parent_id))
             
-    return JSONResponse({"Items": items, "TotalRecordCount": len(items), "StartIndex": 0})
+    return JSONResponse({"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index})
 
 async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
     
+    # Full scene fields for queries
+    scene_fields = "id title code date details files { path duration } studio { name } tags { name } performers { name id }"
+    
     # Handle special folder IDs - return the folder ITSELF (not children)
     if item_id == "root-scenes":
-        # Return folder metadata, not children (children come from /Items?parentId=root-scenes)
+        # Get actual count
+        count_q = """query { findScenes { count } }"""
+        count_res = stash_query(count_q)
+        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        
         return JSONResponse({
             "Name": "All Scenes",
             "SortName": "All Scenes",
@@ -456,12 +542,17 @@ async def endpoint_item_details(request):
             "IsFolder": True,
             "ImageTags": {},
             "BackdropImageTags": [],
-            "ChildCount": 50,
-            "RecursiveItemCount": 50,
+            "ChildCount": total_count,
+            "RecursiveItemCount": total_count,
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
         })
     
     elif item_id == "root-studios":
+        # Get actual count
+        count_q = """query { findStudios { count } }"""
+        count_res = stash_query(count_q)
+        total_count = count_res.get("data", {}).get("findStudios", {}).get("count", 0)
+        
         return JSONResponse({
             "Name": "Studios",
             "SortName": "Studios",
@@ -472,24 +563,34 @@ async def endpoint_item_details(request):
             "IsFolder": True,
             "ImageTags": {},
             "BackdropImageTags": [],
-            "ChildCount": 50,
-            "RecursiveItemCount": 50,
+            "ChildCount": total_count,
+            "RecursiveItemCount": total_count,
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
         })
     
     elif item_id.startswith("studio-"):
-        # Return studio folder metadata
+        # Fetch actual studio info from Stash
         studio_id = item_id.replace("studio-", "")
+        q = """query FindStudio($id: ID!) { findStudio(id: $id) { id name image_path scene_count } }"""
+        res = stash_query(q, {"id": studio_id})
+        studio = res.get("data", {}).get("findStudio", {})
+        
+        studio_name = studio.get("name", f"Studio {studio_id}")
+        scene_count = studio.get("scene_count", 0)
+        has_image = bool(studio.get("image_path"))
+        
         return JSONResponse({
-            "Name": f"Studio {studio_id}",
-            "SortName": f"Studio {studio_id}",
+            "Name": studio_name,
+            "SortName": studio_name,
             "Id": item_id,
             "ServerId": SERVER_ID,
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {},
+            "ImageTags": {"Primary": "img"} if has_image else {},
             "BackdropImageTags": [],
+            "ChildCount": scene_count,
+            "RecursiveItemCount": scene_count,
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
         })
     
@@ -503,7 +604,7 @@ async def endpoint_item_details(request):
     else:
         numeric_id = extract_numeric_id(item_id)
     
-    q = """query FindScene($id: ID!) { findScene(id: $id) { id title code date files { path duration } studio { name } } }"""
+    q = f"""query FindScene($id: ID!) {{ findScene(id: $id) {{ {scene_fields} }} }}"""
     res = stash_query(q, {"id": numeric_id})
     scene = res.get("data", {}).get("findScene")
     if not scene:
@@ -611,10 +712,20 @@ async def endpoint_stream(request):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 async def endpoint_image(request):
-    """Proxy image from Stash with proper authentication."""
+    """Proxy image from Stash with proper authentication. Handles scenes and studios."""
     item_id = request.path_params.get("item_id")
-    numeric_id = get_numeric_id(item_id)
-    stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
+    
+    # Determine image URL based on item type
+    if item_id.startswith("studio-"):
+        numeric_id = item_id.replace("studio-", "")
+        stash_img_url = f"{STASH_URL}/studio/{numeric_id}/image"
+    elif item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
+        stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
+    else:
+        # Fallback - try as scene
+        numeric_id = get_numeric_id(item_id)
+        stash_img_url = f"{STASH_URL}/scene/{numeric_id}/screenshot"
     
     logger.info(f"Proxying image for {item_id} from {stash_img_url}")
     
@@ -628,6 +739,7 @@ async def endpoint_image(request):
     except Exception as e:
         logger.error(f"Image proxy error: {e}")
         from starlette.responses import Response
+        # Return transparent 1x1 PNG as fallback
         return Response(content=b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', media_type='image/png')
 
 async def catch_all(request):
@@ -675,7 +787,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.3 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.4 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
