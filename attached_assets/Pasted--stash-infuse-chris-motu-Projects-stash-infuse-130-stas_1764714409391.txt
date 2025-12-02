@@ -1,0 +1,1270 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_130]$ ./stash_jellyfin_proxy.py --debug
+Loaded config from /home/chris/.scripts.conf: user=chris
+Stash API key configured (length: 147 chars)
+2025-12-02 16:24:33,897 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.14 ---
+2025-12-02 16:24:33,897 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-02 16:24:33,897 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-02 16:24:33,897 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-02 16:24:33,897 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-02 16:24:33,918 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-02 16:24:33,918 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-02 16:24:33,918 - hypercorn.error - INFO - Running on http://0.0.0.0:8096 (CTRL + C to quit)
+2025-12-02 16:24:44,496 - stash-jellyfin-proxy - INFO - INCOMING: GET /System/Info/Public from 192.168.0.233
+2025-12-02 16:24:44,496 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0002s
+2025-12-02 16:24:44,496 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /System/Info/Public 1.1" 200 175
+2025-12-02 16:24:44,506 - stash-jellyfin-proxy - INFO - INCOMING: POST /Users/AuthenticateByName from 192.168.0.233
+2025-12-02 16:24:44,507 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-02 16:24:44,507 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-02 16:24:44,507 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0015s
+2025-12-02 16:24:44,507 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "POST /Users/AuthenticateByName 1.1" 200 212
+2025-12-02 16:24:44,516 - stash-jellyfin-proxy - INFO - INCOMING: GET /System/Info/Public from 192.168.0.233
+2025-12-02 16:24:44,516 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 16:24:44,517 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /System/Info/Public 1.1" 200 175
+2025-12-02 16:24:44,525 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Views from 192.168.0.233
+2025-12-02 16:24:44,526 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 16:24:44,526 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /Users/chris/Views 1.1" 200 1263
+2025-12-02 16:24:44,536 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/GroupingOptions from 192.168.0.233
+2025-12-02 16:24:44,536 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-02 16:24:44,537 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /Users/chris/GroupingOptions 1.1" 200 2
+2025-12-02 16:24:44,632 - stash-jellyfin-proxy - INFO - INCOMING: GET /Library/VirtualFolders from 192.168.0.233
+2025-12-02 16:24:44,633 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:44,633 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /Library/VirtualFolders 1.1" 200 339
+2025-12-02 16:24:44,645 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 16:24:44,646 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:44,646 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 16:24:44,656 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris from 192.168.0.233
+2025-12-02 16:24:44,657 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 16:24:44,657 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:44 -0600] "GET /Users/chris 1.1" 200 872
+2025-12-02 16:24:45,187 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Resume from 192.168.0.233
+2025-12-02 16:24:45,188 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0008s
+2025-12-02 16:24:45,189 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Resume 1.1" 200 33
+2025-12-02 16:24:45,440 - stash-jellyfin-proxy - INFO - INCOMING: GET /Shows/NextUp from 192.168.0.233
+2025-12-02 16:24:45,440 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 16:24:45,441 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Shows/NextUp 1.1" 200 33
+2025-12-02 16:24:45,449 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,449 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,449 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,449 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,450 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0013s
+2025-12-02 16:24:45,450 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0014s
+2025-12-02 16:24:45,450 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0014s
+2025-12-02 16:24:45,451 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0015s
+2025-12-02 16:24:45,451 - hypercorn.access - INFO - 192.168.0.233:65259 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,451 - hypercorn.access - INFO - 192.168.0.233:65260 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,452 - hypercorn.access - INFO - 192.168.0.233:65261 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,452 - hypercorn.access - INFO - 192.168.0.233:65262 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,494 - stash-jellyfin-proxy - INFO - INCOMING: GET /Shows/NextUp from 192.168.0.233
+2025-12-02 16:24:45,495 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,495 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,495 - stash-jellyfin-proxy - INFO - INCOMING: GET /Shows/NextUp from 192.168.0.233
+2025-12-02 16:24:45,496 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,496 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0026s
+2025-12-02 16:24:45,497 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Shows/NextUp 1.1" 200 33
+2025-12-02 16:24:45,497 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0024s
+2025-12-02 16:24:45,498 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0025s
+2025-12-02 16:24:45,498 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0025s
+2025-12-02 16:24:45,498 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0026s
+2025-12-02 16:24:45,498 - hypercorn.access - INFO - 192.168.0.233:65259 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,499 - hypercorn.access - INFO - 192.168.0.233:65260 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,499 - hypercorn.access - INFO - 192.168.0.233:65261 - - [02/Dec/2025:16:24:45 -0600] "GET /Shows/NextUp 1.1" 200 33
+2025-12-02 16:24:45,499 - hypercorn.access - INFO - 192.168.0.233:65262 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,501 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,501 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-02 16:24:45,501 - hypercorn.access - INFO - 192.168.0.233:65263 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,502 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,502 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0002s
+2025-12-02 16:24:45,502 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,507 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,507 - stash-jellyfin-proxy - INFO - INCOMING: GET /Shows/NextUp from 192.168.0.233
+2025-12-02 16:24:45,507 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,507 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,507 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:45,507 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:45,508 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0008s
+2025-12-02 16:24:45,508 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0008s
+2025-12-02 16:24:45,508 - hypercorn.access - INFO - 192.168.0.233:65259 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,508 - hypercorn.access - INFO - 192.168.0.233:65260 - - [02/Dec/2025:16:24:45 -0600] "GET /Shows/NextUp 1.1" 200 33
+2025-12-02 16:24:45,508 - hypercorn.access - INFO - 192.168.0.233:65261 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,508 - hypercorn.access - INFO - 192.168.0.233:65262 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,509 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,509 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-02 16:24:45,509 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-02 16:24:45,509 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-02 16:24:45,510 - hypercorn.access - INFO - 192.168.0.233:65263 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,510 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Latest 1.1" 200 33
+2025-12-02 16:24:45,836 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Views from 192.168.0.233
+2025-12-02 16:24:45,836 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:45,837 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Views 1.1" 200 1263
+2025-12-02 16:24:45,843 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/GroupingOptions from 192.168.0.233
+2025-12-02 16:24:45,844 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-02 16:24:45,844 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/GroupingOptions 1.1" 200 2
+2025-12-02 16:24:45,851 - stash-jellyfin-proxy - INFO - INCOMING: GET /Library/VirtualFolders from 192.168.0.233
+2025-12-02 16:24:45,851 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:45,852 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Library/VirtualFolders 1.1" 200 339
+2025-12-02 16:24:45,858 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 16:24:45,859 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-02 16:24:45,859 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 16:24:45,864 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris from 192.168.0.233
+2025-12-02 16:24:45,864 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 16:24:45,865 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris 1.1" 200 872
+2025-12-02 16:24:45,895 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Resume from 192.168.0.233
+2025-12-02 16:24:45,895 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:45,896 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:45 -0600] "GET /Users/chris/Items/Resume 1.1" 200 33
+2025-12-02 16:24:48,389 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Views from 192.168.0.233
+2025-12-02 16:24:48,390 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0008s
+2025-12-02 16:24:48,390 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:48 -0600] "GET /Users/chris/Views 1.1" 200 1263
+2025-12-02 16:24:48,494 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/root-scenes/Images/Primary from 192.168.0.233
+2025-12-02 16:24:48,507 - stash-jellyfin-proxy - INFO - Serving menu icon for root-scenes
+2025-12-02 16:24:48,508 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0137s
+2025-12-02 16:24:48,508 - hypercorn.access - INFO - 192.168.0.233:65254 - - [02/Dec/2025:16:24:48 -0600] "GET /Items/root-scenes/Images/Primary 1.1" 200 3427
+2025-12-02 16:24:48,508 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/root-studios/Images/Primary from 192.168.0.233
+2025-12-02 16:24:48,508 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/root-performers/Images/Primary from 192.168.0.233
+2025-12-02 16:24:48,509 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/root-groups/Images/Primary from 192.168.0.233
+2025-12-02 16:24:48,512 - stash-jellyfin-proxy - INFO - Serving menu icon for root-studios
+2025-12-02 16:24:48,515 - stash-jellyfin-proxy - INFO - Serving menu icon for root-performers
+2025-12-02 16:24:48,518 - stash-jellyfin-proxy - INFO - Serving menu icon for root-groups
+2025-12-02 16:24:48,518 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0099s
+2025-12-02 16:24:48,518 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0099s
+2025-12-02 16:24:48,518 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0099s
+2025-12-02 16:24:48,519 - hypercorn.access - INFO - 192.168.0.233:65259 - - [02/Dec/2025:16:24:48 -0600] "GET /Items/root-studios/Images/Primary 1.1" 200 2458
+2025-12-02 16:24:48,519 - hypercorn.access - INFO - 192.168.0.233:65260 - - [02/Dec/2025:16:24:48 -0600] "GET /Items/root-performers/Images/Primary 1.1" 200 3323
+2025-12-02 16:24:48,519 - hypercorn.access - INFO - 192.168.0.233:65261 - - [02/Dec/2025:16:24:48 -0600] "GET /Items/root-groups/Images/Primary 1.1" 200 2194
+2025-12-02 16:24:53,557 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/root-performers from 192.168.0.233
+2025-12-02 16:24:53,567 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0099s
+2025-12-02 16:24:53,567 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Users/chris/Items/root-performers 1.1" 200 367
+2025-12-02 16:24:53,573 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 16:24:53,573 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0002s
+2025-12-02 16:24:53,573 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 16:24:53,579 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:24:53,579 - stash-jellyfin-proxy - DEBUG - Sort mapping: SortName -> SortName -> title ASC
+2025-12-02 16:24:53,579 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-performers', 'sortBy': 'SortName', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '0', 'limit': '50'}
+2025-12-02 16:24:53,579 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-performers, Ids: None, PersonIds: None, StartIndex: 0, Limit: 50, Sort: title ASC
+2025-12-02 16:24:53,603 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0246s
+2025-12-02 16:24:53,604 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Users/chris/Items 1.1" 200 16050
+2025-12-02 16:24:53,633 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-3010/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,633 - stash-jellyfin-proxy - INFO - Proxying image for performer-3010 from https://stash.feldorn.com/performer/3010/image
+2025-12-02 16:24:53,640 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/3010/image: 170878 bytes, type=image/jpeg
+2025-12-02 16:24:53,640 - stash-jellyfin-proxy - INFO - Image response: 170878 bytes, type=image/jpeg
+2025-12-02 16:24:53,640 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0070s
+2025-12-02 16:24:53,643 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-2614/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,643 - stash-jellyfin-proxy - INFO - Proxying image for performer-2614 from https://stash.feldorn.com/performer/2614/image
+2025-12-02 16:24:53,649 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/2614/image: 248296 bytes, type=image/jpeg
+2025-12-02 16:24:53,649 - stash-jellyfin-proxy - INFO - Image response: 248296 bytes, type=image/jpeg
+2025-12-02 16:24:53,649 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0066s
+2025-12-02 16:24:53,650 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-3010/Images/Primary 1.1" 200 170878
+2025-12-02 16:24:53,650 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-2354/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,650 - stash-jellyfin-proxy - INFO - Proxying image for performer-2354 from https://stash.feldorn.com/performer/2354/image
+2025-12-02 16:24:53,654 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/2354/image: 333707 bytes, type=image/jpeg
+2025-12-02 16:24:53,654 - stash-jellyfin-proxy - INFO - Image response: 333707 bytes, type=image/jpeg
+2025-12-02 16:24:53,654 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0039s
+2025-12-02 16:24:53,658 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-1162/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,658 - stash-jellyfin-proxy - INFO - Proxying image for performer-1162 from https://stash.feldorn.com/performer/1162/image
+2025-12-02 16:24:53,669 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/1162/image: 1656432 bytes, type=image/png
+2025-12-02 16:24:53,669 - stash-jellyfin-proxy - INFO - Image response: 1656432 bytes, type=image/png
+2025-12-02 16:24:53,669 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0113s
+2025-12-02 16:24:53,670 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-2614/Images/Primary 1.1" 200 248296
+2025-12-02 16:24:53,670 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-2354/Images/Primary 1.1" 200 333707
+2025-12-02 16:24:53,670 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-3840/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,670 - stash-jellyfin-proxy - INFO - Proxying image for performer-3840 from https://stash.feldorn.com/performer/3840/image
+2025-12-02 16:24:53,674 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/3840/image: 102544 bytes, type=image/webp
+2025-12-02 16:24:53,674 - stash-jellyfin-proxy - INFO - Image response: 102544 bytes, type=image/webp
+2025-12-02 16:24:53,674 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0039s
+2025-12-02 16:24:53,674 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-3840/Images/Primary 1.1" 200 102544
+2025-12-02 16:24:53,678 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-1210/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,678 - stash-jellyfin-proxy - INFO - Proxying image for performer-1210 from https://stash.feldorn.com/performer/1210/image
+2025-12-02 16:24:53,682 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/1210/image: 99132 bytes, type=image/webp
+2025-12-02 16:24:53,682 - stash-jellyfin-proxy - INFO - Image response: 99132 bytes, type=image/webp
+2025-12-02 16:24:53,682 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0042s
+2025-12-02 16:24:53,682 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-1210/Images/Primary 1.1" 200 99132
+2025-12-02 16:24:53,685 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-1682/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,685 - stash-jellyfin-proxy - INFO - Proxying image for performer-1682 from https://stash.feldorn.com/performer/1682/image
+2025-12-02 16:24:53,689 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/1682/image: 170017 bytes, type=image/jpeg
+2025-12-02 16:24:53,689 - stash-jellyfin-proxy - INFO - Image response: 170017 bytes, type=image/jpeg
+2025-12-02 16:24:53,690 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0046s
+2025-12-02 16:24:53,690 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-1682/Images/Primary 1.1" 200 170017
+2025-12-02 16:24:53,691 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-53/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,691 - stash-jellyfin-proxy - INFO - Proxying image for performer-53 from https://stash.feldorn.com/performer/53/image
+2025-12-02 16:24:53,694 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/53/image: 102544 bytes, type=image/webp
+2025-12-02 16:24:53,694 - stash-jellyfin-proxy - INFO - Image response: 102544 bytes, type=image/webp
+2025-12-02 16:24:53,694 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-3348/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,695 - stash-jellyfin-proxy - INFO - Proxying image for performer-3348 from https://stash.feldorn.com/performer/3348/image
+2025-12-02 16:24:53,699 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/3348/image: 543093 bytes, type=image/jpeg
+2025-12-02 16:24:53,699 - stash-jellyfin-proxy - INFO - Image response: 543093 bytes, type=image/jpeg
+2025-12-02 16:24:53,699 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0082s
+2025-12-02 16:24:53,699 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-53/Images/Primary 1.1" 200 102544
+2025-12-02 16:24:53,699 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0047s
+2025-12-02 16:24:53,700 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-3348/Images/Primary 1.1" 200 543093
+2025-12-02 16:24:53,700 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-1162/Images/Primary 1.1" 200 1656432
+2025-12-02 16:24:53,735 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-2937/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,735 - stash-jellyfin-proxy - INFO - Proxying image for performer-2937 from https://stash.feldorn.com/performer/2937/image
+2025-12-02 16:24:53,741 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/2937/image: 584226 bytes, type=image/jpeg
+2025-12-02 16:24:53,742 - stash-jellyfin-proxy - INFO - Image response: 584226 bytes, type=image/jpeg
+2025-12-02 16:24:53,742 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0066s
+2025-12-02 16:24:53,742 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-2919/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,743 - stash-jellyfin-proxy - INFO - Proxying image for performer-2919 from https://stash.feldorn.com/performer/2919/image
+2025-12-02 16:24:53,746 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/2919/image: 99069 bytes, type=image/jpeg
+2025-12-02 16:24:53,746 - stash-jellyfin-proxy - INFO - Image response: 99069 bytes, type=image/jpeg
+2025-12-02 16:24:53,746 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-2937/Images/Primary 1.1" 200 584226
+2025-12-02 16:24:53,746 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0039s
+2025-12-02 16:24:53,746 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-2919/Images/Primary 1.1" 200 99069
+2025-12-02 16:24:53,754 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-1211/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,754 - stash-jellyfin-proxy - INFO - Proxying image for performer-1211 from https://stash.feldorn.com/performer/1211/image
+2025-12-02 16:24:53,757 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/1211/image: 212797 bytes, type=image/jpeg
+2025-12-02 16:24:53,757 - stash-jellyfin-proxy - INFO - Image response: 212797 bytes, type=image/jpeg
+2025-12-02 16:24:53,757 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0035s
+2025-12-02 16:24:53,757 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-1211/Images/Primary 1.1" 200 212797
+2025-12-02 16:24:53,758 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-73/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,758 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-4085/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,758 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-225/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,758 - stash-jellyfin-proxy - INFO - Proxying image for performer-73 from https://stash.feldorn.com/performer/73/image
+2025-12-02 16:24:53,761 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/73/image: 85935 bytes, type=image/jpeg
+2025-12-02 16:24:53,761 - stash-jellyfin-proxy - INFO - Image response: 85935 bytes, type=image/jpeg
+2025-12-02 16:24:53,761 - stash-jellyfin-proxy - INFO - Proxying image for performer-4085 from https://stash.feldorn.com/performer/4085/image
+2025-12-02 16:24:53,764 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/4085/image: 102374 bytes, type=image/jpeg
+2025-12-02 16:24:53,764 - stash-jellyfin-proxy - INFO - Image response: 102374 bytes, type=image/jpeg
+2025-12-02 16:24:53,764 - stash-jellyfin-proxy - INFO - Proxying image for performer-225 from https://stash.feldorn.com/performer/225/image
+2025-12-02 16:24:53,766 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/225/image: 152311 bytes, type=image/jpeg
+2025-12-02 16:24:53,767 - stash-jellyfin-proxy - INFO - Image response: 152311 bytes, type=image/jpeg
+2025-12-02 16:24:53,767 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0090s
+2025-12-02 16:24:53,767 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0090s
+2025-12-02 16:24:53,767 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0090s
+2025-12-02 16:24:53,767 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-73/Images/Primary 1.1" 200 85935
+2025-12-02 16:24:53,767 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-4085/Images/Primary 1.1" 200 102374
+2025-12-02 16:24:53,767 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-225/Images/Primary 1.1" 200 152311
+2025-12-02 16:24:53,787 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-3697/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,787 - stash-jellyfin-proxy - INFO - Proxying image for performer-3697 from https://stash.feldorn.com/performer/3697/image
+2025-12-02 16:24:53,791 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/3697/image: 49485 bytes, type=image/jpeg
+2025-12-02 16:24:53,791 - stash-jellyfin-proxy - INFO - Image response: 49485 bytes, type=image/jpeg
+2025-12-02 16:24:53,792 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:53,792 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-3697/Images/Primary 1.1" 200 49485
+2025-12-02 16:24:53,792 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-283/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,792 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-1670/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,793 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-757/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,793 - stash-jellyfin-proxy - INFO - Proxying image for performer-283 from https://stash.feldorn.com/performer/283/image
+2025-12-02 16:24:53,796 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/283/image: 20016 bytes, type=image/jpeg
+2025-12-02 16:24:53,796 - stash-jellyfin-proxy - INFO - Image response: 20016 bytes, type=image/jpeg
+2025-12-02 16:24:53,796 - stash-jellyfin-proxy - INFO - Proxying image for performer-1670 from https://stash.feldorn.com/performer/1670/image
+2025-12-02 16:24:53,799 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/1670/image: 130363 bytes, type=image/jpeg
+2025-12-02 16:24:53,799 - stash-jellyfin-proxy - INFO - Image response: 130363 bytes, type=image/jpeg
+2025-12-02 16:24:53,799 - stash-jellyfin-proxy - INFO - Proxying image for performer-757 from https://stash.feldorn.com/performer/757/image
+2025-12-02 16:24:53,802 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/757/image: 162871 bytes, type=image/jpeg
+2025-12-02 16:24:53,802 - stash-jellyfin-proxy - INFO - Image response: 162871 bytes, type=image/jpeg
+2025-12-02 16:24:53,802 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0097s
+2025-12-02 16:24:53,802 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0097s
+2025-12-02 16:24:53,802 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0097s
+2025-12-02 16:24:53,802 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-283/Images/Primary 1.1" 200 20016
+2025-12-02 16:24:53,803 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-1670/Images/Primary 1.1" 200 130363
+2025-12-02 16:24:53,803 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-757/Images/Primary 1.1" 200 162871
+2025-12-02 16:24:53,814 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-4178/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,814 - stash-jellyfin-proxy - INFO - Proxying image for performer-4178 from https://stash.feldorn.com/performer/4178/image
+2025-12-02 16:24:53,818 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/4178/image: 157375 bytes, type=image/jpeg
+2025-12-02 16:24:53,818 - stash-jellyfin-proxy - INFO - Image response: 157375 bytes, type=image/jpeg
+2025-12-02 16:24:53,818 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0038s
+2025-12-02 16:24:53,818 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-4178/Images/Primary 1.1" 200 157375
+2025-12-02 16:24:53,826 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/performer-2121/Images/Primary from 192.168.0.233
+2025-12-02 16:24:53,826 - stash-jellyfin-proxy - INFO - Proxying image for performer-2121 from https://stash.feldorn.com/performer/2121/image
+2025-12-02 16:24:53,830 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash.feldorn.com/performer/2121/image: 225181 bytes, type=image/jpeg
+2025-12-02 16:24:53,830 - stash-jellyfin-proxy - INFO - Image response: 225181 bytes, type=image/jpeg
+2025-12-02 16:24:53,830 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0045s
+2025-12-02 16:24:53,831 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:53 -0600] "GET /Items/performer-2121/Images/Primary 1.1" 200 225181
+2025-12-02 16:24:55,247 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Views from 192.168.0.233
+2025-12-02 16:24:55,248 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-02 16:24:55,248 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:55 -0600] "GET /Users/chris/Views 1.1" 200 1263
+2025-12-02 16:24:56,167 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/root-groups from 192.168.0.233
+2025-12-02 16:24:56,175 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0081s
+2025-12-02 16:24:56,175 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Users/chris/Items/root-groups 1.1" 200 349
+2025-12-02 16:24:56,180 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-02 16:24:56,180 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-02 16:24:56,181 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-02 16:24:56,186 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:24:56,187 - stash-jellyfin-proxy - DEBUG - Sort mapping: SortName -> SortName -> title ASC
+2025-12-02 16:24:56,187 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '0', 'limit': '50'}
+2025-12-02 16:24:56,187 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 0, Limit: 50, Sort: title ASC
+2025-12-02 16:24:56,203 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0164s
+2025-12-02 16:24:56,203 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Users/chris/Items 1.1" 200 15867
+2025-12-02 16:24:56,238 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-177/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,238 - stash-jellyfin-proxy - INFO - Proxying image for group-177 from https://stash.feldorn.com/movie/177/front_image
+2025-12-02 16:24:56,245 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/177/front_image
+2025-12-02 16:24:56,245 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,245 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,250 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-177
+2025-12-02 16:24:56,250 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0129s
+2025-12-02 16:24:56,251 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-177/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,251 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-10/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,251 - stash-jellyfin-proxy - INFO - Proxying image for group-10 from https://stash.feldorn.com/movie/10/front_image
+2025-12-02 16:24:56,253 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/10/front_image
+2025-12-02 16:24:56,253 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,253 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,256 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-10
+2025-12-02 16:24:56,256 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-81/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,256 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0053s
+2025-12-02 16:24:56,257 - stash-jellyfin-proxy - INFO - Proxying image for group-81 from https://stash.feldorn.com/movie/81/front_image
+2025-12-02 16:24:56,260 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/81/front_image
+2025-12-02 16:24:56,260 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,260 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,263 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-81
+2025-12-02 16:24:56,263 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-10/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,263 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0071s
+2025-12-02 16:24:56,264 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-81/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,264 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-4/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,264 - stash-jellyfin-proxy - INFO - Proxying image for group-4 from https://stash.feldorn.com/movie/4/front_image
+2025-12-02 16:24:56,266 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/4/front_image
+2025-12-02 16:24:56,267 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,267 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,269 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-4
+2025-12-02 16:24:56,270 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0056s
+2025-12-02 16:24:56,270 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-4/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,270 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-82/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,270 - stash-jellyfin-proxy - INFO - Proxying image for group-82 from https://stash.feldorn.com/movie/82/front_image
+2025-12-02 16:24:56,272 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/82/front_image
+2025-12-02 16:24:56,272 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,272 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,275 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-82
+2025-12-02 16:24:56,275 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0054s
+2025-12-02 16:24:56,276 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-82/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,278 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-83/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,278 - stash-jellyfin-proxy - INFO - Proxying image for group-83 from https://stash.feldorn.com/movie/83/front_image
+2025-12-02 16:24:56,281 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/83/front_image
+2025-12-02 16:24:56,281 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,281 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,284 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-83
+2025-12-02 16:24:56,284 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0060s
+2025-12-02 16:24:56,284 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-83/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,285 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-47/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,285 - stash-jellyfin-proxy - INFO - Proxying image for group-47 from https://stash.feldorn.com/movie/47/front_image
+2025-12-02 16:24:56,287 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/47/front_image
+2025-12-02 16:24:56,287 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,287 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,290 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-47
+2025-12-02 16:24:56,290 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0058s
+2025-12-02 16:24:56,291 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-47/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,291 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-227/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,291 - stash-jellyfin-proxy - INFO - Proxying image for group-227 from https://stash.feldorn.com/movie/227/front_image
+2025-12-02 16:24:56,293 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/227/front_image
+2025-12-02 16:24:56,293 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,293 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,296 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-227
+2025-12-02 16:24:56,296 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0053s
+2025-12-02 16:24:56,296 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-227/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,297 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-84/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,297 - stash-jellyfin-proxy - INFO - Proxying image for group-84 from https://stash.feldorn.com/movie/84/front_image
+2025-12-02 16:24:56,299 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/84/front_image
+2025-12-02 16:24:56,299 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,299 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,302 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-84
+2025-12-02 16:24:56,302 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:56,302 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-84/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,302 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-228/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,302 - stash-jellyfin-proxy - INFO - Proxying image for group-228 from https://stash.feldorn.com/movie/228/front_image
+2025-12-02 16:24:56,304 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/228/front_image
+2025-12-02 16:24:56,304 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,304 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,307 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-228
+2025-12-02 16:24:56,307 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:56,308 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-228/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,308 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-85/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,308 - stash-jellyfin-proxy - INFO - Proxying image for group-85 from https://stash.feldorn.com/movie/85/front_image
+2025-12-02 16:24:56,310 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/85/front_image
+2025-12-02 16:24:56,310 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,310 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,313 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-85
+2025-12-02 16:24:56,313 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0050s
+2025-12-02 16:24:56,313 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-85/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,313 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-206/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,313 - stash-jellyfin-proxy - INFO - Proxying image for group-206 from https://stash.feldorn.com/movie/206/front_image
+2025-12-02 16:24:56,315 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/206/front_image
+2025-12-02 16:24:56,315 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,315 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,318 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-206
+2025-12-02 16:24:56,318 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:56,319 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-206/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,319 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-86/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,319 - stash-jellyfin-proxy - INFO - Proxying image for group-86 from https://stash.feldorn.com/movie/86/front_image
+2025-12-02 16:24:56,321 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/86/front_image
+2025-12-02 16:24:56,321 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,321 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,324 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-86
+2025-12-02 16:24:56,324 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0056s
+2025-12-02 16:24:56,325 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-86/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,325 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-235/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,325 - stash-jellyfin-proxy - INFO - Proxying image for group-235 from https://stash.feldorn.com/movie/235/front_image
+2025-12-02 16:24:56,328 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/235/front_image
+2025-12-02 16:24:56,328 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,328 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,330 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-235
+2025-12-02 16:24:56,331 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0056s
+2025-12-02 16:24:56,331 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-235/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,334 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-59/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,334 - stash-jellyfin-proxy - INFO - Proxying image for group-59 from https://stash.feldorn.com/movie/59/front_image
+2025-12-02 16:24:56,336 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/59/front_image
+2025-12-02 16:24:56,336 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,336 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,339 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-59
+2025-12-02 16:24:56,339 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0053s
+2025-12-02 16:24:56,339 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-59/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,340 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-92/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,340 - stash-jellyfin-proxy - INFO - Proxying image for group-92 from https://stash.feldorn.com/movie/92/front_image
+2025-12-02 16:24:56,342 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/92/front_image
+2025-12-02 16:24:56,342 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,342 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,345 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-92
+2025-12-02 16:24:56,345 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0053s
+2025-12-02 16:24:56,345 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-92/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,345 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-80/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,346 - stash-jellyfin-proxy - INFO - Proxying image for group-80 from https://stash.feldorn.com/movie/80/front_image
+2025-12-02 16:24:56,348 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/80/front_image
+2025-12-02 16:24:56,348 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,348 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,351 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-80
+2025-12-02 16:24:56,351 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0055s
+2025-12-02 16:24:56,351 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-80/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,351 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-93/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,352 - stash-jellyfin-proxy - INFO - Proxying image for group-93 from https://stash.feldorn.com/movie/93/front_image
+2025-12-02 16:24:56,354 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/93/front_image
+2025-12-02 16:24:56,354 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,354 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,357 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-93
+2025-12-02 16:24:56,357 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0054s
+2025-12-02 16:24:56,357 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-93/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,357 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-229/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,357 - stash-jellyfin-proxy - INFO - Proxying image for group-229 from https://stash.feldorn.com/movie/229/front_image
+2025-12-02 16:24:56,360 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/229/front_image
+2025-12-02 16:24:56,360 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,360 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,363 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-229
+2025-12-02 16:24:56,363 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0054s
+2025-12-02 16:24:56,363 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-229/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,363 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-87/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,363 - stash-jellyfin-proxy - INFO - Proxying image for group-87 from https://stash.feldorn.com/movie/87/front_image
+2025-12-02 16:24:56,366 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/87/front_image
+2025-12-02 16:24:56,366 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,366 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,369 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-87
+2025-12-02 16:24:56,369 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0056s
+2025-12-02 16:24:56,369 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-87/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:56,369 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-24/Images/Primary from 192.168.0.233
+2025-12-02 16:24:56,369 - stash-jellyfin-proxy - INFO - Proxying image for group-24 from https://stash.feldorn.com/movie/24/front_image
+2025-12-02 16:24:56,372 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/24/front_image
+2025-12-02 16:24:56,372 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:56,372 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:56,375 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-24
+2025-12-02 16:24:56,375 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0056s
+2025-12-02 16:24:56,375 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:56 -0600] "GET /Items/group-24/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,503 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-50/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,503 - stash-jellyfin-proxy - INFO - Proxying image for group-50 from https://stash.feldorn.com/movie/50/front_image
+2025-12-02 16:24:57,509 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/50/front_image
+2025-12-02 16:24:57,509 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,510 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,516 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-50
+2025-12-02 16:24:57,516 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0134s
+2025-12-02 16:24:57,516 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-50/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,517 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-314/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,517 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-88/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,517 - stash-jellyfin-proxy - INFO - Proxying image for group-314 from https://stash.feldorn.com/movie/314/front_image
+2025-12-02 16:24:57,519 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/314/front_image
+2025-12-02 16:24:57,519 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,519 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,522 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-314
+2025-12-02 16:24:57,522 - stash-jellyfin-proxy - INFO - Proxying image for group-88 from https://stash.feldorn.com/movie/88/front_image
+2025-12-02 16:24:57,524 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/88/front_image
+2025-12-02 16:24:57,524 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,524 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,527 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-88
+2025-12-02 16:24:57,527 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0104s
+2025-12-02 16:24:57,527 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0104s
+2025-12-02 16:24:57,527 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-314/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,527 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-88/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,528 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-94/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,528 - stash-jellyfin-proxy - INFO - Proxying image for group-94 from https://stash.feldorn.com/movie/94/front_image
+2025-12-02 16:24:57,530 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/94/front_image
+2025-12-02 16:24:57,530 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,530 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,533 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-94
+2025-12-02 16:24:57,533 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:57,533 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-94/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,533 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-257/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,533 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-236/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,533 - stash-jellyfin-proxy - INFO - Proxying image for group-257 from https://stash.feldorn.com/movie/257/front_image
+2025-12-02 16:24:57,536 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/257/front_image
+2025-12-02 16:24:57,536 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,536 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,538 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-257
+2025-12-02 16:24:57,538 - stash-jellyfin-proxy - INFO - Proxying image for group-236 from https://stash.feldorn.com/movie/236/front_image
+2025-12-02 16:24:57,540 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/236/front_image
+2025-12-02 16:24:57,540 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,541 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,543 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-236
+2025-12-02 16:24:57,543 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0099s
+2025-12-02 16:24:57,543 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0100s
+2025-12-02 16:24:57,544 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-257/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,544 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-236/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,545 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-249/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,545 - stash-jellyfin-proxy - INFO - Proxying image for group-249 from https://stash.feldorn.com/movie/249/front_image
+2025-12-02 16:24:57,547 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/249/front_image
+2025-12-02 16:24:57,547 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,547 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,550 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-249
+2025-12-02 16:24:57,550 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0049s
+2025-12-02 16:24:57,550 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-249/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,560 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-312/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,560 - stash-jellyfin-proxy - INFO - Proxying image for group-312 from https://stash.feldorn.com/movie/312/front_image
+2025-12-02 16:24:57,562 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/312/front_image
+2025-12-02 16:24:57,562 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,562 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,565 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-312
+2025-12-02 16:24:57,565 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0052s
+2025-12-02 16:24:57,565 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-312/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,576 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-90/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,576 - stash-jellyfin-proxy - INFO - Proxying image for group-90 from https://stash.feldorn.com/movie/90/front_image
+2025-12-02 16:24:57,579 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/90/front_image
+2025-12-02 16:24:57,579 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,579 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,582 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-90
+2025-12-02 16:24:57,582 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0053s
+2025-12-02 16:24:57,582 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-90/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,585 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-91/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,585 - stash-jellyfin-proxy - INFO - Proxying image for group-91 from https://stash.feldorn.com/movie/91/front_image
+2025-12-02 16:24:57,588 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/91/front_image
+2025-12-02 16:24:57,588 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,588 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,590 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-91
+2025-12-02 16:24:57,591 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0057s
+2025-12-02 16:24:57,591 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-91/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,593 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-95/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,593 - stash-jellyfin-proxy - INFO - Proxying image for group-95 from https://stash.feldorn.com/movie/95/front_image
+2025-12-02 16:24:57,595 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/95/front_image
+2025-12-02 16:24:57,595 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,595 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,598 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-95
+2025-12-02 16:24:57,598 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:57,598 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-95/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,602 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-97/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,602 - stash-jellyfin-proxy - INFO - Proxying image for group-97 from https://stash.feldorn.com/movie/97/front_image
+2025-12-02 16:24:57,604 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/97/front_image
+2025-12-02 16:24:57,604 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,604 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,607 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-97
+2025-12-02 16:24:57,607 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0052s
+2025-12-02 16:24:57,607 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-97/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,610 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-322/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,610 - stash-jellyfin-proxy - INFO - Proxying image for group-322 from https://stash.feldorn.com/movie/322/front_image
+2025-12-02 16:24:57,612 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/322/front_image
+2025-12-02 16:24:57,612 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,612 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,615 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-322
+2025-12-02 16:24:57,615 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0052s
+2025-12-02 16:24:57,615 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-322/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,618 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-323/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,618 - stash-jellyfin-proxy - INFO - Proxying image for group-323 from https://stash.feldorn.com/movie/323/front_image
+2025-12-02 16:24:57,620 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/323/front_image
+2025-12-02 16:24:57,620 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,620 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,622 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-323
+2025-12-02 16:24:57,623 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0050s
+2025-12-02 16:24:57,623 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-323/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,626 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-98/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,626 - stash-jellyfin-proxy - INFO - Proxying image for group-98 from https://stash.feldorn.com/movie/98/front_image
+2025-12-02 16:24:57,628 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/98/front_image
+2025-12-02 16:24:57,628 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,628 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,631 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-98
+2025-12-02 16:24:57,631 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0053s
+2025-12-02 16:24:57,631 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-98/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,635 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-100/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,635 - stash-jellyfin-proxy - INFO - Proxying image for group-100 from https://stash.feldorn.com/movie/100/front_image
+2025-12-02 16:24:57,637 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/100/front_image
+2025-12-02 16:24:57,637 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,637 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,640 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-100
+2025-12-02 16:24:57,640 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0052s
+2025-12-02 16:24:57,640 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-100/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,643 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-101/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,643 - stash-jellyfin-proxy - INFO - Proxying image for group-101 from https://stash.feldorn.com/movie/101/front_image
+2025-12-02 16:24:57,645 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/101/front_image
+2025-12-02 16:24:57,646 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,646 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,648 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-101
+2025-12-02 16:24:57,648 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0052s
+2025-12-02 16:24:57,649 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-101/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,740 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-102/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,741 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-103/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,741 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-104/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,741 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-105/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,741 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-106/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,741 - stash-jellyfin-proxy - INFO - Proxying image for group-102 from https://stash.feldorn.com/movie/102/front_image
+2025-12-02 16:24:57,745 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/102/front_image
+2025-12-02 16:24:57,745 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,745 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,747 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-102
+2025-12-02 16:24:57,747 - stash-jellyfin-proxy - INFO - Proxying image for group-103 from https://stash.feldorn.com/movie/103/front_image
+2025-12-02 16:24:57,750 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/103/front_image
+2025-12-02 16:24:57,750 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,750 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,752 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-103
+2025-12-02 16:24:57,752 - stash-jellyfin-proxy - INFO - Proxying image for group-104 from https://stash.feldorn.com/movie/104/front_image
+2025-12-02 16:24:57,754 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/104/front_image
+2025-12-02 16:24:57,754 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,755 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,757 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-104
+2025-12-02 16:24:57,757 - stash-jellyfin-proxy - INFO - Proxying image for group-105 from https://stash.feldorn.com/movie/105/front_image
+2025-12-02 16:24:57,759 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/105/front_image
+2025-12-02 16:24:57,759 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,759 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,762 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-105
+2025-12-02 16:24:57,762 - stash-jellyfin-proxy - INFO - Proxying image for group-106 from https://stash.feldorn.com/movie/106/front_image
+2025-12-02 16:24:57,764 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/106/front_image
+2025-12-02 16:24:57,764 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,764 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,767 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-106
+2025-12-02 16:24:57,767 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0272s
+2025-12-02 16:24:57,768 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0270s
+2025-12-02 16:24:57,768 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0269s
+2025-12-02 16:24:57,768 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0268s
+2025-12-02 16:24:57,768 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0267s
+2025-12-02 16:24:57,768 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-102/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,768 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-103/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,768 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-104/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,768 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-105/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,769 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-106/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,769 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-107/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,769 - stash-jellyfin-proxy - INFO - Proxying image for group-107 from https://stash.feldorn.com/movie/107/front_image
+2025-12-02 16:24:57,771 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/107/front_image
+2025-12-02 16:24:57,771 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,771 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,774 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-107
+2025-12-02 16:24:57,774 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0052s
+2025-12-02 16:24:57,774 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-107/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,775 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-108/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,775 - stash-jellyfin-proxy - INFO - Proxying image for group-108 from https://stash.feldorn.com/movie/108/front_image
+2025-12-02 16:24:57,777 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/108/front_image
+2025-12-02 16:24:57,778 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,778 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,780 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-108
+2025-12-02 16:24:57,780 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0051s
+2025-12-02 16:24:57,781 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-108/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,781 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-109/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,781 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-110/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,781 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-111/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,781 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-112/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,781 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-113/Images/Primary from 192.168.0.233
+2025-12-02 16:24:57,782 - stash-jellyfin-proxy - INFO - Proxying image for group-109 from https://stash.feldorn.com/movie/109/front_image
+2025-12-02 16:24:57,784 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/109/front_image
+2025-12-02 16:24:57,784 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,784 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,786 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-109
+2025-12-02 16:24:57,787 - stash-jellyfin-proxy - INFO - Proxying image for group-110 from https://stash.feldorn.com/movie/110/front_image
+2025-12-02 16:24:57,789 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/110/front_image
+2025-12-02 16:24:57,789 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,789 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,792 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-110
+2025-12-02 16:24:57,792 - stash-jellyfin-proxy - INFO - Proxying image for group-111 from https://stash.feldorn.com/movie/111/front_image
+2025-12-02 16:24:57,794 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/111/front_image
+2025-12-02 16:24:57,794 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,794 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,797 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-111
+2025-12-02 16:24:57,797 - stash-jellyfin-proxy - INFO - Proxying image for group-112 from https://stash.feldorn.com/movie/112/front_image
+2025-12-02 16:24:57,799 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/112/front_image
+2025-12-02 16:24:57,799 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,799 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,802 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-112
+2025-12-02 16:24:57,802 - stash-jellyfin-proxy - INFO - Proxying image for group-113 from https://stash.feldorn.com/movie/113/front_image
+2025-12-02 16:24:57,805 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/113/front_image
+2025-12-02 16:24:57,805 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:57,805 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:57,807 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-113
+2025-12-02 16:24:57,808 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0263s
+2025-12-02 16:24:57,808 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0264s
+2025-12-02 16:24:57,808 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0264s
+2025-12-02 16:24:57,808 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0264s
+2025-12-02 16:24:57,808 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0265s
+2025-12-02 16:24:57,808 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-109/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,808 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-110/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,808 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-111/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,808 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-112/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:57,809 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:57 -0600] "GET /Items/group-113/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,063 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:24:59,064 - stash-jellyfin-proxy - DEBUG - Sort mapping: SortName,ProductionYear -> SortName -> title ASC
+2025-12-02 16:24:59,064 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '50', 'limit': '50'}
+2025-12-02 16:24:59,064 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 50, Limit: 50, Sort: title ASC
+2025-12-02 16:24:59,077 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0138s
+2025-12-02 16:24:59,078 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Users/chris/Items 1.1" 200 15878
+2025-12-02 16:24:59,111 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-123/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,111 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-118/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,111 - stash-jellyfin-proxy - INFO - Proxying image for group-123 from https://stash.feldorn.com/movie/123/front_image
+2025-12-02 16:24:59,118 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/123/front_image
+2025-12-02 16:24:59,118 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,118 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,126 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-123
+2025-12-02 16:24:59,126 - stash-jellyfin-proxy - INFO - Proxying image for group-118 from https://stash.feldorn.com/movie/118/front_image
+2025-12-02 16:24:59,130 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/118/front_image
+2025-12-02 16:24:59,130 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,130 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,134 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-118
+2025-12-02 16:24:59,134 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-120/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,134 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-130/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,134 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0240s
+2025-12-02 16:24:59,135 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0237s
+2025-12-02 16:24:59,135 - stash-jellyfin-proxy - INFO - Proxying image for group-120 from https://stash.feldorn.com/movie/120/front_image
+2025-12-02 16:24:59,139 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/120/front_image
+2025-12-02 16:24:59,139 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,139 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,143 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-120
+2025-12-02 16:24:59,144 - stash-jellyfin-proxy - INFO - Proxying image for group-130 from https://stash.feldorn.com/movie/130/front_image
+2025-12-02 16:24:59,146 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/130/front_image
+2025-12-02 16:24:59,146 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,146 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,149 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-130
+2025-12-02 16:24:59,149 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-123/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,149 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-118/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,149 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0152s
+2025-12-02 16:24:59,149 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0152s
+2025-12-02 16:24:59,150 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-52/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,150 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-120/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,150 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-130/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,150 - stash-jellyfin-proxy - INFO - Proxying image for group-52 from https://stash.feldorn.com/movie/52/front_image
+2025-12-02 16:24:59,152 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/52/front_image
+2025-12-02 16:24:59,152 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,152 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,155 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-52
+2025-12-02 16:24:59,155 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-117/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,155 - stash-jellyfin-proxy - INFO - Proxying image for group-117 from https://stash.feldorn.com/movie/117/front_image
+2025-12-02 16:24:59,157 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/117/front_image
+2025-12-02 16:24:59,157 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,157 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,160 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-117
+2025-12-02 16:24:59,160 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0108s
+2025-12-02 16:24:59,161 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-52/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,161 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0058s
+2025-12-02 16:24:59,161 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-117/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,161 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-114/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,162 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-125/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,162 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-45/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,162 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-141/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,162 - stash-jellyfin-proxy - INFO - Proxying image for group-114 from https://stash.feldorn.com/movie/114/front_image
+2025-12-02 16:24:59,164 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/114/front_image
+2025-12-02 16:24:59,164 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,164 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,167 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-114
+2025-12-02 16:24:59,167 - stash-jellyfin-proxy - INFO - Proxying image for group-125 from https://stash.feldorn.com/movie/125/front_image
+2025-12-02 16:24:59,169 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/125/front_image
+2025-12-02 16:24:59,169 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,169 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,172 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-125
+2025-12-02 16:24:59,172 - stash-jellyfin-proxy - INFO - Proxying image for group-45 from https://stash.feldorn.com/movie/45/front_image
+2025-12-02 16:24:59,174 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/45/front_image
+2025-12-02 16:24:59,174 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,174 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,177 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-45
+2025-12-02 16:24:59,177 - stash-jellyfin-proxy - INFO - Proxying image for group-141 from https://stash.feldorn.com/movie/141/front_image
+2025-12-02 16:24:59,179 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/141/front_image
+2025-12-02 16:24:59,179 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,179 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,182 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-141
+2025-12-02 16:24:59,182 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0205s
+2025-12-02 16:24:59,182 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0205s
+2025-12-02 16:24:59,182 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0206s
+2025-12-02 16:24:59,182 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0206s
+2025-12-02 16:24:59,183 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-114/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,183 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-125/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,183 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-45/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,183 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-141/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,183 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-121/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,183 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-115/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,183 - stash-jellyfin-proxy - INFO - Proxying image for group-121 from https://stash.feldorn.com/movie/121/front_image
+2025-12-02 16:24:59,186 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/121/front_image
+2025-12-02 16:24:59,186 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,186 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,189 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-121
+2025-12-02 16:24:59,189 - stash-jellyfin-proxy - INFO - Proxying image for group-115 from https://stash.feldorn.com/movie/115/front_image
+2025-12-02 16:24:59,192 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/115/front_image
+2025-12-02 16:24:59,192 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,192 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,195 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-115
+2025-12-02 16:24:59,195 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0118s
+2025-12-02 16:24:59,195 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0118s
+2025-12-02 16:24:59,195 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-121/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,196 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-115/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,196 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-51/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,196 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-43/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,196 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-62/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,196 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-119/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,196 - stash-jellyfin-proxy - INFO - Proxying image for group-51 from https://stash.feldorn.com/movie/51/front_image
+2025-12-02 16:24:59,199 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/51/front_image
+2025-12-02 16:24:59,199 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,199 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,201 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-51
+2025-12-02 16:24:59,201 - stash-jellyfin-proxy - INFO - Proxying image for group-43 from https://stash.feldorn.com/movie/43/front_image
+2025-12-02 16:24:59,204 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/43/front_image
+2025-12-02 16:24:59,204 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,204 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,207 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-43
+2025-12-02 16:24:59,207 - stash-jellyfin-proxy - INFO - Proxying image for group-62 from https://stash.feldorn.com/movie/62/front_image
+2025-12-02 16:24:59,209 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/62/front_image
+2025-12-02 16:24:59,209 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,209 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,212 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-62
+2025-12-02 16:24:59,212 - stash-jellyfin-proxy - INFO - Proxying image for group-119 from https://stash.feldorn.com/movie/119/front_image
+2025-12-02 16:24:59,214 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/119/front_image
+2025-12-02 16:24:59,214 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,214 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,217 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-119
+2025-12-02 16:24:59,217 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0214s
+2025-12-02 16:24:59,218 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0215s
+2025-12-02 16:24:59,218 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0215s
+2025-12-02 16:24:59,218 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0216s
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-51/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-43/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-62/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-119/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,219 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-44/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,219 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-2/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,219 - stash-jellyfin-proxy - INFO - Proxying image for group-44 from https://stash.feldorn.com/movie/44/front_image
+2025-12-02 16:24:59,221 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/44/front_image
+2025-12-02 16:24:59,221 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,221 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,224 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-44
+2025-12-02 16:24:59,224 - stash-jellyfin-proxy - INFO - Proxying image for group-2 from https://stash.feldorn.com/movie/2/front_image
+2025-12-02 16:24:59,226 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/2/front_image
+2025-12-02 16:24:59,226 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,226 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,229 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-2
+2025-12-02 16:24:59,229 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0103s
+2025-12-02 16:24:59,229 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0104s
+2025-12-02 16:24:59,229 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-44/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,229 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-2/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,315 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-116/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,316 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-99/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,316 - stash-jellyfin-proxy - INFO - Proxying image for group-116 from https://stash.feldorn.com/movie/116/front_image
+2025-12-02 16:24:59,323 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/116/front_image
+2025-12-02 16:24:59,323 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,324 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,330 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-116
+2025-12-02 16:24:59,331 - stash-jellyfin-proxy - INFO - Proxying image for group-99 from https://stash.feldorn.com/movie/99/front_image
+2025-12-02 16:24:59,334 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/99/front_image
+2025-12-02 16:24:59,334 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,334 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,337 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-99
+2025-12-02 16:24:59,337 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0225s
+2025-12-02 16:24:59,338 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0221s
+2025-12-02 16:24:59,338 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-116/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,338 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-99/Images/Primary 1.1" 200 2157

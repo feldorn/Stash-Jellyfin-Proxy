@@ -1308,7 +1308,8 @@ async def endpoint_image(request):
         # Performer images are usually already portrait/square
     elif item_id.startswith("group-"):
         numeric_id = item_id.replace("group-", "")
-        stash_img_url = f"{STASH_URL}/movie/{numeric_id}/front_image"
+        # Try /movie/{id}/image (same pattern as performers) instead of /movie/{id}/front_image
+        stash_img_url = f"{STASH_URL}/movie/{numeric_id}/image"
         # Group images are usually movie posters (portrait)
     elif item_id.startswith("scene-"):
         numeric_id = item_id.replace("scene-", "")
@@ -1430,7 +1431,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.14 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.15 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     

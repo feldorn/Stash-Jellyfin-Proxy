@@ -1,0 +1,73 @@
+2025-12-02 16:24:59,214 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,214 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,217 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-119
+2025-12-02 16:24:59,217 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0214s
+2025-12-02 16:24:59,218 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0215s
+2025-12-02 16:24:59,218 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0215s
+2025-12-02 16:24:59,218 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0216s
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-51/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-43/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65268 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-62/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,218 - hypercorn.access - INFO - 192.168.0.233:65269 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-119/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,219 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-44/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,219 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-2/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,219 - stash-jellyfin-proxy - INFO - Proxying image for group-44 from https://stash.feldorn.com/movie/44/front_image
+2025-12-02 16:24:59,221 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/44/front_image
+2025-12-02 16:24:59,221 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,221 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,224 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-44
+2025-12-02 16:24:59,224 - stash-jellyfin-proxy - INFO - Proxying image for group-2 from https://stash.feldorn.com/movie/2/front_image
+2025-12-02 16:24:59,226 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/2/front_image
+2025-12-02 16:24:59,226 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,226 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,229 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-2
+2025-12-02 16:24:59,229 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0103s
+2025-12-02 16:24:59,229 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0104s
+2025-12-02 16:24:59,229 - hypercorn.access - INFO - 192.168.0.233:65270 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-44/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,229 - hypercorn.access - INFO - 192.168.0.233:65271 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-2/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,315 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-116/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,316 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-99/Images/Primary from 192.168.0.233
+2025-12-02 16:24:59,316 - stash-jellyfin-proxy - INFO - Proxying image for group-116 from https://stash.feldorn.com/movie/116/front_image
+2025-12-02 16:24:59,323 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/116/front_image
+2025-12-02 16:24:59,323 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,324 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,330 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-116
+2025-12-02 16:24:59,331 - stash-jellyfin-proxy - INFO - Proxying image for group-99 from https://stash.feldorn.com/movie/99/front_image
+2025-12-02 16:24:59,334 - stash-jellyfin-proxy - ERROR - Got HTML response instead of media from https://stash.feldorn.com/movie/99/front_image
+2025-12-02 16:24:59,334 - stash-jellyfin-proxy - ERROR - First 200 chars: <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <base href="/" />
+    <meta charset="utf-8" />
+    <link rel="shortcut icon" href="favicon.ico" />
+    <link rel="apple-touch-icon" href="apple-touch-icon
+2025-12-02 16:24:59,334 - stash-jellyfin-proxy - ERROR - Image proxy error: Authentication failed - received HTML instead of media
+2025-12-02 16:24:59,337 - stash-jellyfin-proxy - INFO - Serving placeholder icon for failed group image: group-99
+2025-12-02 16:24:59,337 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0225s
+2025-12-02 16:24:59,338 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0221s
+2025-12-02 16:24:59,338 - hypercorn.access - INFO - 192.168.0.233:65266 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-116/Images/Primary 1.1" 200 2157
+2025-12-02 16:24:59,338 - hypercorn.access - INFO - 192.168.0.233:65267 - - [02/Dec/2025:16:24:59 -0600] "GET /Items/group-99/Images/Primary 1.1" 200 2157
