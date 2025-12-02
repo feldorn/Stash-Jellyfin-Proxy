@@ -997,6 +997,64 @@ async def endpoint_items(request):
         logger.debug(f"Group {group_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
         for s in scenes:
             items.append(format_jellyfin_item(s, parent_id=parent_id))
+    
+    elif parent_id and parent_id.startswith("tag-"):
+        # Tag-based folder: find scenes with this tag
+        # Extract tag name from parent_id (reverse the slugification)
+        tag_slug = parent_id[4:]  # Remove "tag-" prefix
+        
+        # Find the matching tag name from TAG_GROUPS config
+        tag_name = None
+        for t in TAG_GROUPS:
+            if t.lower().replace(' ', '-') == tag_slug:
+                tag_name = t
+                break
+        
+        if tag_name:
+            # First we need to find the tag ID by name
+            tag_query = """query FindTags($filter: FindFilterType!) {
+                findTags(filter: $filter) {
+                    tags { id name }
+                }
+            }"""
+            tag_res = stash_query(tag_query, {"filter": {"q": tag_name}})
+            tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
+            
+            # Find exact match (case-insensitive)
+            tag_id = None
+            for t in tags:
+                if t["name"].lower() == tag_name.lower():
+                    tag_id = t["id"]
+                    break
+            
+            if tag_id:
+                # Get count for scenes with this tag
+                count_q = """query CountScenes($tid: [ID!]) { 
+                    findScenes(scene_filter: {tags: {value: $tid, modifier: INCLUDES}}) { count } 
+                }"""
+                count_res = stash_query(count_q, {"tid": [tag_id]})
+                total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+                
+                # Calculate page
+                page = (start_index // limit) + 1
+                
+                q = f"""query FindScenes($tid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{ 
+                    findScenes(
+                        scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}}, 
+                        filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+                    ) {{ 
+                        scenes {{ {scene_fields} }} 
+                    }} 
+                }}"""
+                res = stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+                scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+                logger.info(f"Tag '{tag_name}' (id={tag_id}) returned {len(scenes)} scenes (page {page}, total {total_count})")
+                for s in scenes:
+                    items.append(format_jellyfin_item(s, parent_id=parent_id))
+            else:
+                logger.warning(f"Tag '{tag_name}' not found in Stash")
+        else:
+            logger.warning(f"Tag slug '{tag_slug}' not found in TAG_GROUPS config")
             
     return JSONResponse({"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index})
 
@@ -1171,6 +1229,54 @@ async def endpoint_item_details(request):
             "RecursiveItemCount": scene_count,
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
         })
+    
+    elif item_id.startswith("tag-"):
+        # Tag-based folder
+        tag_slug = item_id[4:]  # Remove "tag-" prefix
+        
+        # Find the matching tag name from TAG_GROUPS config
+        tag_name = None
+        for t in TAG_GROUPS:
+            if t.lower().replace(' ', '-') == tag_slug:
+                tag_name = t
+                break
+        
+        if tag_name:
+            # Find tag ID and get scene count
+            tag_query = """query FindTags($filter: FindFilterType!) {
+                findTags(filter: $filter) {
+                    tags { id name scene_count }
+                }
+            }"""
+            tag_res = stash_query(tag_query, {"filter": {"q": tag_name}})
+            tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
+            
+            # Find exact match
+            tag_data = None
+            for t in tags:
+                if t["name"].lower() == tag_name.lower():
+                    tag_data = t
+                    break
+            
+            scene_count = tag_data.get("scene_count", 0) if tag_data else 0
+            
+            return JSONResponse({
+                "Name": tag_name,
+                "SortName": tag_name,
+                "Id": item_id,
+                "ServerId": SERVER_ID,
+                "Type": "CollectionFolder",
+                "CollectionType": "movies",
+                "IsFolder": True,
+                "ImageTags": {"Primary": "icon"},
+                "BackdropImageTags": [],
+                "ChildCount": scene_count,
+                "RecursiveItemCount": scene_count,
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
+            })
+        else:
+            logger.warning(f"Tag slug '{tag_slug}' not found in TAG_GROUPS config")
+            return JSONResponse({"error": "Tag not found"}, status_code=404)
     
     elif item_id in ("Resume", "Latest"):
         # Return empty for resume/latest
@@ -1510,6 +1616,14 @@ def generate_menu_icon(icon_type: str, width: int = 400, height: int = 600) -> T
             draw.rectangle([140, 250, 240, 390], outline=icon_color, width=6)
             draw.rectangle([200, 280, 300, 420], outline=icon_color, width=6)
         
+        elif icon_type == "root-tag":
+            # Tag icon (price tag shape)
+            # Draw tag outline (pentagon shape)
+            tag_points = [(100, 200), (280, 200), (340, 300), (200, 450), (60, 300)]
+            draw.polygon(tag_points, outline=icon_color, width=10)
+            # Draw hole in tag
+            draw.ellipse([130, 250, 180, 300], fill=icon_color)
+        
         # Save as PNG
         output = io.BytesIO()
         img.save(output, format='PNG')
@@ -1567,6 +1681,13 @@ async def endpoint_image(request):
         # Generate PNG icon using Pillow drawing
         img_data, content_type = generate_menu_icon(item_id)
         logger.info(f"Serving menu icon for {item_id}")
+        from starlette.responses import Response
+        return Response(content=img_data, media_type=content_type, headers={"Cache-Control": "max-age=86400"})
+    
+    # Handle tag folder icons (tag-* IDs use the root-tag icon)
+    if item_id.startswith("tag-"):
+        img_data, content_type = generate_menu_icon("root-tag")
+        logger.info(f"Serving tag icon for {item_id}")
         from starlette.responses import Response
         return Response(content=img_data, media_type=content_type, headers={"Cache-Control": "max-age=86400"})
     
@@ -1775,7 +1896,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.28 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.29 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
