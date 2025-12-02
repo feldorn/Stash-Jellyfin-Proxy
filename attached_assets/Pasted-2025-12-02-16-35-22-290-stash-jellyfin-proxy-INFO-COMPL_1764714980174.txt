@@ -1,0 +1,47 @@
+2025-12-02 16:35:22,290 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0039s
+2025-12-02 16:35:22,290 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-121/Images/Primary from 192.168.0.233
+2025-12-02 16:35:22,290 - hypercorn.access - INFO - 192.168.0.233:65351 - - [02/Dec/2025:16:35:22 -0600] "GET /Items/group-99/Images/Primary 1.1" 200 110423
+2025-12-02 16:35:22,290 - stash-jellyfin-proxy - INFO - Proxying image for group-121 from https://stash.feldorn.com/group/121/frontimage
+2025-12-02 16:35:22,293 - stash-jellyfin-proxy - INFO - Image response: 114931 bytes, type=image/jpeg
+2025-12-02 16:35:22,293 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0032s
+2025-12-02 16:35:22,293 - hypercorn.access - INFO - 192.168.0.233:65350 - - [02/Dec/2025:16:35:22 -0600] "GET /Items/group-121/Images/Primary 1.1" 200 114931
+2025-12-02 16:35:23,727 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-141/Images/Primary from 192.168.0.233
+2025-12-02 16:35:23,727 - stash-jellyfin-proxy - INFO - Proxying image for group-141 from https://stash.feldorn.com/group/141/frontimage
+2025-12-02 16:35:23,735 - stash-jellyfin-proxy - INFO - Image response: 1446 bytes, type=image/svg+xml
+2025-12-02 16:35:23,735 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0080s
+2025-12-02 16:35:23,735 - hypercorn.access - INFO - 192.168.0.233:65348 - - [02/Dec/2025:16:35:23 -0600] "GET /Items/group-141/Images/Primary 1.1" 200 1446
+2025-12-02 16:35:23,836 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:35:23,837 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '100', 'limit': '50'}
+2025-12-02 16:35:23,837 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 100, Limit: 50, Sort: title ASC
+2025-12-02 16:35:23,858 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0215s
+2025-12-02 16:35:23,859 - hypercorn.access - INFO - 192.168.0.233:65348 - - [02/Dec/2025:16:35:23 -0600] "GET /Users/chris/Items 1.1" 200 15940
+2025-12-02 16:35:30,024 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:35:30,024 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '150', 'limit': '50'}
+2025-12-02 16:35:30,024 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 150, Limit: 50, Sort: title ASC
+2025-12-02 16:35:30,043 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0189s
+2025-12-02 16:35:30,043 - hypercorn.access - INFO - 192.168.0.233:65356 - - [02/Dec/2025:16:35:30 -0600] "GET /Users/chris/Items 1.1" 200 15787
+2025-12-02 16:35:30,682 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:35:30,682 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '200', 'limit': '50'}
+2025-12-02 16:35:30,682 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 200, Limit: 50, Sort: title ASC
+2025-12-02 16:35:30,699 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0169s
+2025-12-02 16:35:30,699 - hypercorn.access - INFO - 192.168.0.233:65356 - - [02/Dec/2025:16:35:30 -0600] "GET /Users/chris/Items 1.1" 200 16090
+2025-12-02 16:35:34,859 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-141/Images/Primary from 192.168.0.233
+2025-12-02 16:35:34,859 - stash-jellyfin-proxy - INFO - Proxying image for group-141 from https://stash.feldorn.com/group/141/frontimage
+2025-12-02 16:35:34,867 - stash-jellyfin-proxy - INFO - Image response: 1446 bytes, type=image/svg+xml
+2025-12-02 16:35:34,868 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0088s
+2025-12-02 16:35:34,868 - hypercorn.access - INFO - 192.168.0.233:65356 - - [02/Dec/2025:16:35:34 -0600] "GET /Items/group-141/Images/Primary 1.1" 200 1446
+2025-12-02 16:35:37,357 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/group-141/Images/Primary from 192.168.0.233
+2025-12-02 16:35:37,357 - stash-jellyfin-proxy - INFO - Proxying image for group-141 from https://stash.feldorn.com/group/141/frontimage
+2025-12-02 16:35:37,363 - stash-jellyfin-proxy - INFO - Image response: 1446 bytes, type=image/svg+xml
+2025-12-02 16:35:37,363 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0061s
+2025-12-02 16:35:37,363 - hypercorn.access - INFO - 192.168.0.233:65356 - - [02/Dec/2025:16:35:37 -0600] "GET /Items/group-141/Images/Primary 1.1" 200 1446
+2025-12-02 16:35:40,766 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:35:40,766 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '250', 'limit': '50'}
+2025-12-02 16:35:40,766 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 250, Limit: 50, Sort: title ASC
+2025-12-02 16:35:40,784 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0181s
+2025-12-02 16:35:40,784 - hypercorn.access - INFO - 192.168.0.233:65356 - - [02/Dec/2025:16:35:40 -0600] "GET /Users/chris/Items 1.1" 200 15745
+2025-12-02 16:35:40,845 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-02 16:35:40,846 - stash-jellyfin-proxy - INFO - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'parentId': 'root-groups', 'sortBy': 'SortName,ProductionYear', 'sortOrder': 'Ascending', 'includeItemTypes': 'Movie', 'recursive': 'true', 'startIndex': '300', 'limit': '32'}
+2025-12-02 16:35:40,846 - stash-jellyfin-proxy - INFO - Items endpoint - ParentId: root-groups, Ids: None, PersonIds: None, StartIndex: 300, Limit: 32, Sort: title ASC
+2025-12-02 16:35:40,863 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0180s
+2025-12-02 16:35:40,864 - hypercorn.access - INFO - 192.168.0.233:65356 - - [02/Dec/2025:16:35:40 -0600] "GET /Users/chris/Items 1.1" 200 10134
