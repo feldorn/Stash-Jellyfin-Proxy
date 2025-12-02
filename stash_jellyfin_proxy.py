@@ -512,57 +512,54 @@ def get_numeric_id(item_id: str) -> str:
         return extract_numeric_id(item_id)
     return item_id
 
-def fetch_from_stash(url: str, extra_headers: Dict[str, str] = None, timeout: int = 30) -> Tuple[bytes, str, Dict[str, str]]:
+def fetch_from_stash(url: str, extra_headers: Dict[str, str] = None, timeout: int = 30, stream: bool = False) -> Tuple[bytes, str, Dict[str, str]]:
     """
-    Fetch content from Stash, manually following redirects to preserve ApiKey header.
+    Fetch content from Stash using requests library for proper redirect handling.
     Returns (data, content_type, response_headers).
     """
-    import urllib.request
-    import urllib.error
+    try:
+        import requests
+    except ImportError:
+        logger.error("requests library not installed. Run: pip install requests")
+        raise Exception("requests library required for media proxy")
     
-    headers = {"ApiKey": STASH_API_KEY} if STASH_API_KEY else {}
-    if extra_headers:
-        headers.update(extra_headers)
+    # Create session with persistent headers
+    session = requests.Session()
+    if STASH_API_KEY:
+        session.headers["ApiKey"] = STASH_API_KEY
     
-    max_redirects = 5
-    current_url = url
+    # Add extra headers
+    headers = extra_headers or {}
     
-    for _ in range(max_redirects):
-        req = urllib.request.Request(current_url, headers=headers)
+    try:
+        response = session.get(url, headers=headers, timeout=timeout, stream=stream, allow_redirects=True)
         
-        try:
-            # Don't auto-follow redirects
-            class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
-                def redirect_request(self, req, fp, code, msg, hdrs, newurl):
-                    return None
-            
-            opener = urllib.request.build_opener(NoRedirectHandler)
-            response = opener.open(req, timeout=timeout)
-            
-            # Success - return data
-            content_type = response.headers.get('Content-Type', 'application/octet-stream')
-            resp_headers = dict(response.headers)
-            data = response.read()
-            
-            logger.debug(f"Fetch success: {len(data)} bytes, type={content_type}")
-            return data, content_type, resp_headers
-            
-        except urllib.error.HTTPError as e:
-            if e.code in (301, 302, 303, 307, 308):
-                # Manual redirect - preserve headers
-                new_url = e.headers.get('Location')
-                if new_url:
-                    # Handle relative URLs
-                    if new_url.startswith('/'):
-                        from urllib.parse import urlparse
-                        parsed = urlparse(current_url)
-                        new_url = f"{parsed.scheme}://{parsed.netloc}{new_url}"
-                    logger.debug(f"Following redirect: {current_url} -> {new_url}")
-                    current_url = new_url
-                    continue
-            raise
-    
-    raise Exception(f"Too many redirects for {url}")
+        # Log response details for debugging
+        content_type = response.headers.get('Content-Type', 'application/octet-stream')
+        logger.debug(f"Fetch {url}: status={response.status_code}, type={content_type}, size={len(response.content) if not stream else 'streaming'}")
+        
+        # Check if we got HTML instead of media (indicates auth failure)
+        if 'text/html' in content_type:
+            logger.error(f"Got HTML response instead of media. First 200 chars: {response.text[:200]}")
+            raise Exception(f"Authentication failed - received HTML instead of media")
+        
+        response.raise_for_status()
+        
+        # Build response headers dict
+        resp_headers = dict(response.headers)
+        
+        if stream:
+            # For streaming, return chunks
+            data = b''.join(response.iter_content(chunk_size=65536))
+        else:
+            data = response.content
+        
+        logger.debug(f"Fetch success: {len(data)} bytes, type={content_type}")
+        return data, content_type, resp_headers
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request failed: {e}")
+        raise
 
 async def endpoint_stream(request):
     """Proxy video stream from Stash with proper authentication."""
@@ -578,7 +575,7 @@ async def endpoint_stream(request):
         extra_headers["Range"] = request.headers["range"]
     
     try:
-        data, content_type, resp_headers = fetch_from_stash(stash_stream_url, extra_headers, timeout=60)
+        data, content_type, resp_headers = fetch_from_stash(stash_stream_url, extra_headers, timeout=120, stream=True)
         
         from starlette.responses import Response
         headers = {"Accept-Ranges": "bytes"}
@@ -604,7 +601,7 @@ async def endpoint_image(request):
     logger.info(f"Proxying image for {item_id} from {stash_img_url}")
     
     try:
-        data, content_type, _ = fetch_from_stash(stash_img_url, timeout=10)
+        data, content_type, _ = fetch_from_stash(stash_img_url, timeout=30)
         
         from starlette.responses import Response
         logger.info(f"Image response: {len(data)} bytes, type={content_type}")
@@ -660,7 +657,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.0 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.1 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
