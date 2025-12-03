@@ -303,9 +303,33 @@ def setup_logging():
 logger = setup_logging()
 
 # --- Middleware for Request Logging ---
-# Track last activity time for each scene to detect resumes
-_stream_last_seen = {}  # scene_id -> timestamp
+# Track active streams to detect start/resume/stop
+_active_streams = {}  # scene_id -> {"last_seen": timestamp, "title": str}
 STREAM_RESUME_THRESHOLD = 90  # seconds of inactivity before considering it a "resume" (Infuse buffers ~60s)
+
+def get_scene_title(scene_id: str) -> str:
+    """Fetch scene title from Stash for logging."""
+    try:
+        numeric_id = scene_id.replace("scene-", "")
+        query = """query($id: ID!) { findScene(id: $id) { title files { basename } } }"""
+        result = stash_query(query, {"id": numeric_id})
+        scene = result.get("data", {}).get("findScene")
+        if scene:
+            title = scene.get("title")
+            if title:
+                return title
+            # Fallback to filename
+            files = scene.get("files", [])
+            if files and files[0].get("basename"):
+                return files[0]["basename"]
+    except:
+        pass
+    return scene_id  # Fallback to ID
+
+def mark_stream_stopped(scene_id: str):
+    """Mark a stream as stopped so next request shows as 'started'."""
+    if scene_id in _active_streams:
+        del _active_streams[scene_id]
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -339,21 +363,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 now = time.time()
                 
                 # Check if this is a new stream, resume, or continuation
-                last_seen = _stream_last_seen.get(scene_id)
-                _stream_last_seen[scene_id] = now
+                stream_info = _active_streams.get(scene_id)
                 
-                if ms > 500:
-                    # Slow response = new stream starting
-                    logger.info(f"▶ Stream started: {scene_id} ({ms}ms)")
-                elif last_seen is None:
-                    # First time seeing this scene (but fast response - maybe cached)
-                    logger.info(f"▶ Stream started: {scene_id} ({ms}ms)")
-                elif (now - last_seen) > STREAM_RESUME_THRESHOLD:
+                if stream_info is None:
+                    # New stream - fetch title and log
+                    title = get_scene_title(scene_id)
+                    _active_streams[scene_id] = {"last_seen": now, "title": title}
+                    logger.info(f"▶ Stream started: {title}")
+                elif (now - stream_info["last_seen"]) > STREAM_RESUME_THRESHOLD:
                     # Gap in activity = resumed after pause
-                    gap = int(now - last_seen)
-                    logger.info(f"▶ Stream resumed: {scene_id} (paused {gap}s)")
+                    gap = int(now - stream_info["last_seen"])
+                    stream_info["last_seen"] = now
+                    logger.info(f"▶ Stream resumed: {stream_info['title']} (paused {gap}s)")
                 else:
-                    # Continuous playback
+                    # Continuous playback - just update timestamp
+                    stream_info["last_seen"] = now
                     logger.debug(f"Stream continue: {scene_id} ({ms}ms)")
             elif is_slow:
                 logger.info(f"Slow request: {path} ({ms}ms)")
@@ -2318,9 +2342,14 @@ async def endpoint_sessions(request):
         try:
             body = await request.json()
             item_id = body.get("ItemId", "unknown")
-            # Extract scene ID if present
-            if item_id.startswith("scene-"):
-                logger.info(f"⏹ Stream stopped: {item_id}")
+            # Get title from active streams cache, or fetch it
+            if item_id in _active_streams:
+                title = _active_streams[item_id]["title"]
+                mark_stream_stopped(item_id)
+                logger.info(f"⏹ Stream stopped: {title}")
+            elif item_id.startswith("scene-"):
+                title = get_scene_title(item_id)
+                logger.info(f"⏹ Stream stopped: {title}")
             else:
                 logger.info(f"⏹ Stream stopped: {item_id}")
         except:
@@ -3262,7 +3291,7 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.61 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.62 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     

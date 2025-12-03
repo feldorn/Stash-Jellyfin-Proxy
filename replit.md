@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.61
+## Current Version: v3.62
 
 ## User Preferences
 
@@ -96,11 +96,12 @@ Preferred communication style: Simple, everyday language.
 
 | File | Description |
 |------|-------------|
-| stash_jellyfin_proxy.py | Main proxy server (v3.61) |
+| stash_jellyfin_proxy.py | Main proxy server (v3.62) |
 | stash_jellyfin_proxy.conf | Configuration file |
 
 ## Recent Changes
 
+- v3.62: Stream logging now shows video title (or filename), fixed duplicate "started" messages by tracking active streams
 - v3.61: Added "Stream stopped" logging, fixed false resume detection (threshold now 90s to match Infuse buffering)
 - v3.60: Added stream resume detection - logs when video resumes after pause (10+ seconds of inactivity)
 - v3.59: Descriptive stream logging - shows "Stream started: scene-12345" for new streams, range requests go to DEBUG
