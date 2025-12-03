@@ -990,6 +990,12 @@ def transform_saved_filter_to_graphql(object_filter, filter_mode="SCENES"):
                     elif val.lower() == 'false':
                         val = False
                 
+                # For simple boolean fields with EQUALS modifier, just pass the boolean directly
+                # The Stash GraphQL API expects: organized: false, not organized: {value: false, modifier: EQUALS}
+                if isinstance(val, bool) and modifier == 'EQUALS':
+                    result[key] = val
+                    continue
+                
                 # Handle HierarchicalMultiCriterionInput (tags, performers, studios, etc.)
                 # Structure: {'items': [{'id': '123', 'label': 'Name'}], 'depth': 0, 'excluded': []}
                 # Needs to become: {'value': ['123'], 'modifier': 'INCLUDES_ALL', 'depth': 0, 'excludes': []}
@@ -2590,7 +2596,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.36 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.37 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
