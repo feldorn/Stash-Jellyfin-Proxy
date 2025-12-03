@@ -1,0 +1,13 @@
+2025-12-03 09:02:51,934 - stash-jellyfin-proxy - INFO - Raw object_filter type: <class 'dict'>, value: {'tags': {'modifier': 'INCLUDES_ALL', 'value': {'depth': 0, 'excluded': [], 'items': [{'id': '939', 'label': '!3. Audio Only'}]}}}
+2025-12-03 09:02:51,934 - stash-jellyfin-proxy - INFO - Transformed filter: {'tags': {'value': {'depth': 0, 'excluded': [], 'items': [{'id': '939', 'label': '!3. Audio Only'}]}, 'modifier': 'INCLUDES_ALL'}}
+2025-12-03 09:02:51,934 - stash-jellyfin-proxy - INFO - Full saved filter data: {'id': '49', 'name': 'Audio Only', 'mode': 'SCENES', 'find_filter': {'q': '', 'page': 1, 'per_page': 40, 'sort': 'updated_at', 'direction': 'DESC'}, 'object_filter': {'tags': {'modifier': 'INCLUDES_ALL', 'value': {'depth': 0, 'excluded': [], 'items': [{'id': '939', 'label': '!3. Audio Only'}]}}}}
+2025-12-03 09:02:51,934 - stash-jellyfin-proxy - DEBUG - Filter find_filter: {'q': '', 'page': 1, 'per_page': 40, 'sort': 'updated_at', 'direction': 'DESC'}
+2025-12-03 09:02:51,934 - stash-jellyfin-proxy - DEBUG - Filter object_filter: {'tags': {'modifier': 'INCLUDES_ALL', 'value': {'depth': 0, 'excluded': [], 'items': [{'id': '939', 'label': '!3. Audio Only'}]}}}
+2025-12-03 09:02:51,934 - stash-jellyfin-proxy - INFO - Running count query with scene_filter: {'tags': {'value': {'depth': 0, 'excluded': [], 'items': [{'id': '939', 'label': '!3. Audio Only'}]}, 'modifier': 'INCLUDES_ALL'}}
+2025-12-03 09:02:51,938 - stash-jellyfin-proxy - ERROR - Stash API Query Error: 400 Client Error: Bad Request for url: https://stash.feldorn.com/graphql-local
+2025-12-03 09:02:51,938 - stash-jellyfin-proxy - INFO - Count query response: {'errors': ['400 Client Error: Bad Request for url: https://stash.feldorn.com/graphql-local']}
+2025-12-03 09:02:51,941 - stash-jellyfin-proxy - ERROR - Stash API Query Error: 400 Client Error: Bad Request for url: https://stash.feldorn.com/graphql-local
+2025-12-03 09:02:51,941 - stash-jellyfin-proxy - INFO - Saved filter returned 0 scenes (page 1, total 0)
+2025-12-03 09:02:51,941 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0132s
+2025-12-03 09:02:51,941 - hypercorn.access - INFO - 192.168.0.233:52203 - - [03/Dec/2025:09:02:51 -0600] "GET /Users/chris/Items 1.1" 200 48
+
