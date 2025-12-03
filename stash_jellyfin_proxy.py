@@ -458,15 +458,36 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         }
         .stream-item {
             display: flex;
-            align-items: center;
+            flex-direction: column;
             padding: 12px;
             background: var(--bg-card);
             border-radius: 6px;
             margin-bottom: 8px;
         }
+        .stream-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+        }
         .stream-title {
             flex: 1;
             font-weight: 500;
+        }
+        .stream-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .stream-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stream-meta-item svg {
+            width: 14px;
+            height: 14px;
         }
         .stream-time {
             color: var(--text-secondary);
@@ -505,7 +526,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.66</span>
+                <span id="version">v3.67</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -698,6 +719,17 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             streams: [],
             currentPage: 'dashboard'
         };
+        
+        // Helper to format duration in human-readable format
+        function formatDuration(seconds) {
+            if (!seconds || seconds < 0) return '';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}h ${m}m`;
+            if (m > 0) return `${m}m ${s}s`;
+            return `${s}s`;
+        }
 
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
@@ -725,7 +757,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.66';
+                document.getElementById('version').textContent = data.version || 'v3.67';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
             }
@@ -741,12 +773,35 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 if (state.streams.length === 0) {
                     list.innerHTML = '<div class="empty-state">No active streams</div>';
                 } else {
-                    list.innerHTML = state.streams.map(s => `
+                    list.innerHTML = state.streams.map(s => {
+                        const startedAt = s.started ? new Date(s.started * 1000).toLocaleTimeString() : '';
+                        const duration = s.started ? formatDuration(Date.now()/1000 - s.started) : '';
+                        return `
                         <div class="stream-item">
-                            <span class="stream-title">${s.title || s.id}</span>
-                            <span class="stream-time">${s.duration || ''}</span>
+                            <div class="stream-header">
+                                <span class="stream-title">${s.title || s.id}</span>
+                                <span class="stream-time">${duration}</span>
+                            </div>
+                            <div class="stream-meta">
+                                <span class="stream-meta-item">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                    ${s.user || 'unknown'}
+                                </span>
+                                <span class="stream-meta-item">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Started ${startedAt}
+                                </span>
+                                <span class="stream-meta-item">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                                    ${s.clientIp || 'unknown'}
+                                </span>
+                                <span class="stream-meta-item">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    ${s.clientType || 'unknown'}
+                                </span>
+                            </div>
                         </div>
-                    `).join('');
+                    `;}).join('');
                 }
             } catch (e) {
                 console.error('Failed to fetch streams:', e);
@@ -944,7 +999,8 @@ logger = setup_logging()
 
 # --- Middleware for Request Logging ---
 # Track active streams to detect start/resume/stop
-_active_streams = {}  # scene_id -> {"last_seen": timestamp, "title": str}
+# scene_id -> {"last_seen": timestamp, "started": timestamp, "title": str, "user": str, "client_ip": str, "client_type": str}
+_active_streams = {}
 STREAM_RESUME_THRESHOLD = 90  # seconds of inactivity before considering it a "resume" (Infuse buffers ~60s)
 
 def get_scene_title(scene_id: str) -> str:
@@ -1001,6 +1057,23 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 match = re.search(r'/(scene-\d+)/', path)
                 scene_id = match.group(1) if match else "unknown"
                 now = time.time()
+                
+                # Extract user from path (e.g., /Users/chris/...)
+                user_match = re.search(r'/Users/([^/]+)/', path)
+                user = user_match.group(1) if user_match else "unknown"
+                
+                # Get client info from headers
+                client_ip = request.headers.get("X-Forwarded-For", client_host).split(",")[0].strip()
+                user_agent = request.headers.get("User-Agent", "")
+                # Parse client type from User-Agent (Infuse, VLC, etc.)
+                if "Infuse" in user_agent:
+                    client_type = "Infuse"
+                elif "VLC" in user_agent:
+                    client_type = "VLC"
+                elif "Jellyfin" in user_agent:
+                    client_type = "Jellyfin"
+                else:
+                    client_type = user_agent.split("/")[0][:20] if user_agent else "Unknown"
 
                 # Check if this is a new stream, resume, or continuation
                 stream_info = _active_streams.get(scene_id)
@@ -1008,8 +1081,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 if stream_info is None:
                     # New stream - fetch title and log
                     title = get_scene_title(scene_id)
-                    _active_streams[scene_id] = {"last_seen": now, "title": title}
-                    logger.info(f"▶ Stream started: {title} ({scene_id})")
+                    _active_streams[scene_id] = {
+                        "last_seen": now,
+                        "started": now,
+                        "title": title,
+                        "user": user,
+                        "client_ip": client_ip,
+                        "client_type": client_type
+                    }
+                    logger.info(f"▶ Stream started: {title} ({scene_id}) by {user} from {client_ip} [{client_type}]")
                 elif (now - stream_info["last_seen"]) > STREAM_RESUME_THRESHOLD:
                     # Gap in activity = resumed after pause
                     gap = int(now - stream_info["last_seen"])
@@ -4002,7 +4082,7 @@ async def ui_api_status(request):
     """Return proxy status."""
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.66",
+        "version": "v3.67",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "stashConnected": STASH_CONNECTED,
@@ -4118,12 +4198,19 @@ async def ui_api_logs(request):
 async def ui_api_streams(request):
     """Return active streams."""
     streams = []
+    now = time.time()
     for scene_id, info in _active_streams.items():
-        streams.append({
-            "id": scene_id,
-            "title": info.get("title", scene_id),
-            "lastSeen": info.get("last_seen", 0)
-        })
+        # Only include streams active in last 5 minutes
+        if now - info.get("last_seen", 0) < 300:
+            streams.append({
+                "id": scene_id,
+                "title": info.get("title", scene_id),
+                "started": info.get("started", 0),
+                "lastSeen": info.get("last_seen", 0),
+                "user": info.get("user", "unknown"),
+                "clientIp": info.get("client_ip", "unknown"),
+                "clientType": info.get("client_type", "unknown")
+            })
     return JSONResponse({"streams": streams})
 
 ui_routes = [
@@ -4158,7 +4245,7 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.66 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.67 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
