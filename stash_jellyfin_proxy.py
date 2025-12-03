@@ -306,15 +306,29 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         start_time = time.time()
         client_host = request.client.host if request.client else "unknown"
-        logger.info(f"INCOMING: {request.method} {request.url.path} from {client_host}")
+        path = request.url.path
+        method = request.method
+        
+        # Log incoming request at DEBUG level for detailed tracing
+        logger.debug(f"<- {method} {path} from {client_host}")
         
         try:
             response = await call_next(request)
             process_time = time.time() - start_time
-            logger.info(f"COMPLETED: {response.status_code} in {process_time:.4f}s")
+            ms = int(process_time * 1000)
+            
+            # Single clear log line: method path -> status (time)
+            status = response.status_code
+            if status >= 400:
+                logger.warning(f"{method} {path} -> {status} ({ms}ms)")
+            else:
+                logger.info(f"{method} {path} -> {status} ({ms}ms)")
+            
             return response
         except Exception as e:
-            logger.error(f"FAILED: {request.url.path} - {str(e)}", exc_info=True)
+            process_time = time.time() - start_time
+            ms = int(process_time * 1000)
+            logger.error(f"{method} {path} -> ERROR ({ms}ms): {str(e)}", exc_info=True)
             return JSONResponse({"error": "Internal Server Error"}, status_code=500)
 
 # --- Stash GraphQL Client ---
@@ -3198,7 +3212,7 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.56 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.57 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
