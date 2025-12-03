@@ -526,7 +526,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.70</span>
+                <span id="version">v3.71</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -688,7 +688,11 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             </div>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        <button type="button" id="restart-btn" class="btn" style="background: #dc3545;">Restart Server</button>
+                    </div>
+                    <p id="restart-note" class="hidden" style="color: #ffc107; margin-top: 0.5rem; font-size: 0.9rem;">Note: Changes to bind address or ports require a restart to take effect.</p>
                 </form>
             </div>
             <!-- Logs Page -->
@@ -757,7 +761,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.70';
+                document.getElementById('version').textContent = data.version || 'v3.71';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
             }
@@ -884,6 +888,44 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 }
             } catch (e) {
                 showToast('Failed to save configuration', 'error');
+            }
+        });
+
+        // Restart button
+        document.getElementById('restart-btn').addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to restart the server? Active streams will be interrupted.')) {
+                return;
+            }
+            try {
+                showToast('Restarting server...', 'info');
+                const res = await fetch('/api/restart', { method: 'POST' });
+                if (res.ok) {
+                    // Poll for server to come back up
+                    let attempts = 0;
+                    const maxAttempts = 30;
+                    const checkServer = async () => {
+                        attempts++;
+                        try {
+                            const statusRes = await fetch('/api/status', { cache: 'no-store' });
+                            if (statusRes.ok) {
+                                showToast('Server restarted successfully!', 'success');
+                                setTimeout(() => location.reload(), 1000);
+                                return;
+                            }
+                        } catch (e) {}
+                        if (attempts < maxAttempts) {
+                            setTimeout(checkServer, 1000);
+                        } else {
+                            showToast('Server restart timed out. Please refresh manually.', 'error');
+                        }
+                    };
+                    setTimeout(checkServer, 2000);
+                } else {
+                    showToast('Failed to restart server', 'error');
+                }
+            } catch (e) {
+                // Expected - server is restarting
+                setTimeout(() => location.reload(), 3000);
             }
         });
 
@@ -4156,7 +4198,7 @@ async def ui_api_status(request):
     """Return proxy status."""
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.70",
+        "version": "v3.71",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "stashConnected": STASH_CONNECTED,
@@ -4306,12 +4348,40 @@ async def ui_api_streams(request):
             })
     return JSONResponse({"streams": streams})
 
+# Global reference for restart functionality
+_shutdown_event = None
+_restart_requested = False
+
+async def ui_api_restart(request):
+    """Restart the proxy server."""
+    global _restart_requested
+    
+    if request.method != "POST":
+        return JSONResponse({"error": "Method not allowed"}, status_code=405)
+    
+    logger.info("Restart requested via Web UI")
+    _restart_requested = True
+    
+    # Schedule the restart after responding
+    async def delayed_restart():
+        await asyncio.sleep(1)  # Allow response to be sent
+        logger.info("Restarting server...")
+        if _shutdown_event:
+            _shutdown_event.set()
+        await asyncio.sleep(1)  # Allow graceful shutdown
+        # Replace current process with fresh start
+        os.execv(sys.executable, [sys.executable, os.path.abspath(__file__)] + sys.argv[1:])
+    
+    asyncio.create_task(delayed_restart())
+    return JSONResponse({"success": True, "message": "Restarting..."})
+
 ui_routes = [
     Route("/", ui_index),
     Route("/api/status", ui_api_status),
     Route("/api/config", ui_api_config, methods=["GET", "POST"]),
     Route("/api/logs", ui_api_logs),
     Route("/api/streams", ui_api_streams),
+    Route("/api/restart", ui_api_restart, methods=["POST"]),
 ]
 
 ui_middleware = [
@@ -4367,7 +4437,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.70 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.71 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
@@ -4384,7 +4454,9 @@ if __name__ == "__main__":
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
+        global _shutdown_event
         shutdown_event = asyncio.Event()
+        _shutdown_event = shutdown_event  # Make available for restart endpoint
         
         def signal_handler():
             logger.info("Shutdown signal received...")
