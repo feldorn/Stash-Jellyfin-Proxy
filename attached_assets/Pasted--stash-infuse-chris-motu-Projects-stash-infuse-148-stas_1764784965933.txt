@@ -1,0 +1,26 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py --debug
+Loaded config from /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.conf
+  User: chris
+  Stash URL: https://stash.feldorn.com
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: a1b2c3d4e5f6a1b2c3d4e5f6
+  Tag groups: Gooning, JOI, Good Boy, Tit Worship
+  Latest groups: Scenes, Tit Worship
+  Log level: INFO (20)
+  Log file: /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.log
+2025-12-03 12:02:04,062 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.64 ---
+2025-12-03 12:02:04,062 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-03 12:02:04,062 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-03 12:02:04,062 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-03 12:02:04,062 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-03 12:02:04,084 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-03 12:02:04,084 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-03 12:02:09,636 - stash-jellyfin-proxy - DEBUG - Sort mapping: PremiereDate -> PremiereDate -> date DESC
+2025-12-03 12:02:09,636 - stash-jellyfin-proxy - DEBUG - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'searchTerm': 'Warned', 'recursive': 'true', 'limit': '24'}
+2025-12-03 12:02:09,636 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: None, Ids: None, PersonIds: None, SearchTerm: Warned, StartIndex: 0, Limit: 24, Sort: date DESC
+2025-12-03 12:02:09,637 - stash-jellyfin-proxy - INFO - 🔍 Search: 'Warned'
+2025-12-03 12:02:09,768 - stash-jellyfin-proxy - DEBUG - Search 'Warned' returned 19 scenes (page 1, total 19)
+2025-12-03 12:02:09,769 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items -> 200 (132ms)
+2025-12-03 12:02:09,778 - stash-jellyfin-proxy - DEBUG - /Persons -> 200 (8ms)
+

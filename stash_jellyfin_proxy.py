@@ -3125,18 +3125,45 @@ async def endpoint_persons(request):
     start_index = int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0)
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 50)
     
+    # Check for searchTerm parameter (Infuse search functionality)
+    search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm")
+    
     try:
-        count_q = """query { findPerformers { count } }"""
-        count_res = stash_query(count_q)
-        total_count = count_res.get("data", {}).get("findPerformers", {}).get("count", 0)
-        
         page = (start_index // limit) + 1
-        q = """query FindPerformers($page: Int!, $per_page: Int!) { 
-            findPerformers(filter: {page: $page, per_page: $per_page, sort: "name", direction: ASC}) { 
-                performers { id name image_path scene_count } 
-            } 
-        }"""
-        res = stash_query(q, {"page": page, "per_page": limit})
+        
+        if search_term:
+            # Search for performers matching the search term
+            clean_search = search_term.strip('"\'')
+            logger.debug(f"Persons search: '{clean_search}'")
+            
+            # Count matching performers
+            count_q = """query CountPerformers($q: String!) { 
+                findPerformers(filter: {q: $q}) { count } 
+            }"""
+            count_res = stash_query(count_q, {"q": clean_search})
+            total_count = count_res.get("data", {}).get("findPerformers", {}).get("count", 0)
+            
+            # Query performers with search term
+            q = """query FindPerformers($q: String!, $page: Int!, $per_page: Int!) { 
+                findPerformers(filter: {q: $q, page: $page, per_page: $per_page, sort: "name", direction: ASC}) { 
+                    performers { id name image_path scene_count } 
+                } 
+            }"""
+            res = stash_query(q, {"q": clean_search, "page": page, "per_page": limit})
+            logger.debug(f"Persons search '{clean_search}' returned {total_count} matches")
+        else:
+            # No search term - return all performers
+            count_q = """query { findPerformers { count } }"""
+            count_res = stash_query(count_q)
+            total_count = count_res.get("data", {}).get("findPerformers", {}).get("count", 0)
+            
+            q = """query FindPerformers($page: Int!, $per_page: Int!) { 
+                findPerformers(filter: {page: $page, per_page: $per_page, sort: "name", direction: ASC}) { 
+                    performers { id name image_path scene_count } 
+                } 
+            }"""
+            res = stash_query(q, {"page": page, "per_page": limit})
+        
         performers = res.get("data", {}).get("findPerformers", {}).get("performers", [])
         
         items = []
