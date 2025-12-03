@@ -4530,9 +4530,11 @@ if __name__ == "__main__":
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        global _shutdown_event
         shutdown_event = asyncio.Event()
-        _shutdown_event = shutdown_event  # Make available for restart endpoint
+        
+        # Update module-level reference for restart endpoint
+        import __main__
+        __main__._shutdown_event = shutdown_event
         
         def signal_handler():
             logger.info("Shutdown signal received...")
