@@ -58,7 +58,7 @@ LATEST_GROUPS = ["Scenes"]  # e.g., ["Scenes", "VR", "Favorites"]
 
 # Server identity
 SERVER_NAME = "Stash Media Server"
-SERVER_ID = "a1b2c3d4e5f6a1b2c3d4e5f6"  # Must be consistent - changing breaks Infuse pairing
+SERVER_ID = ""  # Required - must be set in config file
 
 # Pagination settings
 DEFAULT_PAGE_SIZE = 50
@@ -126,9 +126,9 @@ if _config:
     if latest_groups_str:
         LATEST_GROUPS = [t.strip() for t in latest_groups_str.split(",") if t.strip()]
     
-    # Server identity (only SERVER_NAME is configurable - SERVER_ID must stay constant)
+    # Server identity
     SERVER_NAME = _config.get("SERVER_NAME", SERVER_NAME)
-    # Note: SERVER_ID should NOT be loaded from config - changing it breaks Infuse pairing
+    SERVER_ID = _config.get("SERVER_ID", SERVER_ID)
     
     # Pagination settings
     if "DEFAULT_PAGE_SIZE" in _config:
@@ -172,6 +172,8 @@ if _config:
         print("WARNING: STASH_API_KEY not set in config file!")
         print("  Images will not load. Add STASH_API_KEY to your config file.")
         print("  Get your API key from: Stash -> Settings -> Security -> API Key")
+    if SERVER_ID:
+        print(f"  Server ID: {SERVER_ID}")
     if TAG_GROUPS:
         print(f"  Tag groups: {', '.join(TAG_GROUPS)}")
     if LATEST_GROUPS:
@@ -184,6 +186,16 @@ else:
     PROXY_PORT = int(os.getenv("PROXY_PORT", PROXY_PORT))
     SJS_USER = os.getenv("SJS_USER", SJS_USER)
     SJS_PASSWORD = os.getenv("SJS_PASSWORD", SJS_PASSWORD)
+    SERVER_ID = os.getenv("SERVER_ID", SERVER_ID)
+
+# Validate required config: SERVER_ID
+if not SERVER_ID:
+    print("ERROR: SERVER_ID is not set in config file!")
+    print("  SERVER_ID is required for Jellyfin client compatibility.")
+    print("  Add SERVER_ID to your config file with a unique identifier.")
+    print("  Example: SERVER_ID = \"a1b2c3d4e5f6a1b2c3d4e5f6\"")
+    print("  Note: Once set, do not change it or Infuse will need to be reconfigured.")
+    sys.exit(1)
 
 # Session management for cookie-based auth
 STASH_SESSION = None  # Will hold requests.Session with auth cookies
@@ -3175,7 +3187,7 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.53 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.54 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
