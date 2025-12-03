@@ -395,11 +395,20 @@ def extract_numeric_id(guid_id: str) -> str:
 def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") -> Dict[str, Any]:
     raw_id = str(scene.get("id"))
     item_id = f"scene-{raw_id}"  # Simple ID format like studios use
-    title = scene.get("title") or scene.get("code") or f"Scene {raw_id}"
     date = scene.get("date")
     files = scene.get("files", [])
     path = files[0].get("path") if files else ""
     duration = files[0].get("duration", 0) if files else 0
+    
+    # Title fallback: title -> code -> filename (without extension) -> Scene #
+    title = scene.get("title") or scene.get("code")
+    if not title and path:
+        # Extract filename without extension, like Stash does
+        import os
+        filename = os.path.basename(path)
+        title = os.path.splitext(filename)[0] if filename else None
+    if not title:
+        title = f"Scene {raw_id}"
     studio = scene.get("studio", {}).get("name") if scene.get("studio") else None
     description = scene.get("details") or ""  # Stash uses 'details' for description
     tags = scene.get("tags", [])
@@ -968,6 +977,10 @@ def transform_saved_filter_to_graphql(object_filter, filter_mode="SCENES"):
             # For most filter fields with modifier/value, pass through as-is
             # The GraphQL API expects the modifier as a string enum
             if modifier and val is not None:
+                # Handle nested value objects like {'value': 1} -> 1
+                # This happens with IntCriterionInput and similar types
+                if isinstance(val, dict) and 'value' in val and len(val) == 1:
+                    val = val['value']
                 result[key] = {'value': val, 'modifier': modifier}
                 continue
             
