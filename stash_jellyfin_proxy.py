@@ -526,7 +526,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.71</span>
+                <span id="version">v3.72</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -657,6 +657,45 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         </div>
                     </div>
                     <div class="card">
+                        <h3 class="card-title">Feature Toggles</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" name="ENABLE_FILTERS" checked style="width: auto;">
+                                    Enable Filters
+                                </label>
+                                <div class="form-hint">Show FILTERS folder in library (requires saved filters in Stash)</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" name="ENABLE_IMAGE_RESIZE" checked style="width: auto;">
+                                    Enable Image Resize
+                                </label>
+                                <div class="form-hint">Resize thumbnails for performers/studios (requires Pillow)</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Image Cache Size</label>
+                            <input type="number" class="form-input" name="IMAGE_CACHE_MAX_SIZE" value="100" style="width: 100px;">
+                            <div class="form-hint">Max items to cache for resized images</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 class="card-title">Pagination</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Default Page Size</label>
+                                <input type="number" class="form-input" name="DEFAULT_PAGE_SIZE" value="50">
+                                <div class="form-hint">Items per page when client doesn't specify</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Max Page Size</label>
+                                <input type="number" class="form-input" name="MAX_PAGE_SIZE" value="200">
+                                <div class="form-hint">Maximum items in a single request</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
                         <h3 class="card-title">Logging</h3>
                         <div class="form-row">
                             <div class="form-group">
@@ -761,7 +800,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.71';
+                document.getElementById('version').textContent = data.version || 'v3.72';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
             }
@@ -849,7 +888,9 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 Object.entries(state.config).forEach(([key, value]) => {
                     const input = document.querySelector(`[name="${key}"]`);
                     if (input) {
-                        if (Array.isArray(value)) {
+                        if (input.type === 'checkbox') {
+                            input.checked = value === true || value === 'true';
+                        } else if (Array.isArray(value)) {
                             input.value = value.join(', ');
                         } else {
                             input.value = value;
@@ -866,13 +907,24 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             e.preventDefault();
             const formData = new FormData(e.target);
             const config = {};
+            const intFields = ['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT', 'DEFAULT_PAGE_SIZE', 'MAX_PAGE_SIZE', 'IMAGE_CACHE_MAX_SIZE'];
+            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE'];
+            
             formData.forEach((value, key) => {
                 if (key === 'TAG_GROUPS' || key === 'LATEST_GROUPS') {
                     config[key] = value.split(',').map(s => s.trim()).filter(Boolean);
-                } else if (['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT'].includes(key)) {
+                } else if (intFields.includes(key)) {
                     config[key] = parseInt(value) || 0;
                 } else {
                     config[key] = value;
+                }
+            });
+            
+            // Handle checkboxes (not included in FormData if unchecked)
+            boolFields.forEach(key => {
+                const checkbox = document.querySelector(`[name="${key}"]`);
+                if (checkbox) {
+                    config[key] = checkbox.checked;
                 }
             });
             try {
@@ -4198,7 +4250,7 @@ async def ui_api_status(request):
     """Return proxy status."""
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.71",
+        "version": "v3.72",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "stashConnected": STASH_CONNECTED,
@@ -4223,6 +4275,11 @@ async def ui_api_config(request):
             "LATEST_GROUPS": LATEST_GROUPS,
             "STASH_TIMEOUT": STASH_TIMEOUT,
             "STASH_RETRIES": STASH_RETRIES,
+            "ENABLE_FILTERS": ENABLE_FILTERS,
+            "ENABLE_IMAGE_RESIZE": ENABLE_IMAGE_RESIZE,
+            "IMAGE_CACHE_MAX_SIZE": IMAGE_CACHE_MAX_SIZE,
+            "DEFAULT_PAGE_SIZE": DEFAULT_PAGE_SIZE,
+            "MAX_PAGE_SIZE": MAX_PAGE_SIZE,
             "LOG_LEVEL": LOG_LEVEL,
             "LOG_DIR": LOG_DIR,
             "LOG_FILE": LOG_FILE,
@@ -4236,12 +4293,15 @@ async def ui_api_config(request):
                 "STASH_URL", "STASH_API_KEY", "PROXY_BIND", "PROXY_PORT", "UI_PORT",
                 "SJS_USER", "SJS_PASSWORD", "SERVER_ID", "SERVER_NAME",
                 "TAG_GROUPS", "LATEST_GROUPS", "STASH_TIMEOUT", "STASH_RETRIES",
+                "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "IMAGE_CACHE_MAX_SIZE",
+                "DEFAULT_PAGE_SIZE", "MAX_PAGE_SIZE",
                 "LOG_LEVEL", "LOG_DIR", "LOG_FILE", "LOG_MAX_SIZE_MB", "LOG_BACKUP_COUNT"
             ]
 
-            # Read existing config file preserving all lines (comments, blank lines, etc.)
+            # Read existing config file preserving all lines
             original_lines = []
-            existing_values = {}
+            existing_values = {}  # Currently active (uncommented) values
+            all_keys_in_file = set()  # Track all keys in file (commented or not)
             if os.path.isfile(CONFIG_FILE):
                 with open(CONFIG_FILE, 'r') as f:
                     original_lines = f.readlines()
@@ -4249,9 +4309,17 @@ async def ui_api_config(request):
                         stripped = line.strip()
                         if stripped and not stripped.startswith('#') and '=' in stripped:
                             key, _, value = stripped.partition('=')
-                            existing_values[key.strip()] = value.strip().strip('"').strip("'")
+                            key = key.strip()
+                            existing_values[key] = value.strip().strip('"').strip("'")
+                            all_keys_in_file.add(key)
+                        elif stripped.startswith('#') and '=' in stripped:
+                            # Track commented keys too
+                            uncommented = stripped.lstrip('#').strip()
+                            if '=' in uncommented:
+                                key, _, _ = uncommented.partition('=')
+                                all_keys_in_file.add(key.strip())
 
-            # Prepare new values to update
+            # Prepare new values - only include values that actually changed
             updates = {}
             for key in config_keys:
                 if key in data:
@@ -4261,29 +4329,37 @@ async def ui_api_config(request):
                         continue
                     if isinstance(value, list):
                         value = ", ".join(value)
-                    updates[key] = str(value)
+                    elif isinstance(value, bool):
+                        value = "true" if value else "false"
+                    new_value = str(value)
+                    # Only update if value actually changed from current active value
+                    current_value = existing_values.get(key, "")
+                    if new_value != current_value:
+                        updates[key] = new_value
 
-            # Update lines in-place, preserving comments and formatting
+            # Update lines in-place - only update uncommented keys
             updated_keys = set()
             new_lines = []
             for line in original_lines:
                 stripped = line.strip()
+                
+                # Check for uncommented key=value - update if changed
                 if stripped and not stripped.startswith('#') and '=' in stripped:
                     key, _, old_value = stripped.partition('=')
                     key = key.strip()
                     if key in updates:
-                        # Preserve indentation from original line
                         indent = len(line) - len(line.lstrip())
                         new_lines.append(f'{" " * indent}{key} = "{updates[key]}"\n')
                         updated_keys.add(key)
                     else:
                         new_lines.append(line)
+                # Keep commented lines as-is (don't uncomment them)
                 else:
                     new_lines.append(line)
 
-            # Add any new keys that weren't in the original file
-            for key in config_keys:
-                if key in updates and key not in updated_keys:
+            # Only add truly new keys that don't exist anywhere in the file (not even commented)
+            for key in updates:
+                if key not in updated_keys and key not in all_keys_in_file:
                     new_lines.append(f'{key} = "{updates[key]}"\n')
 
             # Write updated config file
@@ -4437,7 +4513,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.71 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.72 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
