@@ -1427,10 +1427,13 @@ async def endpoint_items(request):
     # Check for PersonIds parameter (Infuse uses this when clicking on a person)
     person_ids = request.query_params.get("PersonIds") or request.query_params.get("personIds")
     
+    # Check for searchTerm parameter (Infuse search functionality)
+    search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm")
+    
     # Debug: Log ALL query params to understand what Infuse is sending
     all_params = dict(request.query_params)
     logger.debug(f"Items endpoint - ALL PARAMS: {all_params}")
-    logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, PersonIds: {person_ids}, StartIndex: {start_index}, Limit: {limit}, Sort: {sort_field} {sort_direction}")
+    logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, PersonIds: {person_ids}, SearchTerm: {search_term}, StartIndex: {start_index}, Limit: {limit}, Sort: {sort_field} {sort_direction}")
     
     items = []
     total_count = 0
@@ -1485,6 +1488,35 @@ async def endpoint_items(request):
         logger.debug(f"PersonIds filter: returned {len(scenes)} scenes (page {page}, total {total_count})")
         for s in scenes:
             items.append(format_jellyfin_item(s, parent_id=f"person-{performer_id}"))
+    
+    elif search_term:
+        # Handle search from Infuse - query Stash with the search term
+        # Strip any quotes that Infuse might add around the search term
+        clean_search = search_term.strip('"\'')
+        
+        logger.info(f"🔍 Search: '{clean_search}'")
+        
+        # Get count of matching scenes
+        count_q = """query CountScenes($q: String!) { 
+            findScenes(filter: {q: $q}) { count } 
+        }"""
+        count_res = stash_query(count_q, {"q": clean_search})
+        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        
+        # Calculate page
+        page = (start_index // limit) + 1
+        
+        # Query Stash with the search term - use relevance sorting for search results
+        q = f"""query FindScenes($q: String!, $page: Int!, $per_page: Int!) {{ 
+            findScenes(filter: {{q: $q, page: $page, per_page: $per_page, sort: "relevance", direction: DESC}}) {{ 
+                scenes {{ {scene_fields} }} 
+            }} 
+        }}"""
+        res = stash_query(q, {"q": clean_search, "page": page, "per_page": limit})
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        logger.debug(f"Search '{clean_search}' returned {len(scenes)} scenes (page {page}, total {total_count})")
+        for s in scenes:
+            items.append(format_jellyfin_item(s))
     
     elif parent_id and parent_id.startswith("filters-"):
         # List saved filters for a specific mode (filters-scenes, filters-performers, etc.)
@@ -3291,7 +3323,7 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.63 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.64 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     

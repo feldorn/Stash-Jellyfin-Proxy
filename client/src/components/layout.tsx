@@ -20,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Terminal className="w-6 h-6" />
             <h1 className="font-bold tracking-tight">STASH<span className="text-muted-foreground">PROXY</span></h1>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground font-mono">v3.63</div>
+          <div className="mt-1 text-xs text-muted-foreground font-mono">v3.64</div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">

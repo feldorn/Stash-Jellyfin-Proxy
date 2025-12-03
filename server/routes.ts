@@ -260,7 +260,7 @@ export async function registerRoutes(
       
       res.json({
         running: proxyRunning,
-        version: "v3.63",
+        version: "v3.64",
         proxyBind: config.proxyBind || "0.0.0.0",
         proxyPort: config.proxyPort || 8096,
         stashConnected,
