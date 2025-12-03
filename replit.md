@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.74
+## Current Version: v3.76
 
 ## User Preferences
 
@@ -23,8 +23,13 @@ Preferred communication style: Simple, everyday language.
 - Configuration editor with all settings
 - Log viewer with filtering and download
 
-**Next Phases**:
-- Phase 3: Docker containerization
+**Phase 3 (Complete)**: Docker containerization
+- Dockerfile with Python 3.11-slim-bookworm base
+- PUID/PGID/TZ environment variable support
+- Auto-generated SERVER_ID on first run
+- Config and logs in /config volume
+- Healthcheck on proxy port
+- build_container.sh and docker-compose.yml sample
 
 ## Core Features
 
@@ -103,11 +108,34 @@ Preferred communication style: Simple, everyday language.
 
 | File | Description |
 |------|-------------|
-| stash_jellyfin_proxy.py | Main proxy server (v3.68) |
+| stash_jellyfin_proxy.py | Main proxy server (v3.76) |
 | stash_jellyfin_proxy.conf | Configuration file |
+| Dockerfile | Docker container definition |
+| docker-entrypoint.sh | Container entrypoint script |
+| build_container.sh | Build script for Docker image |
+| docker-compose.yml | Sample compose file |
+
+## Docker Usage
+
+```bash
+# Build the image
+./build_container.sh
+
+# Or use docker-compose
+docker-compose up -d
+```
+
+Environment variables:
+- PUID/PGID: User/Group ID for file permissions
+- TZ: Timezone (e.g., America/New_York)
+- STASH_URL, STASH_API_KEY: Override config file
+- SJS_USER, SJS_PASSWORD: Login credentials
+- PROXY_PORT, UI_PORT: Port overrides
+- REQUIRE_AUTH_FOR_CONFIG: Password-protect config page
 
 ## Recent Changes
 
+- v3.76: Docker containerization - Dockerfile, docker-entrypoint.sh, build_container.sh, docker-compose.yml; CONFIG_FILE env var support; auto-generated SERVER_ID; script continues with warning if Stash connection fails
 - v3.74: Added uptime display to dashboard; fixed config save to properly uncomment and update commented values; fixed restart to execute after event loop exits
 - v3.73: Added REQUIRE_AUTH_FOR_CONFIG option to password-protect config page; stream dashboard now shows login username instead of "unknown"; config changes logged at INFO level with old/new values (sensitive fields masked); removed "(requires Pillow)" from UI
 - v3.72: Added Feature Toggles (ENABLE_FILTERS, ENABLE_IMAGE_RESIZE), Pagination settings (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE), and IMAGE_CACHE_MAX_SIZE to Web UI config page; fixed config save to preserve commented lines (no longer uncomments them when saving)

@@ -39,7 +39,7 @@ except ImportError:
 # --- Configuration Loading ---
 # Config file location: same directory as script, or specified path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(SCRIPT_DIR, "stash_jellyfin_proxy.conf")
+CONFIG_FILE = os.getenv("CONFIG_FILE", os.path.join(SCRIPT_DIR, "stash_jellyfin_proxy.conf"))
 
 # Default Configuration (can be overridden by config file)
 STASH_URL = "https://stash.feldorn.com"
@@ -170,37 +170,48 @@ if _config:
         LOG_BACKUP_COUNT = int(_config.get("LOG_BACKUP_COUNT", LOG_BACKUP_COUNT))
 
     print(f"Loaded config from {CONFIG_FILE}")
-    print(f"  User: {SJS_USER}")
-    print(f"  Stash URL: {STASH_URL}")
-    print(f"  Proxy: {PROXY_BIND}:{PROXY_PORT}")
-    if STASH_API_KEY:
-        print(f"  API key: configured ({len(STASH_API_KEY)} chars)")
-    else:
-        print("WARNING: STASH_API_KEY not set in config file!")
-        print("  Images will not load. Add STASH_API_KEY to your config file.")
-        print("  Get your API key from: Stash -> Settings -> Security -> API Key")
-    if SERVER_ID:
-        print(f"  Server ID: {SERVER_ID}")
-    if TAG_GROUPS:
-        print(f"  Tag groups: {', '.join(TAG_GROUPS)}")
-    if LATEST_GROUPS:
-        print(f"  Latest groups: {', '.join(LATEST_GROUPS)}")
 else:
     print(f"Warning: Config file {CONFIG_FILE} not found or empty. Using defaults/env vars.")
-    STASH_URL = os.getenv("STASH_URL", STASH_URL)
-    STASH_API_KEY = os.getenv("STASH_API_KEY", STASH_API_KEY)
-    PROXY_BIND = os.getenv("PROXY_BIND", PROXY_BIND)
-    PROXY_PORT = int(os.getenv("PROXY_PORT", PROXY_PORT))
-    UI_PORT = int(os.getenv("UI_PORT", UI_PORT))
-    SJS_USER = os.getenv("SJS_USER", SJS_USER)
-    SJS_PASSWORD = os.getenv("SJS_PASSWORD", SJS_PASSWORD)
-    SERVER_ID = os.getenv("SERVER_ID", SERVER_ID)
-    
-    # Additional env vars for Docker deployment
-    if os.getenv("REQUIRE_AUTH_FOR_CONFIG"):
-        REQUIRE_AUTH_FOR_CONFIG = os.getenv("REQUIRE_AUTH_FOR_CONFIG", "").lower() in ('true', 'yes', '1', 'on')
-    if os.getenv("LOG_DIR"):
-        LOG_DIR = os.getenv("LOG_DIR", LOG_DIR)
+
+# Environment variables ALWAYS override config file (for Docker deployment flexibility)
+# This allows docker-compose env vars to take precedence over the mounted config file
+if os.getenv("STASH_URL"):
+    STASH_URL = os.getenv("STASH_URL")
+if os.getenv("STASH_API_KEY"):
+    STASH_API_KEY = os.getenv("STASH_API_KEY")
+if os.getenv("PROXY_BIND"):
+    PROXY_BIND = os.getenv("PROXY_BIND")
+if os.getenv("PROXY_PORT"):
+    PROXY_PORT = int(os.getenv("PROXY_PORT"))
+if os.getenv("UI_PORT"):
+    UI_PORT = int(os.getenv("UI_PORT"))
+if os.getenv("SJS_USER"):
+    SJS_USER = os.getenv("SJS_USER")
+if os.getenv("SJS_PASSWORD"):
+    SJS_PASSWORD = os.getenv("SJS_PASSWORD")
+if os.getenv("SERVER_ID"):
+    SERVER_ID = os.getenv("SERVER_ID")
+if os.getenv("REQUIRE_AUTH_FOR_CONFIG"):
+    REQUIRE_AUTH_FOR_CONFIG = os.getenv("REQUIRE_AUTH_FOR_CONFIG", "").lower() in ('true', 'yes', '1', 'on')
+if os.getenv("LOG_DIR"):
+    LOG_DIR = os.getenv("LOG_DIR")
+
+# Print effective configuration
+print(f"  User: {SJS_USER}")
+print(f"  Stash URL: {STASH_URL}")
+print(f"  Proxy: {PROXY_BIND}:{PROXY_PORT}")
+if STASH_API_KEY:
+    print(f"  API key: configured ({len(STASH_API_KEY)} chars)")
+else:
+    print("WARNING: STASH_API_KEY not set!")
+    print("  Images will not load. Set STASH_API_KEY in config file or environment.")
+    print("  Get your API key from: Stash -> Settings -> Security -> API Key")
+if SERVER_ID:
+    print(f"  Server ID: {SERVER_ID}")
+if TAG_GROUPS:
+    print(f"  Tag groups: {', '.join(TAG_GROUPS)}")
+if LATEST_GROUPS:
+    print(f"  Latest groups: {', '.join(LATEST_GROUPS)}")
 
 # Validate required config: SERVER_ID
 if not SERVER_ID:
@@ -535,7 +546,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.75</span>
+                <span id="version">v3.76</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -843,7 +854,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.75';
+                document.getElementById('version').textContent = data.version || 'v3.76';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -4296,7 +4307,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.75",
+        "version": "v3.76",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -4639,7 +4650,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.75 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.76 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 

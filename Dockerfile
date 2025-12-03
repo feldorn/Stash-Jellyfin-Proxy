@@ -2,7 +2,7 @@ FROM python:3.11-slim-bookworm
 
 LABEL maintainer="Stash-Jellyfin Proxy"
 LABEL description="Jellyfin API emulation proxy for Stash media server"
-LABEL version="3.75"
+LABEL version="3.76"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     curl \
     gosu \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir \
