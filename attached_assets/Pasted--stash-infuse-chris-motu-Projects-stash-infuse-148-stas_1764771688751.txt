@@ -1,0 +1,135 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py
+Loaded config from /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.conf
+  User: chris
+  Stash URL: https://stash.feldorn.com
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Tag groups: Gooning, JOI, Good Boy, Tit Worship
+2025-12-03 08:20:05,184 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.31 ---
+2025-12-03 08:20:05,184 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-03 08:20:05,184 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-03 08:20:05,184 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-03 08:20:05,184 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-03 08:20:05,205 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-03 08:20:05,205 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-03 08:20:05,206 - hypercorn.error - INFO - Running on http://0.0.0.0:8096 (CTRL + C to quit)
+2025-12-03 08:20:24,984 - stash-jellyfin-proxy - INFO - INCOMING: GET /System/Info/Public from 192.168.0.233
+2025-12-03 08:20:24,984 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0002s
+2025-12-03 08:20:24,984 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:24 -0600] "GET /System/Info/Public 1.1" 200 175
+2025-12-03 08:20:24,990 - stash-jellyfin-proxy - INFO - INCOMING: POST /Users/AuthenticateByName from 192.168.0.233
+2025-12-03 08:20:24,992 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-03 08:20:24,992 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-03 08:20:24,992 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0015s
+2025-12-03 08:20:24,992 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:24 -0600] "POST /Users/AuthenticateByName 1.1" 200 212
+2025-12-03 08:20:24,999 - stash-jellyfin-proxy - INFO - INCOMING: GET /Shows/NextUp from 192.168.0.233
+2025-12-03 08:20:24,999 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-03 08:20:25,000 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:24 -0600] "GET /Shows/NextUp 1.1" 200 33
+2025-12-03 08:20:25,003 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,003 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-scenes, Limit: 20
+2025-12-03 08:20:25,031 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,032 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0290s
+2025-12-03 08:20:25,032 - hypercorn.access - INFO - 192.168.0.233:51998 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,033 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,033 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-joi, Limit: 20
+2025-12-03 08:20:25,056 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,057 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0243s
+2025-12-03 08:20:25,057 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,057 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,057 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,058 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,058 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,058 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-studios, Limit: 20
+2025-12-03 08:20:25,082 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,083 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-performers, Limit: 20
+2025-12-03 08:20:25,108 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,108 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-groups, Limit: 20
+2025-12-03 08:20:25,131 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,131 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-gooning, Limit: 20
+2025-12-03 08:20:25,155 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,155 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0979s
+2025-12-03 08:20:25,155 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0980s
+2025-12-03 08:20:25,156 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0980s
+2025-12-03 08:20:25,156 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0981s
+2025-12-03 08:20:25,156 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,156 - hypercorn.access - INFO - 192.168.0.233:51999 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,156 - hypercorn.access - INFO - 192.168.0.233:52000 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,156 - hypercorn.access - INFO - 192.168.0.233:52001 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,156 - hypercorn.access - INFO - 192.168.0.233:52002 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,156 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-good-boy, Limit: 20
+2025-12-03 08:20:25,183 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,184 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0284s
+2025-12-03 08:20:25,184 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:25,185 - hypercorn.access - INFO - 192.168.0.233:51998 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,185 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-tit-worship, Limit: 20
+2025-12-03 08:20:25,207 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:25,208 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0234s
+2025-12-03 08:20:25,208 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Resume from 192.168.0.233
+2025-12-03 08:20:25,208 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:25,208 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-03 08:20:25,208 - hypercorn.access - INFO - 192.168.0.233:51999 - - [03/Dec/2025:08:20:25 -0600] "GET /Users/chris/Items/Resume 1.1" 200 33
+2025-12-03 08:20:27,874 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/scene-37985/Images/Primary from 192.168.0.233
+2025-12-03 08:20:27,875 - stash-jellyfin-proxy - INFO - Proxying image for scene-37985 from https://stash.feldorn.com/scene/37985/screenshot
+2025-12-03 08:20:27,888 - stash-jellyfin-proxy - INFO - Image response: 499374 bytes, type=image/jpeg
+2025-12-03 08:20:27,888 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0139s
+2025-12-03 08:20:27,904 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:27 -0600] "GET /Items/scene-37985/Images/Primary 1.1" 200 499374
+2025-12-03 08:20:28,169 - stash-jellyfin-proxy - INFO - INCOMING: GET /Shows/NextUp from 192.168.0.233
+2025-12-03 08:20:28,170 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,171 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,171 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,171 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0020s
+2025-12-03 08:20:28,172 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-scenes, Limit: 20
+2025-12-03 08:20:28,200 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,200 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-studios, Limit: 20
+2025-12-03 08:20:28,224 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,224 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-performers, Limit: 20
+2025-12-03 08:20:28,250 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,251 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:28 -0600] "GET /Shows/NextUp 1.1" 200 33
+2025-12-03 08:20:28,251 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0804s
+2025-12-03 08:20:28,251 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0803s
+2025-12-03 08:20:28,251 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0803s
+2025-12-03 08:20:28,251 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,252 - hypercorn.access - INFO - 192.168.0.233:51998 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,252 - hypercorn.access - INFO - 192.168.0.233:51999 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,252 - hypercorn.access - INFO - 192.168.0.233:52000 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,252 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: root-groups, Limit: 20
+2025-12-03 08:20:28,278 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,279 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,279 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-gooning, Limit: 20
+2025-12-03 08:20:28,304 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,305 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0533s
+2025-12-03 08:20:28,305 - hypercorn.access - INFO - 192.168.0.233:52001 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,305 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0262s
+2025-12-03 08:20:28,305 - hypercorn.access - INFO - 192.168.0.233:52002 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,306 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,306 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,306 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Latest from 192.168.0.233
+2025-12-03 08:20:28,306 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-joi, Limit: 20
+2025-12-03 08:20:28,329 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,330 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-good-boy, Limit: 20
+2025-12-03 08:20:28,352 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,353 - stash-jellyfin-proxy - INFO - Latest items request - ParentId: tag-tit-worship, Limit: 20
+2025-12-03 08:20:28,375 - stash-jellyfin-proxy - INFO - Returning 20 latest items
+2025-12-03 08:20:28,375 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0698s
+2025-12-03 08:20:28,376 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0699s
+2025-12-03 08:20:28,376 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0699s
+2025-12-03 08:20:28,376 - hypercorn.access - INFO - 192.168.0.233:51997 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,376 - hypercorn.access - INFO - 192.168.0.233:51998 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:28,376 - hypercorn.access - INFO - 192.168.0.233:51999 - - [03/Dec/2025:08:20:28 -0600] "GET /Users/chris/Items/Latest 1.1" 200 48377
+2025-12-03 08:20:51,429 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Views from 192.168.0.233
+2025-12-03 08:20:51,430 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0008s
+2025-12-03 08:20:51,431 - hypercorn.access - INFO - 192.168.0.233:52009 - - [03/Dec/2025:08:20:51 -0600] "GET /Users/chris/Views 1.1" 200 2486
+2025-12-03 08:20:51,437 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/GroupingOptions from 192.168.0.233
+2025-12-03 08:20:51,437 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0004s
+2025-12-03 08:20:51,438 - hypercorn.access - INFO - 192.168.0.233:52009 - - [03/Dec/2025:08:20:51 -0600] "GET /Users/chris/GroupingOptions 1.1" 200 2
+2025-12-03 08:20:51,442 - stash-jellyfin-proxy - INFO - INCOMING: GET /Library/VirtualFolders from 192.168.0.233
+2025-12-03 08:20:51,442 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-03 08:20:51,443 - hypercorn.access - INFO - 192.168.0.233:52009 - - [03/Dec/2025:08:20:51 -0600] "GET /Library/VirtualFolders 1.1" 200 673
+2025-12-03 08:20:51,447 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-03 08:20:51,448 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-03 08:20:51,448 - hypercorn.access - INFO - 192.168.0.233:52009 - - [03/Dec/2025:08:20:51 -0600] "GET /DisplayPreferences/usersettings 1.1" 200 251
+2025-12-03 08:20:51,454 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris from 192.168.0.233
+2025-12-03 08:20:51,454 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0005s
+2025-12-03 08:20:51,455 - hypercorn.access - INFO - 192.168.0.233:52009 - - [03/Dec/2025:08:20:51 -0600] "GET /Users/chris 1.1" 200 872
+2025-12-03 08:20:51,483 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/Resume from 192.168.0.233
+2025-12-03 08:20:51,484 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0007s
+2025-12-03 08:20:51,485 - hypercorn.access - INFO - 192.168.0.233:52009 - - [03/Dec/2025:08:20:51 -0600] "GET /Users/chris/Items/Resume 1.1" 200 33

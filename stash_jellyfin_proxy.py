@@ -672,8 +672,8 @@ async def endpoint_shows_nextup(request):
     return JSONResponse({"Items": [], "TotalRecordCount": 0})
 
 async def endpoint_latest_items(request):
-    """Return recently added items for the Infuse home page."""
-    # Get parent_id to filter by library (optional)
+    """Return recently added items for the Infuse home page, personalized by library."""
+    # Get parent_id to filter by library
     parent_id = request.query_params.get("ParentId") or request.query_params.get("parentId")
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 16)
     
@@ -682,21 +682,76 @@ async def endpoint_latest_items(request):
     # Full scene fields for queries
     scene_fields = "id title code date details files { path duration } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
     
-    # Query for the most recently added scenes, sorted by created_at descending
-    q = f"""query FindScenes($page: Int!, $per_page: Int!) {{ 
-        findScenes(filter: {{page: $page, per_page: $per_page, sort: "created_at", direction: DESC}}) {{ 
-            scenes {{ {scene_fields} }} 
-        }} 
-    }}"""
-    
-    res = stash_query(q, {"page": 1, "per_page": limit})
-    scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-    
     items = []
-    for s in scenes:
-        items.append(format_jellyfin_item(s, parent_id="root-scenes"))
     
-    logger.info(f"Returning {len(items)} latest items")
+    if parent_id == "root-scenes":
+        # Return latest scenes (most recently added)
+        q = f"""query FindScenes($page: Int!, $per_page: Int!) {{ 
+            findScenes(filter: {{page: $page, per_page: $per_page, sort: "created_at", direction: DESC}}) {{ 
+                scenes {{ {scene_fields} }} 
+            }} 
+        }}"""
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        for s in scenes:
+            items.append(format_jellyfin_item(s, parent_id="root-scenes"))
+    
+    elif parent_id and parent_id.startswith("tag-"):
+        # Return latest scenes with this specific tag
+        tag_slug = parent_id[4:]  # Remove "tag-" prefix
+        
+        # Find the matching tag name from TAG_GROUPS config
+        tag_name = None
+        for t in TAG_GROUPS:
+            if t.lower().replace(' ', '-') == tag_slug:
+                tag_name = t
+                break
+        
+        if tag_name:
+            # Find the tag ID
+            tag_query = """query FindTags($filter: FindFilterType!) {
+                findTags(filter: $filter) {
+                    tags { id name }
+                }
+            }"""
+            tag_res = stash_query(tag_query, {"filter": {"q": tag_name}})
+            tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
+            
+            # Find exact match
+            tag_id = None
+            for t in tags:
+                if t["name"].lower() == tag_name.lower():
+                    tag_id = t["id"]
+                    break
+            
+            if tag_id:
+                # Query scenes with this tag, sorted by created_at
+                q = f"""query FindScenes($tid: [ID!], $page: Int!, $per_page: Int!) {{ 
+                    findScenes(
+                        scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
+                        filter: {{page: $page, per_page: $per_page, sort: "created_at", direction: DESC}}
+                    ) {{ 
+                        scenes {{ {scene_fields} }} 
+                    }} 
+                }}"""
+                res = stash_query(q, {"tid": [tag_id], "page": 1, "per_page": limit})
+                scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+                logger.info(f"Tag '{tag_name}' latest: {len(scenes)} scenes")
+                for s in scenes:
+                    items.append(format_jellyfin_item(s, parent_id=parent_id))
+    
+    elif parent_id in ("root-studios", "root-performers", "root-groups"):
+        # These are folder-type libraries, not scene libraries
+        # Return empty - they don't have "recently added" content in the same way
+        logger.info(f"Skipping latest for folder library: {parent_id}")
+        pass
+    
+    else:
+        # Unknown parent_id - return empty
+        logger.info(f"Unknown parent_id for latest: {parent_id}")
+        pass
+    
+    logger.info(f"Returning {len(items)} latest items for {parent_id}")
     return JSONResponse(items)
 
 async def endpoint_display_preferences(request):
@@ -1978,7 +2033,7 @@ if __name__ == "__main__":
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.31 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.32 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
