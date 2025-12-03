@@ -526,7 +526,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.69</span>
+                <span id="version">v3.70</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -757,7 +757,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.69';
+                document.getElementById('version').textContent = data.version || 'v3.70';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
             }
@@ -4156,7 +4156,7 @@ async def ui_api_status(request):
     """Return proxy status."""
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.69",
+        "version": "v3.70",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "stashConnected": STASH_CONNECTED,
@@ -4190,7 +4190,6 @@ async def ui_api_config(request):
     elif request.method == "POST":
         try:
             data = await request.json()
-            config_lines = []
             config_keys = [
                 "STASH_URL", "STASH_API_KEY", "PROXY_BIND", "PROXY_PORT", "UI_PORT",
                 "SJS_USER", "SJS_PASSWORD", "SERVER_ID", "SERVER_NAME",
@@ -4198,36 +4197,56 @@ async def ui_api_config(request):
                 "LOG_LEVEL", "LOG_DIR", "LOG_FILE", "LOG_MAX_SIZE_MB", "LOG_BACKUP_COUNT"
             ]
 
-            # Read existing config to preserve values not being updated
-            existing_config = {}
+            # Read existing config file preserving all lines (comments, blank lines, etc.)
+            original_lines = []
+            existing_values = {}
             if os.path.isfile(CONFIG_FILE):
                 with open(CONFIG_FILE, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line or line.startswith('#'):
-                            continue
-                        if '=' in line:
-                            key, _, value = line.partition('=')
-                            existing_config[key.strip()] = value.strip().strip('"').strip("'")
+                    original_lines = f.readlines()
+                    for line in original_lines:
+                        stripped = line.strip()
+                        if stripped and not stripped.startswith('#') and '=' in stripped:
+                            key, _, value = stripped.partition('=')
+                            existing_values[key.strip()] = value.strip().strip('"').strip("'")
 
-            # Update with new values
+            # Prepare new values to update
+            updates = {}
             for key in config_keys:
                 if key in data:
                     value = data[key]
                     # Don't update masked passwords
-                    if key in ["STASH_API_KEY", "SJS_PASSWORD"] and value.startswith("*"):
-                        value = existing_config.get(key, "")
+                    if key in ["STASH_API_KEY", "SJS_PASSWORD"] and str(value).startswith("*"):
+                        continue
                     if isinstance(value, list):
                         value = ", ".join(value)
-                    existing_config[key] = str(value)
+                    updates[key] = str(value)
 
-            # Write config file
+            # Update lines in-place, preserving comments and formatting
+            updated_keys = set()
+            new_lines = []
+            for line in original_lines:
+                stripped = line.strip()
+                if stripped and not stripped.startswith('#') and '=' in stripped:
+                    key, _, old_value = stripped.partition('=')
+                    key = key.strip()
+                    if key in updates:
+                        # Preserve indentation from original line
+                        indent = len(line) - len(line.lstrip())
+                        new_lines.append(f'{" " * indent}{key} = "{updates[key]}"\n')
+                        updated_keys.add(key)
+                    else:
+                        new_lines.append(line)
+                else:
+                    new_lines.append(line)
+
+            # Add any new keys that weren't in the original file
+            for key in config_keys:
+                if key in updates and key not in updated_keys:
+                    new_lines.append(f'{key} = "{updates[key]}"\n')
+
+            # Write updated config file
             with open(CONFIG_FILE, 'w') as f:
-                f.write("# Stash-Jellyfin Proxy Configuration\n")
-                f.write("# Generated by Web UI\n\n")
-                for key in config_keys:
-                    if key in existing_config:
-                        f.write(f'{key} = "{existing_config[key]}"\n')
+                f.writelines(new_lines)
 
             return JSONResponse({"success": True})
         except Exception as e:
@@ -4339,11 +4358,16 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
 
-    # Suppress Hypercorn's socket disconnect errors (expected during video seeking)
+    # Suppress socket disconnect errors (expected during video seeking)
+    # These come from both Hypercorn and asyncio when clients disconnect
     hypercorn_error_logger = logging.getLogger("hypercorn.error")
     hypercorn_error_logger.addFilter(SuppressDisconnectFilter())
+    
+    # The "socket.send() raised exception" messages come from asyncio, not Hypercorn
+    asyncio_logger = logging.getLogger("asyncio")
+    asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.69 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.70 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
