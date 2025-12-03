@@ -4404,7 +4404,7 @@ async def ui_api_config(request):
                     if new_value != running_value:
                         updates[key] = new_value
 
-            # Update lines in-place - only update uncommented keys
+            # Update lines in-place - update uncommented keys, uncomment if value changed
             updated_keys = set()
             new_lines = []
             for line in original_lines:
@@ -4420,13 +4420,27 @@ async def ui_api_config(request):
                         updated_keys.add(key)
                     else:
                         new_lines.append(line)
-                # Keep commented lines as-is (don't uncomment them)
+                # Check for commented key=value - uncomment if value needs to change
+                elif stripped.startswith('#') and '=' in stripped:
+                    uncommented = stripped.lstrip('#').strip()
+                    if '=' in uncommented:
+                        key, _, old_value = uncommented.partition('=')
+                        key = key.strip()
+                        if key in updates and key not in updated_keys:
+                            # Uncomment and update the value
+                            indent = len(line) - len(line.lstrip())
+                            new_lines.append(f'{" " * indent}{key} = "{updates[key]}"\n')
+                            updated_keys.add(key)
+                        else:
+                            new_lines.append(line)
+                    else:
+                        new_lines.append(line)
                 else:
                     new_lines.append(line)
 
-            # Only add truly new keys that don't exist anywhere in the file (not even commented)
+            # Only add truly new keys that don't exist anywhere in the file
             for key in updates:
-                if key not in updated_keys and key not in all_keys_in_file:
+                if key not in updated_keys:
                     new_lines.append(f'{key} = "{updates[key]}"\n')
 
             # Log configuration changes
