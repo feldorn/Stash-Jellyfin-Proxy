@@ -27,6 +27,11 @@ services:
       # - REQUIRE_AUTH_FOR_CONFIG=true
       # - UI_PORT=8097
       # - PROXY_PORT=8096
+      #
+      # For Docker-to-Docker connection (bypassing SWAG):
+      # - STASH_URL=https://stash:9999
+      # - STASH_GRAPHQL_PATH=/graphql
+      # - STASH_VERIFY_TLS=false
     
     # If Stash is also in Docker on the same network, use its container name
     # Example: STASH_URL=http://stash:9999

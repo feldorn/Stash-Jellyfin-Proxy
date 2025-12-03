@@ -75,6 +75,12 @@ REQUIRE_AUTH_FOR_CONFIG = False
 STASH_TIMEOUT = 30
 STASH_RETRIES = 3
 
+# GraphQL endpoint path (change to /graphql for direct Docker connection)
+STASH_GRAPHQL_PATH = "/graphql-local"  # Use /graphql-local for SWAG bypass, /graphql for Docker direct
+
+# TLS verification (set to false for self-signed certs in Docker)
+STASH_VERIFY_TLS = True
+
 # Logging settings
 LOG_DIR = "."  # Current directory
 LOG_FILE = "stash_jellyfin_proxy.log"
@@ -156,6 +162,12 @@ if _config:
         STASH_TIMEOUT = int(_config.get("STASH_TIMEOUT", STASH_TIMEOUT))
     if "STASH_RETRIES" in _config:
         STASH_RETRIES = int(_config.get("STASH_RETRIES", STASH_RETRIES))
+    
+    # GraphQL endpoint settings
+    if "STASH_GRAPHQL_PATH" in _config:
+        STASH_GRAPHQL_PATH = _config.get("STASH_GRAPHQL_PATH", STASH_GRAPHQL_PATH)
+    if "STASH_VERIFY_TLS" in _config:
+        STASH_VERIFY_TLS = parse_bool(_config.get("STASH_VERIFY_TLS"), STASH_VERIFY_TLS)
 
     # Logging settings
     if "LOG_DIR" in _config:
@@ -206,6 +218,12 @@ if os.getenv("REQUIRE_AUTH_FOR_CONFIG"):
 if os.getenv("LOG_DIR"):
     LOG_DIR = os.getenv("LOG_DIR")
     _env_overrides.append("LOG_DIR")
+if os.getenv("STASH_GRAPHQL_PATH"):
+    STASH_GRAPHQL_PATH = os.getenv("STASH_GRAPHQL_PATH")
+    _env_overrides.append("STASH_GRAPHQL_PATH")
+if os.getenv("STASH_VERIFY_TLS"):
+    STASH_VERIFY_TLS = os.getenv("STASH_VERIFY_TLS", "").lower() in ('true', 'yes', '1', 'on')
+    _env_overrides.append("STASH_VERIFY_TLS")
 
 if _env_overrides:
     print(f"  Env overrides: {', '.join(_env_overrides)}")
@@ -214,6 +232,9 @@ if _env_overrides:
 print(f"  User: {SJS_USER}")
 print(f"  Password: configured ({len(SJS_PASSWORD)} chars)")
 print(f"  Stash URL: {STASH_URL}")
+print(f"  GraphQL path: {STASH_GRAPHQL_PATH}")
+if not STASH_VERIFY_TLS:
+    print(f"  TLS verify: disabled")
 print(f"  Proxy: {PROXY_BIND}:{PROXY_PORT}")
 if STASH_API_KEY:
     print(f"  API key: configured ({len(STASH_API_KEY)} chars)")
@@ -1309,7 +1330,8 @@ class RequestLoggingMiddleware:
             logger.debug(f"{path} -> {status} ({ms}ms)")
 
 # --- Stash GraphQL Client ---
-GRAPHQL_URL = f"{STASH_URL}/graphql-local" if not STASH_URL.endswith("/graphql-local") else STASH_URL
+# Construct GraphQL URL from base URL and path
+GRAPHQL_URL = f"{STASH_URL.rstrip('/')}{STASH_GRAPHQL_PATH}"
 
 # Create a persistent session with authentication
 STASH_SESSION = None
@@ -1324,6 +1346,14 @@ def get_stash_session():
         return STASH_SESSION
 
     STASH_SESSION = requests.Session()
+    
+    # Set TLS verification (can be disabled for self-signed certs in Docker)
+    STASH_SESSION.verify = STASH_VERIFY_TLS
+    if not STASH_VERIFY_TLS:
+        # Suppress InsecureRequestWarning when TLS verification is disabled
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        logger.info("TLS verification disabled (STASH_VERIFY_TLS=false)")
 
     # Use STASH_API_KEY for authentication (required for image endpoints)
     if STASH_API_KEY:

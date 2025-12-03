@@ -63,6 +63,8 @@ Preferred communication style: Simple, everyday language.
 | SERVER_NAME | Server name shown in clients | Stash Media Server |
 | STASH_TIMEOUT | API request timeout (seconds) | 30 |
 | STASH_RETRIES | API retry count | 3 |
+| STASH_GRAPHQL_PATH | GraphQL endpoint path | /graphql-local |
+| STASH_VERIFY_TLS | Verify TLS certificates | true |
 | LOG_DIR | Log file directory | . |
 | LOG_FILE | Log file name | stash_jellyfin_proxy.log |
 | LOG_LEVEL | Logging level (DEBUG/INFO/WARNING/ERROR) | INFO |

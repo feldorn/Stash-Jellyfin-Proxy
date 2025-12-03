@@ -47,6 +47,13 @@ SERVER_NAME = Stash Media Server
 STASH_TIMEOUT = 30
 STASH_RETRIES = 3
 
+# GraphQL endpoint path
+# Use /graphql-local for SWAG bypass (host), /graphql for Docker direct
+STASH_GRAPHQL_PATH = /graphql
+
+# TLS verification (set to false for self-signed certs in Docker)
+STASH_VERIFY_TLS = false
+
 # Feature toggles
 ENABLE_FILTERS = true
 ENABLE_IMAGE_RESIZE = true
