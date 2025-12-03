@@ -69,6 +69,7 @@ MAX_PAGE_SIZE = 200
 # Feature toggles
 ENABLE_FILTERS = True
 ENABLE_IMAGE_RESIZE = True
+REQUIRE_AUTH_FOR_CONFIG = False
 
 # Performance settings
 STASH_TIMEOUT = 30
@@ -145,6 +146,8 @@ if _config:
         ENABLE_FILTERS = parse_bool(_config.get("ENABLE_FILTERS"), ENABLE_FILTERS)
     if "ENABLE_IMAGE_RESIZE" in _config:
         ENABLE_IMAGE_RESIZE = parse_bool(_config.get("ENABLE_IMAGE_RESIZE"), ENABLE_IMAGE_RESIZE)
+    if "REQUIRE_AUTH_FOR_CONFIG" in _config:
+        REQUIRE_AUTH_FOR_CONFIG = parse_bool(_config.get("REQUIRE_AUTH_FOR_CONFIG"), REQUIRE_AUTH_FOR_CONFIG)
     if "IMAGE_CACHE_MAX_SIZE" in _config:
         IMAGE_CACHE_MAX_SIZE = int(_config.get("IMAGE_CACHE_MAX_SIZE", IMAGE_CACHE_MAX_SIZE))
 
@@ -526,7 +529,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.72</span>
+                <span id="version">v3.73</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -630,6 +633,13 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                                 <input type="password" class="form-input" name="SJS_PASSWORD" placeholder="Enter password">
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" name="REQUIRE_AUTH_FOR_CONFIG" style="width: auto;">
+                                Require Password for Configuration
+                            </label>
+                            <div class="form-hint">Prompt for password before accessing config page</div>
+                        </div>
                     </div>
                     <div class="card">
                         <h3 class="card-title">Server Identity</h3>
@@ -671,7 +681,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                                     <input type="checkbox" name="ENABLE_IMAGE_RESIZE" checked style="width: auto;">
                                     Enable Image Resize
                                 </label>
-                                <div class="form-hint">Resize thumbnails for performers/studios (requires Pillow)</div>
+                                <div class="form-hint">Resize thumbnails for performers/studios</div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -760,7 +770,8 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             config: {},
             logs: [],
             streams: [],
-            currentPage: 'dashboard'
+            currentPage: 'dashboard',
+            configAuthenticated: false
         };
         
         // Helper to format duration in human-readable format
@@ -782,7 +793,30 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             });
         });
 
-        function showPage(page) {
+        async function showPage(page) {
+            // Check if config page requires authentication
+            if (page === 'config' && state.config.REQUIRE_AUTH_FOR_CONFIG && !state.configAuthenticated) {
+                const password = prompt('Enter password to access configuration:');
+                if (!password) return;
+                
+                try {
+                    const res = await fetch('/api/auth-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        alert('Incorrect password');
+                        return;
+                    }
+                    state.configAuthenticated = true;
+                } catch (e) {
+                    alert('Authentication failed');
+                    return;
+                }
+            }
+            
             state.currentPage = page;
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.querySelector(`[data-page="${page}"]`).classList.add('active');
@@ -800,7 +834,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.72';
+                document.getElementById('version').textContent = data.version || 'v3.73';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
             }
@@ -908,7 +942,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             const formData = new FormData(e.target);
             const config = {};
             const intFields = ['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT', 'DEFAULT_PAGE_SIZE', 'MAX_PAGE_SIZE', 'IMAGE_CACHE_MAX_SIZE'];
-            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE'];
+            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'REQUIRE_AUTH_FOR_CONFIG'];
             
             formData.forEach((value, key) => {
                 if (key === 'TAG_GROUPS' || key === 'LATEST_GROUPS') {
@@ -1192,9 +1226,9 @@ class RequestLoggingMiddleware:
             scene_id = match.group(1) if match else "unknown"
             now = time.time()
             
-            # Extract user from path (e.g., /Users/chris/...)
+            # Extract user from path (e.g., /Users/chris/...), fallback to login username
             user_match = re.search(r'/Users/([^/]+)/', path)
-            user = user_match.group(1) if user_match else "unknown"
+            user = user_match.group(1) if user_match else SJS_USER
             
             # Get client info from headers
             client_ip = headers.get("x-forwarded-for", client_host).split(",")[0].strip()
@@ -4250,7 +4284,7 @@ async def ui_api_status(request):
     """Return proxy status."""
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.72",
+        "version": "v3.73",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "stashConnected": STASH_CONNECTED,
@@ -4277,6 +4311,7 @@ async def ui_api_config(request):
             "STASH_RETRIES": STASH_RETRIES,
             "ENABLE_FILTERS": ENABLE_FILTERS,
             "ENABLE_IMAGE_RESIZE": ENABLE_IMAGE_RESIZE,
+            "REQUIRE_AUTH_FOR_CONFIG": REQUIRE_AUTH_FOR_CONFIG,
             "IMAGE_CACHE_MAX_SIZE": IMAGE_CACHE_MAX_SIZE,
             "DEFAULT_PAGE_SIZE": DEFAULT_PAGE_SIZE,
             "MAX_PAGE_SIZE": MAX_PAGE_SIZE,
@@ -4293,10 +4328,13 @@ async def ui_api_config(request):
                 "STASH_URL", "STASH_API_KEY", "PROXY_BIND", "PROXY_PORT", "UI_PORT",
                 "SJS_USER", "SJS_PASSWORD", "SERVER_ID", "SERVER_NAME",
                 "TAG_GROUPS", "LATEST_GROUPS", "STASH_TIMEOUT", "STASH_RETRIES",
-                "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "IMAGE_CACHE_MAX_SIZE",
+                "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "REQUIRE_AUTH_FOR_CONFIG", "IMAGE_CACHE_MAX_SIZE",
                 "DEFAULT_PAGE_SIZE", "MAX_PAGE_SIZE",
                 "LOG_LEVEL", "LOG_DIR", "LOG_FILE", "LOG_MAX_SIZE_MB", "LOG_BACKUP_COUNT"
             ]
+            
+            # Sensitive keys - log changes but mask values
+            sensitive_keys = ["STASH_API_KEY", "SJS_PASSWORD"]
 
             # Read existing config file preserving all lines
             original_lines = []
@@ -4362,6 +4400,14 @@ async def ui_api_config(request):
                 if key not in updated_keys and key not in all_keys_in_file:
                     new_lines.append(f'{key} = "{updates[key]}"\n')
 
+            # Log configuration changes
+            for key, new_val in updates.items():
+                old_val = existing_values.get(key, "(not set)")
+                if key in sensitive_keys:
+                    logger.info(f"Config changed: {key} = ******* (sensitive)")
+                else:
+                    logger.info(f"Config changed: {key}: \"{old_val}\" -> \"{new_val}\"")
+            
             # Write updated config file
             with open(CONFIG_FILE, 'w') as f:
                 f.writelines(new_lines)
@@ -4418,7 +4464,7 @@ async def ui_api_streams(request):
                 "title": info.get("title", scene_id),
                 "started": info.get("started", 0),
                 "lastSeen": info.get("last_seen", 0),
-                "user": info.get("user", "unknown"),
+                "user": info.get("user", SJS_USER),
                 "clientIp": info.get("client_ip", "unknown"),
                 "clientType": info.get("client_type", "unknown")
             })
@@ -4451,10 +4497,26 @@ async def ui_api_restart(request):
     asyncio.create_task(delayed_restart())
     return JSONResponse({"success": True, "message": "Restarting..."})
 
+async def ui_api_auth_config(request):
+    """Authenticate for config access."""
+    if request.method != "POST":
+        return JSONResponse({"error": "Method not allowed"}, status_code=405)
+    
+    try:
+        data = await request.json()
+        password = data.get("password", "")
+        if password == SJS_PASSWORD:
+            return JSONResponse({"success": True})
+        else:
+            return JSONResponse({"success": False, "error": "Invalid password"})
+    except Exception as e:
+        return JSONResponse({"success": False, "error": str(e)})
+
 ui_routes = [
     Route("/", ui_index),
     Route("/api/status", ui_api_status),
     Route("/api/config", ui_api_config, methods=["GET", "POST"]),
+    Route("/api/auth-config", ui_api_auth_config, methods=["POST"]),
     Route("/api/logs", ui_api_logs),
     Route("/api/streams", ui_api_streams),
     Route("/api/restart", ui_api_restart, methods=["POST"]),
@@ -4513,7 +4575,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.72 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.73 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 

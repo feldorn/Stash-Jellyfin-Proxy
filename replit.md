@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.72
+## Current Version: v3.73
 
 ## User Preferences
 
@@ -108,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- v3.73: Added REQUIRE_AUTH_FOR_CONFIG option to password-protect config page; stream dashboard now shows login username instead of "unknown"; config changes logged at INFO level with old/new values (sensitive fields masked); removed "(requires Pillow)" from UI
 - v3.72: Added Feature Toggles (ENABLE_FILTERS, ENABLE_IMAGE_RESIZE), Pagination settings (DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE), and IMAGE_CACHE_MAX_SIZE to Web UI config page; fixed config save to preserve commented lines (no longer uncomments them when saving)
 - v3.71: Added "Restart Server" button in Web UI config page; uses os.execv for clean process restart with same command-line args
 - v3.70: Config save now preserves comments and formatting (updates values in-place); fixed socket.send() errors by suppressing asyncio logger; v3.69 middleware improvements included
