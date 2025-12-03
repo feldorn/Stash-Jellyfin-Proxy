@@ -1,0 +1,71 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py --debug
+Loaded config from /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.conf
+  User: chris
+  Password: configured (10 chars)
+  Stash URL: https://stash.feldorn.com
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: a1b2c3d4e5f6a1b2c3d4e5f6
+  Tag groups: Gooning, JOI, Good Boy, Tit Worship
+  Latest groups: Scenes
+  Log level: INFO (20)
+  Log file: /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.log
+2025-12-03 15:50:10,029 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.76 ---
+2025-12-03 15:50:10,029 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-03 15:50:10,029 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-03 15:50:10,029 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-03 15:50:10,029 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-03 15:50:10,049 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-03 15:50:10,050 - stash-jellyfin-proxy - INFO - Web UI: http://0.0.0.0:8097
+2025-12-03 15:50:10,050 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-03 15:50:13,556 - stash-jellyfin-proxy - DEBUG - /System/Info/Public -> 200 (1ms)
+2025-12-03 15:50:13,563 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-03 15:50:13,563 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=11, expected len=10
+2025-12-03 15:50:13,564 - stash-jellyfin-proxy - WARNING - Auth FAILED - Invalid Key
+2025-12-03 15:50:13,564 - stash-jellyfin-proxy - WARNING - /Users/AuthenticateByName -> 401 (1ms)
+2025-12-03 15:50:14,580 - stash-jellyfin-proxy - DEBUG - /System/Info/Public -> 200 (0ms)
+2025-12-03 15:50:14,589 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-03 15:50:14,589 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=11, expected len=10
+2025-12-03 15:50:14,589 - stash-jellyfin-proxy - WARNING - Auth FAILED - Invalid Key
+2025-12-03 15:50:14,589 - stash-jellyfin-proxy - WARNING - /Users/AuthenticateByName -> 401 (1ms)
+2025-12-03 15:50:15,659 - stash-jellyfin-proxy - DEBUG - /System/Info/Public -> 200 (0ms)
+2025-12-03 15:50:15,668 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-03 15:50:15,668 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=11, expected len=10
+2025-12-03 15:50:15,668 - stash-jellyfin-proxy - WARNING - Auth FAILED - Invalid Key
+2025-12-03 15:50:15,669 - stash-jellyfin-proxy - WARNING - /Users/AuthenticateByName -> 401 (1ms)
+2025-12-03 15:50:16,686 - stash-jellyfin-proxy - DEBUG - /System/Info/Public -> 200 (0ms)
+2025-12-03 15:50:16,696 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-03 15:50:16,696 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=11, expected len=10
+2025-12-03 15:50:16,696 - stash-jellyfin-proxy - WARNING - Auth FAILED - Invalid Key
+2025-12-03 15:50:16,697 - stash-jellyfin-proxy - WARNING - /Users/AuthenticateByName -> 401 (1ms)
+^C2025-12-03 15:50:25,023 - stash-jellyfin-proxy - INFO - Shutdown signal received...
+2025-12-03 15:50:25,024 - stash-jellyfin-proxy - INFO - Servers stopped.
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_0]$ cat stash_jellyfin_proxy.conf
+# Stash-Jellyfin Proxy Configuration
+# ===================================
+
+#################################################################################
+# ---- Connection Settings ----
+#################################################################################
+
+# Port for the web configuration UI (separate from proxy port). Set to 0 to disable Web UI.
+UI_PORT = "8097"
+REQUIRE_AUTH_FOR_CONFIG = "false"
+
+# Stash server URL (your Stash server address)
+STASH_URL = "https://stash.feldorn.com"
+
+# Proxy binding settings
+PROXY_BIND = "0.0.0.0"
+PROXY_PORT = "8096"
+
+# Stash API key from Settings -> Security -> API Key
+# Get your API key from: Stash -> Settings -> Security -> API Key
+STASH_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1aWQiOiJGZWxkb3JuIiwiaWF0IjoxNjgyNDUyMDQ0LCJzdWIiOiJBUElLZXkifQ.aOUDW-mpev6E1OHlQYZmmN7s4qRjz-oeTvpnKeByS68"
+
+# User credentials for Infuse authentication
+# These are the credentials you'll use to connect from Infuse
+SJS_USER = "chris"
+SJS_PASSWORD = "infuse1234"
+
+
