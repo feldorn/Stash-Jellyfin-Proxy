@@ -3325,6 +3325,9 @@ async def endpoint_stream(request):
         response.raise_for_status()
         
         # Build response headers
+        # Note: Content-Length is needed for video players to know file size and enable seeking
+        # The "Too little data" errors that appear when client disconnects mid-stream are expected
+        # and harmless - they happen when the player seeks to a new position
         headers = {"Accept-Ranges": "bytes"}
         if "Content-Length" in response.headers:
             headers["Content-Length"] = response.headers["Content-Length"]
@@ -3335,12 +3338,17 @@ async def endpoint_stream(request):
         content_length = response.headers.get("Content-Length", "?")
         logger.debug(f"Stream response: {content_length} bytes, type={content_type}, status={status_code}")
         
-        # Generator that yields chunks from Stash directly to client
-        def stream_generator():
+        # Async generator that yields chunks from Stash directly to client
+        async def stream_generator():
             try:
                 for chunk in response.iter_content(chunk_size=262144):  # 256KB chunks
                     if chunk:
                         yield chunk
+            except GeneratorExit:
+                # Client disconnected mid-stream (normal for video seeking)
+                pass
+            except Exception as e:
+                logger.debug(f"Stream interrupted: {e}")
             finally:
                 response.close()
         
@@ -3348,7 +3356,8 @@ async def endpoint_stream(request):
             stream_generator(),
             media_type=content_type,
             headers=headers,
-            status_code=status_code
+            status_code=status_code,
+            background=None
         )
 
     except requests.exceptions.Timeout:

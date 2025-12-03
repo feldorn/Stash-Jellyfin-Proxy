@@ -1,0 +1,159 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_0]$ fg
+emacs -nw stash_jellyfin_proxy.py
+
+[1]+  Stopped                 emacs -nw stash_jellyfin_proxy.py
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py --debug
+Loaded config from /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.conf
+  User: chris
+  Stash URL: https://stash.feldorn.com
+  Proxy: 192.168.0.200:8096
+  API key: configured (147 chars)
+  Server ID: a1b2c3d4e5f6a1b2c3d4e5f6
+  Tag groups: Gooning, JOI, Good Boy, Tit Worship
+  Latest groups: Scenes, Tit Worship
+  Log level: INFO (20)
+  Log file: /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.log
+2025-12-03 13:45:13,014 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.68 ---
+2025-12-03 13:45:13,014 - stash-jellyfin-proxy - INFO - Binding: 192.168.0.200:8096
+2025-12-03 13:45:13,014 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-03 13:45:13,014 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-03 13:45:13,014 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-03 13:45:13,034 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-03 13:45:13,034 - stash-jellyfin-proxy - INFO - Web UI: http://192.168.0.200:8097
+2025-12-03 13:45:13,034 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-03 13:45:14,743 - stash-jellyfin-proxy - DEBUG - PlaybackInfo for scene-37630: 0 subtitles
+2025-12-03 13:45:14,744 - stash-jellyfin-proxy - DEBUG - /Items/scene-37630/PlaybackInfo -> 200 (9ms)
+2025-12-03 13:45:14,774 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/scene-37630 -> 200 (13ms)
+2025-12-03 13:45:14,776 - stash-jellyfin-proxy - DEBUG - /MediaSegments/scene-37630 -> 200 (0ms)
+2025-12-03 13:45:14,784 - stash-jellyfin-proxy - DEBUG - Proxying stream for scene-37630 from https://stash.feldorn.com/scene/37630/stream
+2025-12-03 13:45:14,788 - stash-jellyfin-proxy - DEBUG - Stream response: 2153952666 bytes, type=video/mp4, status=206
+2025-12-03 13:45:14,836 - stash-jellyfin-proxy - INFO - ▶ Stream started: Settling With Huge Assets (scene-37630) by unknown from 192.168.0.233 [Infuse]
+2025-12-03 13:45:15,356 - stash-jellyfin-proxy - DEBUG - Proxying stream for scene-37630 from https://stash.feldorn.com/scene/37630/stream
+2025-12-03 13:45:15,361 - stash-jellyfin-proxy - DEBUG - Stream response: 1928421 bytes, type=video/mp4, status=206
+2025-12-03 13:45:15,362 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37630 (6ms)
+2025-12-03 13:45:16,456 - stash-jellyfin-proxy - DEBUG - Proxying stream for scene-37630 from https://stash.feldorn.com/scene/37630/stream
+2025-12-03 13:45:16,465 - stash-jellyfin-proxy - DEBUG - Stream response: 1921687899 bytes, type=video/mp4, status=206
+2025-12-03 13:45:16,466 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37630 (10ms)
+2025-12-03 13:45:16,587 - stash-jellyfin-proxy - DEBUG - PlaybackInfo for scene-37630: 0 subtitles
+2025-12-03 13:45:16,587 - stash-jellyfin-proxy - DEBUG - /Items/scene-37630/PlaybackInfo -> 200 (29ms)
+2025-12-03 13:45:16,594 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing -> 200 (0ms)
+2025-12-03 13:45:26,617 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:45:36,636 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:45:46,659 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:45:56,686 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:46:06,708 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:46:16,732 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:46:26,756 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+Error in ASGI Framework
+  + Exception Group Traceback (most recent call last):
+  |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_utils.py", line 79, in collapse_excgroups
+  |     yield
+  |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 192, in __call__
+  |     async with anyio.create_task_group() as task_group:
+  |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 783, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/asyncio/task_group.py", line 28, in _handle
+    |     await app(scope, receive, send, sync_spawn, call_soon)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/app_wrappers.py", line 34, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    |     raise exc
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 191, in __call__
+    |     with recv_stream, send_stream, collapse_excgroups():
+    |   File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    |     self.gen.throw(value)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    |     raise exc
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 194, in __call__
+    |     await response(scope, wrapped_receive, send)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 241, in __call__
+    |     await send({"type": "http.response.body", "body": b"", "more_body": False})
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/errors.py", line 161, in _send
+    |     await send(message)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/http_stream.py", line 200, in app_send
+    |     await self._send_closed()
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/http_stream.py", line 244, in _send_closed
+    |     await self.send(EndBody(stream_id=self.stream_id))
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/h11.py", line 145, in stream_send
+    |     await self._send_h11_event(h11.EndOfMessage())
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/h11.py", line 250, in _send_h11_event
+    |     data = self.connection.send(event)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_connection.py", line 538, in send
+    |     data_list = self.send_with_data_passthrough(event)
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_connection.py", line 571, in send_with_data_passthrough
+    |     writer(event, data_list.append)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_writers.py", line 67, in __call__
+    |     self.send_eom(event.headers, write)
+    |   File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_writers.py", line 96, in send_eom
+    |     raise LocalProtocolError("Too little data for declared Content-Length")
+    | h11._util.LocalProtocolError: Too little data for declared Content-Length
+    +------------------------------------
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/asyncio/task_group.py", line 28, in _handle
+    await app(scope, receive, send, sync_spawn, call_soon)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/app_wrappers.py", line 34, in __call__
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/applications.py", line 107, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/errors.py", line 186, in __call__
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 191, in __call__
+    with recv_stream, send_stream, collapse_excgroups():
+  File "/usr/lib/python3.12/contextlib.py", line 158, in __exit__
+    self.gen.throw(value)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_utils.py", line 85, in collapse_excgroups
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 194, in __call__
+    await response(scope, wrapped_receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 241, in __call__
+    await send({"type": "http.response.body", "body": b"", "more_body": False})
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/errors.py", line 161, in _send
+    await send(message)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/http_stream.py", line 200, in app_send
+    await self._send_closed()
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/http_stream.py", line 244, in _send_closed
+    await self.send(EndBody(stream_id=self.stream_id))
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/h11.py", line 145, in stream_send
+    await self._send_h11_event(h11.EndOfMessage())
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/hypercorn/protocol/h11.py", line 250, in _send_h11_event
+    data = self.connection.send(event)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_connection.py", line 538, in send
+    data_list = self.send_with_data_passthrough(event)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_connection.py", line 571, in send_with_data_passthrough
+    writer(event, data_list.append)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_writers.py", line 67, in __call__
+    self.send_eom(event.headers, write)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/h11/_writers.py", line 96, in send_eom
+    raise LocalProtocolError("Too little data for declared Content-Length")
+h11._util.LocalProtocolError: Too little data for declared Content-Length
+2025-12-03 13:46:32,993 - stash-jellyfin-proxy - DEBUG - Proxying stream for scene-37630 from https://stash.feldorn.com/scene/37630/stream
+2025-12-03 13:46:32,998 - stash-jellyfin-proxy - DEBUG - Stream response: 806601280 bytes, type=video/mp4, status=206
+2025-12-03 13:46:32,999 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37630 (6ms)
+2025-12-03 13:46:36,781 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:46:46,873 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:46:56,894 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:47:06,916 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:47:16,940 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:47:26,964 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:47:33,042 - stash-jellyfin-proxy - DEBUG - Proxying stream for scene-37630 from https://stash.feldorn.com/scene/37630/stream
+2025-12-03 13:47:33,072 - stash-jellyfin-proxy - DEBUG - Stream response: 2117281876 bytes, type=video/mp4, status=206
+2025-12-03 13:47:33,073 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37630 (31ms)
+2025-12-03 13:47:36,985 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+2025-12-03 13:47:47,002 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (0ms)
+
