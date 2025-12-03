@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.52
+## Current Version: v3.53
 
 ## User Preferences
 
@@ -96,11 +96,12 @@ Preferred communication style: Simple, everyday language.
 
 | File | Description |
 |------|-------------|
-| stash_jellyfin_proxy.py | Main proxy server (v3.52) |
+| stash_jellyfin_proxy.py | Main proxy server (v3.53) |
 | stash_jellyfin_proxy.conf | Configuration file |
 
 ## Recent Changes
 
+- v3.53: Fixed log level not being properly applied to all handlers
 - v3.52: Added file logging with rotation, debug flag improvements
 - v3.51: Fixed SERVER_ID consistency for Infuse pairing
 - v3.50: Added 20+ Jellyfin endpoints, enhanced filter transformation, externalized config, retry logic

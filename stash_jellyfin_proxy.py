@@ -238,10 +238,12 @@ def setup_logging():
         'ERROR': logging.ERROR,
     }
     log_level = level_map.get(LOG_LEVEL.upper(), logging.INFO)
+    print(f"  Log level: {LOG_LEVEL.upper()} ({log_level})")
     
     # Create logger
     log = logging.getLogger("stash-jellyfin-proxy")
     log.setLevel(log_level)
+    log.propagate = False  # Prevent propagation to root logger
     
     # Clear any existing handlers
     log.handlers = []
@@ -3173,7 +3175,7 @@ if __name__ == "__main__":
     if args.no_log_file:
         logger.handlers = [h for h in logger.handlers if not isinstance(h, (RotatingFileHandler, logging.FileHandler))]
     
-    logger.info(f"--- Stash-Jellyfin Proxy v3.52 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.53 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
     
