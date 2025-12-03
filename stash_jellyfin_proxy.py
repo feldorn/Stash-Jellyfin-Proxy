@@ -1022,6 +1022,7 @@ async def endpoint_items(request):
                     object_filter = {}
                 
                 logger.info(f"Applying saved filter '{saved_filter.get('name')}' (id={filter_id}, mode={filter_mode})")
+                logger.info(f"Raw object_filter type: {type(object_filter)}, value: {object_filter}")
                 logger.debug(f"Filter find_filter: {find_filter}")
                 logger.debug(f"Filter object_filter: {object_filter}")
                 
