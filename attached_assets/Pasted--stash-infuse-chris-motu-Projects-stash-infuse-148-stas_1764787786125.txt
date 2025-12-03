@@ -1,0 +1,220 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py --debug
+Loaded config from /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.conf
+  User: chris
+  Stash URL: https://stash.feldorn.com
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: a1b2c3d4e5f6a1b2c3d4e5f6
+  Tag groups: Gooning, JOI, Good Boy, Tit Worship
+  Latest groups: Scenes, Tit Worship
+  Log level: INFO (20)
+  Log file: /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.log
+2025-12-03 12:48:15,795 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.65 ---
+2025-12-03 12:48:15,795 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-03 12:48:15,795 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-03 12:48:15,795 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-03 12:48:15,796 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-03 12:48:15,818 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-03 12:48:15,818 - stash-jellyfin-proxy - INFO - Web UI: http://0.0.0.0:8097
+2025-12-03 12:48:15,818 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-03 12:48:54,873 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-scenes, Limit: 20
+2025-12-03 12:48:54,911 - stash-jellyfin-proxy - DEBUG - Returning 20 latest items for root-scenes
+2025-12-03 12:48:54,912 - stash-jellyfin-proxy - DEBUG - /Shows/NextUp -> 200 (39ms)
+2025-12-03 12:48:54,912 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (39ms)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-studios, Limit: 20
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-studios (not in LATEST_GROUPS)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-performers, Limit: 20
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-performers (not in LATEST_GROUPS)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-groups, Limit: 20
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-groups (not in LATEST_GROUPS)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-gooning, Limit: 20
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-gooning (not in LATEST_GROUPS)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (0ms)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (0ms)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (0ms)
+2025-12-03 12:48:54,914 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (0ms)
+2025-12-03 12:48:54,916 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-joi, Limit: 20
+2025-12-03 12:48:54,916 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-joi (not in LATEST_GROUPS)
+2025-12-03 12:48:54,916 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (0ms)
+2025-12-03 12:48:54,920 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-good-boy, Limit: 20
+2025-12-03 12:48:54,920 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-good-boy (not in LATEST_GROUPS)
+2025-12-03 12:48:54,920 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-tit-worship, Limit: 20
+2025-12-03 12:48:54,932 - stash-jellyfin-proxy - DEBUG - Tag 'Tit Worship' latest: 20 scenes
+2025-12-03 12:48:54,933 - stash-jellyfin-proxy - DEBUG - Returning 20 latest items for tag-tit-worship
+2025-12-03 12:48:54,934 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (14ms)
+2025-12-03 12:48:54,934 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (14ms)
+2025-12-03 12:48:59,309 - stash-jellyfin-proxy - WARNING - GraphQL errors in response: ['strconv.Atoi: parsing "performer-302": invalid syntax']
+2025-12-03 12:48:59,309 - stash-jellyfin-proxy - ERROR - /Users/chris/Items/person-performer-302 -> ERROR (8ms): 'NoneType' object has no attribute 'get'
+Traceback (most recent call last):
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 982, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 2885, in endpoint_item_details
+    performer_name = performer.get("name", f"Performer {performer_id}")
+                     ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+2025-12-03 12:48:59,355 - stash-jellyfin-proxy - WARNING - GraphQL errors in response: ['strconv.Atoi: parsing "performer-2801": invalid syntax']
+2025-12-03 12:48:59,356 - stash-jellyfin-proxy - ERROR - /Users/chris/Items/person-performer-2801 -> ERROR (7ms): 'NoneType' object has no attribute 'get'
+Traceback (most recent call last):
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 982, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 2885, in endpoint_item_details
+    performer_name = performer.get("name", f"Performer {performer_id}")
+                     ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+2025-12-03 12:48:59,363 - stash-jellyfin-proxy - WARNING - GraphQL errors in response: ['strconv.Atoi: parsing "performer-2554": invalid syntax']
+2025-12-03 12:48:59,364 - stash-jellyfin-proxy - ERROR - /Users/chris/Items/person-performer-2554 -> ERROR (5ms): 'NoneType' object has no attribute 'get'
+Traceback (most recent call last):
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 982, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 2885, in endpoint_item_details
+    performer_name = performer.get("name", f"Performer {performer_id}")
+                     ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+2025-12-03 12:48:59,369 - stash-jellyfin-proxy - WARNING - GraphQL errors in response: ['strconv.Atoi: parsing "performer-2554": invalid syntax']
+2025-12-03 12:48:59,369 - stash-jellyfin-proxy - ERROR - /Users/chris/Items/person-performer-2554 -> ERROR (3ms): 'NoneType' object has no attribute 'get'
+Traceback (most recent call last):
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 982, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/cors.py", line 85, in __call__
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 716, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 736, in app
+    await route.handle(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 290, in handle
+    await self.app(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 78, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "/home/chris/Projects/stash_infuse/lib/python3.12/site-packages/starlette/routing.py", line 75, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "/home/chris/Projects/stash_infuse/./stash_jellyfin_proxy.py", line 2885, in endpoint_item_details
+    performer_name = performer.get("name", f"Performer {performer_id}")
+                     ^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'
+2025-12-03 12:48:59,443 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Resume -> 200 (0ms)
+2025-12-03 12:48:59,506 - stash-jellyfin-proxy - DEBUG - /Shows/NextUp -> 200 (0ms)
+2025-12-03 12:48:59,508 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-scenes, Limit: 20
+2025-12-03 12:48:59,538 - stash-jellyfin-proxy - DEBUG - Returning 20 latest items for root-scenes
+2025-12-03 12:48:59,538 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-studios, Limit: 20
+2025-12-03 12:48:59,538 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-studios (not in LATEST_GROUPS)
+2025-12-03 12:48:59,538 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-performers, Limit: 20
+2025-12-03 12:48:59,538 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-performers (not in LATEST_GROUPS)
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-gooning, Limit: 20
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-gooning (not in LATEST_GROUPS)
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-groups, Limit: 20
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-groups (not in LATEST_GROUPS)
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (30ms)
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (30ms)
+2025-12-03 12:48:59,539 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (30ms)
+2025-12-03 12:48:59,540 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (1ms)
+2025-12-03 12:48:59,540 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (1ms)
+2025-12-03 12:48:59,540 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-joi, Limit: 20
+2025-12-03 12:48:59,540 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-joi (not in LATEST_GROUPS)
+2025-12-03 12:48:59,540 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (0ms)
+2025-12-03 12:48:59,546 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-good-boy, Limit: 20
+2025-12-03 12:48:59,546 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-good-boy (not in LATEST_GROUPS)
+2025-12-03 12:48:59,546 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-tit-worship, Limit: 20
+2025-12-03 12:48:59,558 - stash-jellyfin-proxy - DEBUG - Tag 'Tit Worship' latest: 20 scenes
+2025-12-03 12:48:59,559 - stash-jellyfin-proxy - DEBUG - Returning 20 latest items for tag-tit-worship
+2025-12-03 12:48:59,559 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (13ms)
+2025-12-03 12:48:59,559 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (13ms)
