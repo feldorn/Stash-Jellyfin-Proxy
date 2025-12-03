@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  stash-jellyfin-proxy:
+    image: stash-jellyfin-proxy:latest
+    container_name: stash-jellyfin-proxy
+    restart: unless-stopped
+    
+    ports:
+      - "8096:8096"
+      - "8097:8097"
+    
+    volumes:
+      - ./config:/config
+    
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      
+      # Optional: Override settings from config file
+      # - STASH_URL=http://stash:9999
+      # - STASH_API_KEY=your_api_key
+      # - SJS_USER=admin
+      # - SJS_PASSWORD=your_password
+      # - REQUIRE_AUTH_FOR_CONFIG=true
+    
+    # If Stash is also in Docker, you may need to connect them
+    # networks:
+    #   - stash_network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8097/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Uncomment if you need to connect to Stash in another container
+# networks:
+#   stash_network:
+#     external: true
