@@ -552,6 +552,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                     <div class="status-card">
                         <div class="status-label">Proxy Status</div>
                         <div id="proxy-status" class="status-value">Checking...</div>
+                        <div id="proxy-uptime" class="status-hint"></div>
                     </div>
                     <div class="status-card">
                         <div class="status-label">Stash Connection</div>
@@ -4275,6 +4276,7 @@ app = Starlette(debug=True, routes=routes, middleware=middleware)
 
 # --- Web UI Server ---
 PROXY_RUNNING = False  # Track if proxy is running
+PROXY_START_TIME = None  # Track when proxy started
 
 async def ui_index(request):
     """Serve the Web UI."""
@@ -4282,11 +4284,13 @@ async def ui_index(request):
 
 async def ui_api_status(request):
     """Return proxy status."""
+    uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
         "version": "v3.73",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
+        "uptime": uptime_seconds,
         "stashConnected": STASH_CONNECTED,
         "stashVersion": STASH_VERSION,
         "stashUrl": STASH_URL
@@ -4632,6 +4636,7 @@ if __name__ == "__main__":
 
     if check_stash_connection():
         PROXY_RUNNING = True
+        PROXY_START_TIME = time.time()
 
         # Configure proxy server
         proxy_config = Config()
