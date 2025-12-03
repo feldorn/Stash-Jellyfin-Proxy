@@ -8,6 +8,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", icon: Activity, label: "Status" },
     { href: "/config", icon: Settings, label: "Configuration" },
+    { href: "/logs", icon: FileText, label: "Logs" },
   ];
 
   return (
@@ -19,7 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Terminal className="w-6 h-6" />
             <h1 className="font-bold tracking-tight">STASH<span className="text-muted-foreground">PROXY</span></h1>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground font-mono">v1.0.0-beta</div>
+          <div className="mt-1 text-xs text-muted-foreground font-mono">v3.63</div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
@@ -40,18 +41,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
-          <div className="bg-background/50 p-3 rounded text-xs font-mono text-muted-foreground border border-border">
-            <div className="flex justify-between">
-              <span>MEM:</span>
-              <span className="text-primary">42MB</span>
-            </div>
-            <div className="flex justify-between mt-1">
-              <span>UPTIME:</span>
-              <span>12h 4m</span>
-            </div>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
