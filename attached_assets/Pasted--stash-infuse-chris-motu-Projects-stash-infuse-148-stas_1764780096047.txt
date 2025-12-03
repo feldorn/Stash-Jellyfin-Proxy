@@ -1,0 +1,49 @@
+(stash_infuse) [chris@motu:~/Projects/stash_infuse_148]$ ./stash_jellyfin_proxy.py
+Loaded config from /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.conf
+  User: chris
+  Stash URL: https://stash.feldorn.com
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: a1b2c3d4e5f6a1b2c3d4e5f6
+  Tag groups: Gooning, JOI, Good Boy, Tit Worship
+  Latest groups: Scenes, Tit Worship
+  Log level: INFO (20)
+  Log file: /home/chris/Projects/stash_infuse/stash_jellyfin_proxy.log
+2025-12-03 10:40:38,811 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.55 ---
+2025-12-03 10:40:38,811 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-03 10:40:38,811 - stash-jellyfin-proxy - INFO - Stash URL: https://stash.feldorn.com
+2025-12-03 10:40:38,811 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash.feldorn.com/graphql-local...
+2025-12-03 10:40:38,811 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-03 10:40:38,831 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-03 10:40:38,831 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-03 10:40:41,326 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Views from 192.168.0.233
+2025-12-03 10:40:41,326 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-03 10:40:43,036 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/root-scenes from 192.168.0.233
+2025-12-03 10:40:43,048 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0123s
+2025-12-03 10:40:43,054 - stash-jellyfin-proxy - INFO - INCOMING: GET /DisplayPreferences/usersettings from 192.168.0.233
+2025-12-03 10:40:43,054 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-03 10:40:43,060 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-03 10:40:43,124 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0640s
+2025-12-03 10:40:45,144 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/filters-scenes from 192.168.0.233
+2025-12-03 10:40:45,147 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0031s
+2025-12-03 10:40:45,153 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-03 10:40:45,156 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0027s
+2025-12-03 10:40:47,057 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/filter-scenes-23 from 192.168.0.233
+2025-12-03 10:40:47,064 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0071s
+2025-12-03 10:40:47,072 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items from 192.168.0.233
+2025-12-03 10:40:47,126 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0543s
+2025-12-03 10:40:58,022 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/scene-16036/PlaybackInfo from 192.168.0.233
+2025-12-03 10:40:58,035 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0124s
+2025-12-03 10:40:58,046 - stash-jellyfin-proxy - INFO - INCOMING: GET /Users/chris/Items/scene-16036 from 192.168.0.233
+2025-12-03 10:40:58,057 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0114s
+2025-12-03 10:40:58,059 - stash-jellyfin-proxy - INFO - INCOMING: GET /MediaSegments/scene-16036 from 192.168.0.233
+2025-12-03 10:40:58,059 - stash-jellyfin-proxy - WARNING - UNHANDLED ENDPOINT: GET /MediaSegments/scene-16036 - Query: {}
+2025-12-03 10:40:58,059 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0006s
+2025-12-03 10:40:58,069 - stash-jellyfin-proxy - INFO - INCOMING: GET /Videos/scene-16036/stream from 192.168.0.233
+2025-12-03 10:41:00,309 - stash-jellyfin-proxy - INFO - COMPLETED: 206 in 2.2399s
+2025-12-03 10:41:00,583 - stash-jellyfin-proxy - INFO - INCOMING: GET /Items/scene-16036/PlaybackInfo from 192.168.0.233
+2025-12-03 10:41:00,588 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0045s
+2025-12-03 10:41:00,608 - stash-jellyfin-proxy - INFO - INCOMING: POST /Sessions/Playing from 192.168.0.233
+2025-12-03 10:41:00,609 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
+2025-12-03 10:41:06,948 - stash-jellyfin-proxy - INFO - INCOMING: POST /Sessions/Playing/Stopped from 192.168.0.233
+2025-12-03 10:41:06,949 - stash-jellyfin-proxy - INFO - COMPLETED: 200 in 0.0003s
