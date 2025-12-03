@@ -4357,7 +4357,35 @@ async def ui_api_config(request):
                                 key, _, _ = uncommented.partition('=')
                                 all_keys_in_file.add(key.strip())
 
-            # Prepare new values - only include values that actually changed
+            # Get current running values to compare against
+            current_running = {
+                "STASH_URL": STASH_URL,
+                "STASH_API_KEY": STASH_API_KEY,
+                "PROXY_BIND": PROXY_BIND,
+                "PROXY_PORT": str(PROXY_PORT),
+                "UI_PORT": str(UI_PORT),
+                "SJS_USER": SJS_USER,
+                "SJS_PASSWORD": SJS_PASSWORD,
+                "SERVER_ID": SERVER_ID,
+                "SERVER_NAME": SERVER_NAME,
+                "TAG_GROUPS": ", ".join(TAG_GROUPS) if TAG_GROUPS else "",
+                "LATEST_GROUPS": ", ".join(LATEST_GROUPS) if LATEST_GROUPS else "",
+                "STASH_TIMEOUT": str(STASH_TIMEOUT),
+                "STASH_RETRIES": str(STASH_RETRIES),
+                "ENABLE_FILTERS": "true" if ENABLE_FILTERS else "false",
+                "ENABLE_IMAGE_RESIZE": "true" if ENABLE_IMAGE_RESIZE else "false",
+                "REQUIRE_AUTH_FOR_CONFIG": "true" if REQUIRE_AUTH_FOR_CONFIG else "false",
+                "IMAGE_CACHE_MAX_SIZE": str(IMAGE_CACHE_MAX_SIZE),
+                "DEFAULT_PAGE_SIZE": str(DEFAULT_PAGE_SIZE),
+                "MAX_PAGE_SIZE": str(MAX_PAGE_SIZE),
+                "LOG_LEVEL": LOG_LEVEL,
+                "LOG_DIR": LOG_DIR,
+                "LOG_FILE": LOG_FILE,
+                "LOG_MAX_SIZE_MB": str(LOG_MAX_SIZE_MB),
+                "LOG_BACKUP_COUNT": str(LOG_BACKUP_COUNT),
+            }
+            
+            # Prepare new values - only include values that actually changed from running config
             updates = {}
             for key in config_keys:
                 if key in data:
@@ -4370,9 +4398,10 @@ async def ui_api_config(request):
                     elif isinstance(value, bool):
                         value = "true" if value else "false"
                     new_value = str(value)
-                    # Only update if value actually changed from current active value
-                    current_value = existing_values.get(key, "")
-                    if new_value != current_value:
+                    
+                    # Compare against running value, not just what's in config file
+                    running_value = current_running.get(key, "")
+                    if new_value != running_value:
                         updates[key] = new_value
 
             # Update lines in-place - only update uncommented keys
@@ -4402,7 +4431,7 @@ async def ui_api_config(request):
 
             # Log configuration changes
             for key, new_val in updates.items():
-                old_val = existing_values.get(key, "(not set)")
+                old_val = current_running.get(key, "(unknown)")
                 if key in sensitive_keys:
                     logger.info(f"Config changed: {key} = ******* (sensitive)")
                 else:
