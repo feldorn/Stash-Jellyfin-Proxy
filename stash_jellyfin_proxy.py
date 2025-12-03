@@ -4153,6 +4153,7 @@ if __name__ == "__main__":
     logger.info(f"Stash URL: {STASH_URL}")
     
     if check_stash_connection():
+        global PROXY_RUNNING
         PROXY_RUNNING = True
         
         # Configure proxy server

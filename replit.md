@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.64
+## Current Version: v3.65
 
 ## User Preferences
 
@@ -17,8 +17,13 @@ Preferred communication style: Simple, everyday language.
 - Configurable logging with file rotation
 - Error resilience with retry logic
 
+**Phase 2 (Complete)**: Web UI
+- Embedded Web UI served from Python script on UI_PORT (8097)
+- Dashboard with proxy status, Stash connection, active streams
+- Configuration editor with all settings
+- Log viewer with filtering and download
+
 **Next Phases**:
-- Phase 2: Web UI for configuration and monitoring
 - Phase 3: Docker containerization
 
 ## Core Features
@@ -44,6 +49,7 @@ Preferred communication style: Simple, everyday language.
 | STASH_URL | Stash server URL | http://localhost:9999 |
 | PROXY_BIND | Proxy bind address | 0.0.0.0 |
 | PROXY_PORT | Proxy port | 8096 |
+| UI_PORT | Web UI port (0 to disable) | 8097 |
 | STASH_API_KEY | Stash API key | (required) |
 | SJS_USER | Infuse login username | admin |
 | SJS_PASSWORD | Infuse login password | (required) |
@@ -61,11 +67,12 @@ Preferred communication style: Simple, everyday language.
 ### Command Line Options
 
 ```bash
-./stash_jellyfin_proxy.py [--debug] [--no-log-file]
+./stash_jellyfin_proxy.py [--debug] [--no-log-file] [--no-ui]
 ```
 
 - `--debug`: Enable debug logging (overrides LOG_LEVEL)
 - `--no-log-file`: Disable file logging (console only)
+- `--no-ui`: Disable Web UI server
 
 ## Technical Architecture
 
@@ -96,13 +103,13 @@ Preferred communication style: Simple, everyday language.
 
 | File | Description |
 |------|-------------|
-| stash_jellyfin_proxy.py | Main proxy server (v3.64) |
+| stash_jellyfin_proxy.py | Main proxy server (v3.65) |
 | stash_jellyfin_proxy.conf | Configuration file |
 
 ## Recent Changes
 
+- v3.65: Embedded Web UI in Python script - Dashboard, Configuration editor, Log viewer all served on UI_PORT (8097)
 - v3.64: Implemented Infuse search functionality - now queries Stash with searchTerm parameter using relevance sorting
-- v3.63: Added Web UI settings (UI_PORT config), backend API routes for config/status/logs
 - v3.62: Stream logging now shows video title (or filename), fixed duplicate "started" messages by tracking active streams
 - v3.61: Added "Stream stopped" logging, fixed false resume detection (threshold now 90s to match Infuse buffering)
 - v3.60: Added stream resume detection - logs when video resumes after pause (10+ seconds of inactivity)
