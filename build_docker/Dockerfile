@@ -2,7 +2,7 @@ FROM python:3.11-slim-bookworm
 
 LABEL maintainer="Stash-Jellyfin Proxy"
 LABEL description="Jellyfin API emulation proxy for Stash media server"
-LABEL version="3.81"
+LABEL version="3.82"
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \

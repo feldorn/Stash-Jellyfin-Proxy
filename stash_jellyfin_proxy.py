@@ -696,7 +696,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.81</span>
+                <span id="version">v3.82</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1032,7 +1032,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.81';
+                document.getElementById('version').textContent = data.version || 'v3.82';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -1255,7 +1255,16 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                     body: JSON.stringify(config)
                 });
                 if (res.ok) {
-                    showToast('Configuration saved! Restart proxy to apply changes.', 'success');
+                    const result = await res.json();
+                    if (result.needs_restart && result.needs_restart.length > 0) {
+                        showToast(`Configuration saved. ${result.needs_restart.join(', ')} require restart.`, 'warning');
+                    } else if (result.applied_immediately && result.applied_immediately.length > 0) {
+                        showToast('Configuration saved and applied!', 'success');
+                    } else {
+                        showToast('Configuration saved.', 'success');
+                    }
+                    // Refresh config to reflect new values
+                    loadConfig();
                 } else {
                     showToast('Failed to save configuration', 'error');
                 }
@@ -3964,11 +3973,25 @@ async def endpoint_subtitle(request):
 
 def generate_text_icon(text: str, width: int = 400, height: int = 600) -> Tuple[bytes, str]:
     """Generate a portrait 2:3 PNG icon with text label (matches Infuse folder tiles)."""
+    # Calculate appropriate font size based on text length
+    # For SVG, scale font size to fit within 80% of width
+    text_len = len(text)
+    if text_len <= 5:
+        svg_font_size = 72
+    elif text_len <= 8:
+        svg_font_size = 56
+    elif text_len <= 12:
+        svg_font_size = 44
+    elif text_len <= 16:
+        svg_font_size = 36
+    else:
+        svg_font_size = max(24, 320 // text_len)  # Scale down for very long text
+    
     if not PILLOW_AVAILABLE:
-        # Return a simple SVG with text as fallback
-        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
-            <rect width="400" height="600" fill="#1a1a2e"/>
-            <text x="200" y="320" text-anchor="middle" fill="#4a90d9" font-size="48" font-family="sans-serif">{text}</text>
+        # Return SVG with dynamically sized text
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">
+            <rect width="{width}" height="{height}" fill="#1a1a2e"/>
+            <text x="{width//2}" y="{height//2}" text-anchor="middle" dominant-baseline="middle" fill="#4a90d9" font-size="{svg_font_size}" font-family="sans-serif" font-weight="bold">{text}</text>
         </svg>'''
         return svg.encode('utf-8'), "image/svg+xml"
 
@@ -3987,6 +4010,7 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600) -> Tuple[
         max_width = width - 40  # Leave 20px padding on each side
         font_size = 72
         font = None
+        found_font_path = None
 
         # Try to load a nice font, fall back to default
         font_paths = [
@@ -4000,30 +4024,29 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600) -> Tuple[
         for font_path in font_paths:
             try:
                 font = ImageFont.truetype(font_path, font_size)
+                found_font_path = font_path
                 break
             except (IOError, OSError):
                 continue
 
         if font is None:
-            # Use default font
+            # Use default font - skip resizing since we can't change its size
             font = ImageFont.load_default()
-            font_size = 20  # Default font is small
+        else:
+            # Reduce font size until text fits
+            while font_size > 20 and found_font_path:
+                try:
+                    font = ImageFont.truetype(found_font_path, font_size)
+                except:
+                    break
 
-        # Reduce font size until text fits
-        while font_size > 20:
-            try:
-                font = ImageFont.truetype(font_path, font_size) if font_path else ImageFont.load_default()
-            except:
-                font = ImageFont.load_default()
-                break
+                # Get text bounding box
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
 
-            # Get text bounding box
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_width = bbox[2] - bbox[0]
-
-            if text_width <= max_width:
-                break
-            font_size -= 4
+                if text_width <= max_width:
+                    break
+                font_size -= 4
 
         # Calculate position to center text
         bbox = draw.textbbox((0, 0), text, font=font)
@@ -4043,10 +4066,10 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600) -> Tuple[
 
     except Exception as e:
         logger.warning(f"Text icon generation failed: {e}")
-        # Simple SVG fallback
-        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
-            <rect width="400" height="600" fill="#1a1a2e"/>
-            <text x="200" y="320" text-anchor="middle" fill="#4a90d9" font-size="48" font-family="sans-serif">{text}</text>
+        # SVG fallback with properly sized text
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">
+            <rect width="{width}" height="{height}" fill="#1a1a2e"/>
+            <text x="{width//2}" y="{height//2}" text-anchor="middle" dominant-baseline="middle" fill="#4a90d9" font-size="{svg_font_size}" font-family="sans-serif" font-weight="bold">{text}</text>
         </svg>'''
         return svg.encode('utf-8'), "image/svg+xml"
 
@@ -4655,7 +4678,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.81",
+        "version": "v3.82",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -4895,7 +4918,138 @@ async def ui_api_config(request):
             with open(CONFIG_FILE, 'w') as f:
                 f.writelines(new_lines)
 
-            return JSONResponse({"success": True})
+            # Apply configuration changes immediately (where safe to do so)
+            # These don't require server restart - just update globals
+            global TAG_GROUPS, LATEST_GROUPS, SERVER_NAME, STASH_TIMEOUT, STASH_RETRIES
+            global STASH_GRAPHQL_PATH, STASH_VERIFY_TLS, ENABLE_FILTERS, ENABLE_IMAGE_RESIZE
+            global IMAGE_CACHE_MAX_SIZE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, REQUIRE_AUTH_FOR_CONFIG
+            global LOG_LEVEL, _config_defined_keys
+            
+            # Settings that need restart: PROXY_BIND, PROXY_PORT, UI_PORT, LOG_DIR, LOG_FILE
+            # Settings that need restart: STASH_URL, STASH_API_KEY (connection settings)
+            # Settings that need restart: SJS_USER, SJS_PASSWORD (auth tokens may be cached)
+            
+            applied_immediately = []
+            needs_restart = []
+            
+            # Apply safe settings from updates dict
+            for key, new_val in updates.items():
+                if key == "TAG_GROUPS":
+                    TAG_GROUPS = [t.strip() for t in new_val.split(",") if t.strip()]
+                    applied_immediately.append(key)
+                elif key == "LATEST_GROUPS":
+                    LATEST_GROUPS = [t.strip() for t in new_val.split(",") if t.strip()]
+                    applied_immediately.append(key)
+                elif key == "SERVER_NAME":
+                    SERVER_NAME = new_val
+                    applied_immediately.append(key)
+                elif key == "STASH_TIMEOUT":
+                    STASH_TIMEOUT = int(new_val)
+                    applied_immediately.append(key)
+                elif key == "STASH_RETRIES":
+                    STASH_RETRIES = int(new_val)
+                    applied_immediately.append(key)
+                elif key == "STASH_GRAPHQL_PATH":
+                    STASH_GRAPHQL_PATH = normalize_path(new_val)
+                    applied_immediately.append(key)
+                elif key == "STASH_VERIFY_TLS":
+                    STASH_VERIFY_TLS = new_val.lower() in ('true', 'yes', '1', 'on')
+                    applied_immediately.append(key)
+                elif key == "ENABLE_FILTERS":
+                    ENABLE_FILTERS = new_val.lower() in ('true', 'yes', '1', 'on')
+                    applied_immediately.append(key)
+                elif key == "ENABLE_IMAGE_RESIZE":
+                    ENABLE_IMAGE_RESIZE = new_val.lower() in ('true', 'yes', '1', 'on')
+                    applied_immediately.append(key)
+                elif key == "IMAGE_CACHE_MAX_SIZE":
+                    IMAGE_CACHE_MAX_SIZE = int(new_val)
+                    applied_immediately.append(key)
+                elif key == "DEFAULT_PAGE_SIZE":
+                    DEFAULT_PAGE_SIZE = int(new_val)
+                    applied_immediately.append(key)
+                elif key == "MAX_PAGE_SIZE":
+                    MAX_PAGE_SIZE = int(new_val)
+                    applied_immediately.append(key)
+                elif key == "REQUIRE_AUTH_FOR_CONFIG":
+                    REQUIRE_AUTH_FOR_CONFIG = new_val.lower() in ('true', 'yes', '1', 'on')
+                    applied_immediately.append(key)
+                elif key == "LOG_LEVEL":
+                    LOG_LEVEL = new_val.upper()
+                    # Update logger level
+                    level = getattr(logging, LOG_LEVEL, logging.INFO)
+                    logger.setLevel(level)
+                    for handler in logger.handlers:
+                        handler.setLevel(level)
+                    applied_immediately.append(key)
+                elif key in ["PROXY_BIND", "PROXY_PORT", "UI_PORT", "LOG_DIR", "LOG_FILE", 
+                             "STASH_URL", "STASH_API_KEY", "SJS_USER", "SJS_PASSWORD", "SERVER_ID"]:
+                    needs_restart.append(key)
+            
+            # Apply default values for commented-out keys
+            for key in commented_keys:
+                default_val = defaults.get(key, "")
+                if key == "TAG_GROUPS":
+                    TAG_GROUPS = []
+                    applied_immediately.append(key)
+                elif key == "LATEST_GROUPS":
+                    LATEST_GROUPS = ["Scenes"]
+                    applied_immediately.append(key)
+                elif key == "SERVER_NAME":
+                    SERVER_NAME = "Stash Media Server"
+                    applied_immediately.append(key)
+                elif key == "STASH_TIMEOUT":
+                    STASH_TIMEOUT = 30
+                    applied_immediately.append(key)
+                elif key == "STASH_RETRIES":
+                    STASH_RETRIES = 3
+                    applied_immediately.append(key)
+                elif key == "STASH_GRAPHQL_PATH":
+                    STASH_GRAPHQL_PATH = "/graphql"
+                    applied_immediately.append(key)
+                elif key == "STASH_VERIFY_TLS":
+                    STASH_VERIFY_TLS = False
+                    applied_immediately.append(key)
+                elif key == "ENABLE_FILTERS":
+                    ENABLE_FILTERS = True
+                    applied_immediately.append(key)
+                elif key == "ENABLE_IMAGE_RESIZE":
+                    ENABLE_IMAGE_RESIZE = True
+                    applied_immediately.append(key)
+                elif key == "IMAGE_CACHE_MAX_SIZE":
+                    IMAGE_CACHE_MAX_SIZE = 100
+                    applied_immediately.append(key)
+                elif key == "DEFAULT_PAGE_SIZE":
+                    DEFAULT_PAGE_SIZE = 50
+                    applied_immediately.append(key)
+                elif key == "MAX_PAGE_SIZE":
+                    MAX_PAGE_SIZE = 200
+                    applied_immediately.append(key)
+                elif key == "REQUIRE_AUTH_FOR_CONFIG":
+                    REQUIRE_AUTH_FOR_CONFIG = False
+                    applied_immediately.append(key)
+                elif key == "LOG_LEVEL":
+                    LOG_LEVEL = "INFO"
+                    logger.setLevel(logging.INFO)
+                    for handler in logger.handlers:
+                        handler.setLevel(logging.INFO)
+                    applied_immediately.append(key)
+            
+            # Update _config_defined_keys to reflect new state
+            for key in updates:
+                _config_defined_keys.add(key)
+            for key in commented_keys:
+                _config_defined_keys.discard(key)
+            
+            if applied_immediately:
+                logger.info(f"Applied immediately: {', '.join(applied_immediately)}")
+            if needs_restart:
+                logger.info(f"Requires restart: {', '.join(needs_restart)}")
+
+            return JSONResponse({
+                "success": True,
+                "applied_immediately": applied_immediately,
+                "needs_restart": needs_restart
+            })
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
@@ -5066,7 +5220,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.81 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.82 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 

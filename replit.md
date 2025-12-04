@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.81
+## Current Version: v3.82
 
 ## User Preferences
 
@@ -110,7 +110,7 @@ Preferred communication style: Simple, everyday language.
 
 | File | Description |
 |------|-------------|
-| stash_jellyfin_proxy.py | Main proxy server (v3.81) |
+| stash_jellyfin_proxy.py | Main proxy server (v3.82) |
 | stash_jellyfin_proxy.conf | Configuration file |
 | build_docker/Dockerfile | Docker container definition |
 | build_docker/docker-entrypoint.sh | Container entrypoint script |
@@ -141,6 +141,7 @@ Environment variables ALWAYS override config file values when set.
 
 ## Recent Changes
 
+- v3.82: Live config updates - most settings now apply immediately on save without restart (TAG_GROUPS, LATEST_GROUPS, timeouts, feature toggles, pagination, log level); UI shows feedback on which settings took effect vs need restart; fixed text scaling in folder icons (SVG now uses dynamic font sizing based on text length); fixed Pillow font loading bug (undefined variable)
 - v3.81: Security hardening - removed hardcoded default credentials (SJS_USER/SJS_PASSWORD now empty by default); added startup warning if auth not configured; Docker entrypoint uses "CHANGE_ME" placeholder; pagination validation (min=1, max=MAX_PAGE_SIZE) to prevent edge cases
 - v3.80: Fixed environment override detection - only marks fields as env-locked if they differ from Docker defaults (PROXY_BIND, PROXY_PORT, UI_PORT, LOG_DIR); dropdowns now always show selected value; checkboxes show "(env)" label when locked; LOG_DIR default is now /config
 - v3.79: Enhanced Configuration UI - added help text for all fields explaining their purpose; placeholders show default/example values; added STASH_GRAPHQL_PATH and STASH_VERIFY_TLS fields to UI; updated SERVER_ID warning text
