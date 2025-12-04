@@ -79,7 +79,7 @@ STASH_RETRIES = 3
 STASH_GRAPHQL_PATH = "/graphql"
 
 # TLS verification (set to false for self-signed certs in Docker)
-STASH_VERIFY_TLS = True
+STASH_VERIFY_TLS = False
 
 # Logging settings
 LOG_DIR = "."  # Current directory
@@ -1063,7 +1063,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             STASH_URL: '',
             STASH_API_KEY: '',
             STASH_GRAPHQL_PATH: '/graphql',
-            STASH_VERIFY_TLS: true,
+            STASH_VERIFY_TLS: false,
             PROXY_BIND: '0.0.0.0',
             PROXY_PORT: 8096,
             UI_PORT: 8097,
