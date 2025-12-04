@@ -4750,8 +4750,40 @@ async def ui_api_config(request):
                 "LOG_BACKUP_COUNT": str(LOG_BACKUP_COUNT),
             }
             
-            # Prepare new values - only include values that actually changed from running config
+            # Default values for comparison
+            defaults = {
+                "STASH_URL": "https://stash:9999",
+                "STASH_API_KEY": "",
+                "STASH_GRAPHQL_PATH": "/graphql",
+                "STASH_VERIFY_TLS": "false",
+                "PROXY_BIND": "0.0.0.0",
+                "PROXY_PORT": "8096",
+                "UI_PORT": "8097",
+                "SJS_USER": "",
+                "SJS_PASSWORD": "",
+                "SERVER_ID": "",
+                "SERVER_NAME": "Stash Media Server",
+                "TAG_GROUPS": "",
+                "LATEST_GROUPS": "Scenes",
+                "STASH_TIMEOUT": "30",
+                "STASH_RETRIES": "3",
+                "ENABLE_FILTERS": "true",
+                "ENABLE_IMAGE_RESIZE": "true",
+                "REQUIRE_AUTH_FOR_CONFIG": "false",
+                "IMAGE_CACHE_MAX_SIZE": "1000",
+                "DEFAULT_PAGE_SIZE": "50",
+                "MAX_PAGE_SIZE": "200",
+                "LOG_LEVEL": "INFO",
+                "LOG_DIR": "/config",
+                "LOG_FILE": "stash_jellyfin_proxy.log",
+                "LOG_MAX_SIZE_MB": "10",
+                "LOG_BACKUP_COUNT": "3",
+            }
+            
+            # Prepare new values and track which keys should be commented out (reverted to default)
             updates = {}
+            comment_out = set()  # Keys to comment out (user wants to use default)
+            
             for key in config_keys:
                 if key in data:
                     value = data[key]
@@ -4764,22 +4796,40 @@ async def ui_api_config(request):
                         value = "true" if value else "false"
                     new_value = str(value)
                     
-                    # Compare against running value, not just what's in config file
+                    # Check if value equals default
+                    default_value = defaults.get(key, "")
+                    is_default = (new_value == default_value)
+                    
+                    # Check if key is currently defined (uncommented) in config file
+                    is_defined_in_file = key in existing_values
+                    
+                    # Compare against running value
                     running_value = current_running.get(key, "")
-                    if new_value != running_value:
+                    
+                    if is_default and is_defined_in_file:
+                        # User cleared the field - comment out the line to use default
+                        comment_out.add(key)
+                    elif new_value != running_value:
+                        # Value changed to something non-default
                         updates[key] = new_value
 
-            # Update lines in-place - update uncommented keys, uncomment if value changed
+            # Update lines in-place
             updated_keys = set()
+            commented_keys = set()
             new_lines = []
             for line in original_lines:
                 stripped = line.strip()
                 
-                # Check for uncommented key=value - update if changed
+                # Check for uncommented key=value
                 if stripped and not stripped.startswith('#') and '=' in stripped:
                     key, _, old_value = stripped.partition('=')
                     key = key.strip()
-                    if key in updates:
+                    if key in comment_out:
+                        # Comment out this line (user wants default)
+                        indent = len(line) - len(line.lstrip())
+                        new_lines.append(f'{" " * indent}# {stripped}\n')
+                        commented_keys.add(key)
+                    elif key in updates:
                         indent = len(line) - len(line.lstrip())
                         new_lines.append(f'{" " * indent}{key} = "{updates[key]}"\n')
                         updated_keys.add(key)
@@ -4815,6 +4865,15 @@ async def ui_api_config(request):
                     logger.info(f"Config changed: {key} = ******* (sensitive)")
                 else:
                     logger.info(f"Config changed: {key}: \"{old_val}\" -> \"{new_val}\"")
+            
+            # Log reverted-to-default fields
+            for key in commented_keys:
+                old_val = existing_values.get(key, "(unknown)")
+                default_val = defaults.get(key, "")
+                if key in sensitive_keys:
+                    logger.info(f"Config reverted to default: {key} (sensitive)")
+                else:
+                    logger.info(f"Config reverted to default: {key}: \"{old_val}\" -> default \"{default_val}\"")
             
             # Write updated config file
             with open(CONFIG_FILE, 'w') as f:
