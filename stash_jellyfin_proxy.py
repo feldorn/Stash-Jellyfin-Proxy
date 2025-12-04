@@ -444,6 +444,28 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             color: var(--text-secondary);
             margin-top: 4px;
         }
+        .env-locked {
+            border-color: #b35900 !important;
+            background: rgba(179, 89, 0, 0.15) !important;
+            color: #ff9933 !important;
+            cursor: not-allowed;
+        }
+        .env-locked:disabled {
+            opacity: 0.8;
+        }
+        .env-notice {
+            background: rgba(179, 89, 0, 0.15);
+            border: 1px solid #b35900;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-top: 16px;
+            color: #ff9933;
+            font-size: 13px;
+            display: none;
+        }
+        .env-notice strong {
+            color: #ffb366;
+        }
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -794,7 +816,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Log Directory</label>
-                                <input type="text" class="form-input" name="LOG_DIR" placeholder=".">
+                                <input type="text" class="form-input" name="LOG_DIR" placeholder="/config">
                                 <div class="form-hint">Directory for log files (. = current directory)</div>
                             </div>
                         </div>
@@ -816,7 +838,10 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             </div>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div id="env-notice" class="env-notice">
+                        <strong>Environment Override:</strong> The following fields are set via environment variables and cannot be changed here: <span></span>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-top: 16px;">
                         <button type="submit" class="btn btn-primary">Save Configuration</button>
                         <button type="button" id="restart-btn" class="btn" style="background: #dc3545;">Restart Server</button>
                     </div>
@@ -1021,7 +1046,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             DEFAULT_PAGE_SIZE: 50,
             MAX_PAGE_SIZE: 200,
             LOG_LEVEL: 'INFO',
-            LOG_DIR: '.',
+            LOG_DIR: '/config',
             LOG_FILE: 'stash_jellyfin_proxy.log',
             LOG_MAX_SIZE_MB: 10,
             LOG_BACKUP_COUNT: 3
@@ -1030,13 +1055,38 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         async function fetchConfig() {
             try {
                 const res = await fetch('/api/config');
-                state.config = await res.json();
+                const data = await res.json();
+                state.config = data.config || data;
+                const envFields = data.env_fields || [];
+                
+                // Show env fields notice if any exist
+                const envNotice = document.getElementById('env-notice');
+                if (envFields.length > 0) {
+                    envNotice.style.display = 'block';
+                    envNotice.querySelector('span').textContent = envFields.join(', ');
+                } else {
+                    envNotice.style.display = 'none';
+                }
+                
                 Object.entries(state.config).forEach(([key, value]) => {
                     const input = document.querySelector(`[name="${key}"]`);
                     if (input) {
                         const defaultVal = DEFAULTS[key];
+                        const isEnvField = envFields.includes(key);
+                        
+                        // Mark env fields as read-only with visual indicator
+                        if (isEnvField) {
+                            input.readOnly = true;
+                            input.disabled = input.tagName === 'SELECT';
+                            input.classList.add('env-locked');
+                        }
+                        
                         if (input.type === 'checkbox') {
                             input.checked = value === true || value === 'true';
+                            if (isEnvField) input.disabled = true;
+                        } else if (input.tagName === 'SELECT') {
+                            // Always set select value (dropdowns should show selection)
+                            input.value = value;
                         } else if (Array.isArray(value)) {
                             const valStr = value.join(', ');
                             const defStr = Array.isArray(defaultVal) ? defaultVal.join(', ') : '';
@@ -4495,32 +4545,35 @@ async def ui_api_config(request):
     """Get or set configuration."""
     if request.method == "GET":
         return JSONResponse({
-            "STASH_URL": STASH_URL,
-            "STASH_API_KEY": "*" * min(len(STASH_API_KEY), 20) if STASH_API_KEY else "",
-            "STASH_GRAPHQL_PATH": STASH_GRAPHQL_PATH,
-            "STASH_VERIFY_TLS": STASH_VERIFY_TLS,
-            "PROXY_BIND": PROXY_BIND,
-            "PROXY_PORT": PROXY_PORT,
-            "UI_PORT": UI_PORT,
-            "SJS_USER": SJS_USER,
-            "SJS_PASSWORD": "*" * min(len(SJS_PASSWORD), 10) if SJS_PASSWORD else "",
-            "SERVER_ID": SERVER_ID,
-            "SERVER_NAME": SERVER_NAME,
-            "TAG_GROUPS": TAG_GROUPS,
-            "LATEST_GROUPS": LATEST_GROUPS,
-            "STASH_TIMEOUT": STASH_TIMEOUT,
-            "STASH_RETRIES": STASH_RETRIES,
-            "ENABLE_FILTERS": ENABLE_FILTERS,
-            "ENABLE_IMAGE_RESIZE": ENABLE_IMAGE_RESIZE,
-            "REQUIRE_AUTH_FOR_CONFIG": REQUIRE_AUTH_FOR_CONFIG,
-            "IMAGE_CACHE_MAX_SIZE": IMAGE_CACHE_MAX_SIZE,
-            "DEFAULT_PAGE_SIZE": DEFAULT_PAGE_SIZE,
-            "MAX_PAGE_SIZE": MAX_PAGE_SIZE,
-            "LOG_LEVEL": LOG_LEVEL,
-            "LOG_DIR": LOG_DIR,
-            "LOG_FILE": LOG_FILE,
-            "LOG_MAX_SIZE_MB": LOG_MAX_SIZE_MB,
-            "LOG_BACKUP_COUNT": LOG_BACKUP_COUNT
+            "config": {
+                "STASH_URL": STASH_URL,
+                "STASH_API_KEY": "*" * min(len(STASH_API_KEY), 20) if STASH_API_KEY else "",
+                "STASH_GRAPHQL_PATH": STASH_GRAPHQL_PATH,
+                "STASH_VERIFY_TLS": STASH_VERIFY_TLS,
+                "PROXY_BIND": PROXY_BIND,
+                "PROXY_PORT": PROXY_PORT,
+                "UI_PORT": UI_PORT,
+                "SJS_USER": SJS_USER,
+                "SJS_PASSWORD": "*" * min(len(SJS_PASSWORD), 10) if SJS_PASSWORD else "",
+                "SERVER_ID": SERVER_ID,
+                "SERVER_NAME": SERVER_NAME,
+                "TAG_GROUPS": TAG_GROUPS,
+                "LATEST_GROUPS": LATEST_GROUPS,
+                "STASH_TIMEOUT": STASH_TIMEOUT,
+                "STASH_RETRIES": STASH_RETRIES,
+                "ENABLE_FILTERS": ENABLE_FILTERS,
+                "ENABLE_IMAGE_RESIZE": ENABLE_IMAGE_RESIZE,
+                "REQUIRE_AUTH_FOR_CONFIG": REQUIRE_AUTH_FOR_CONFIG,
+                "IMAGE_CACHE_MAX_SIZE": IMAGE_CACHE_MAX_SIZE,
+                "DEFAULT_PAGE_SIZE": DEFAULT_PAGE_SIZE,
+                "MAX_PAGE_SIZE": MAX_PAGE_SIZE,
+                "LOG_LEVEL": LOG_LEVEL,
+                "LOG_DIR": LOG_DIR,
+                "LOG_FILE": LOG_FILE,
+                "LOG_MAX_SIZE_MB": LOG_MAX_SIZE_MB,
+                "LOG_BACKUP_COUNT": LOG_BACKUP_COUNT
+            },
+            "env_fields": _env_overrides
         })
     elif request.method == "POST":
         try:
