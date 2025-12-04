@@ -691,7 +691,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.80</span>
+                <span id="version">v3.81</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1027,7 +1027,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.80';
+                document.getElementById('version').textContent = data.version || 'v3.81';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -2649,10 +2649,10 @@ async def endpoint_items(request):
     parent_id = request.query_params.get("ParentId") or request.query_params.get("parentId")
     ids = request.query_params.get("Ids") or request.query_params.get("ids")
 
-    # Pagination parameters
-    start_index = int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0)
+    # Pagination parameters with validation
+    start_index = max(0, int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0))
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or DEFAULT_PAGE_SIZE)
-    limit = min(limit, MAX_PAGE_SIZE)  # Cap at maximum
+    limit = max(1, min(limit, MAX_PAGE_SIZE))  # Enforce min=1, max=MAX_PAGE_SIZE
 
     # Sort parameters
     sort_field, sort_direction = get_stash_sort_params(request)
@@ -4416,9 +4416,9 @@ async def endpoint_genres(request):
 async def endpoint_persons(request):
     """Return persons - maps to Stash performers."""
     # This is an alternative endpoint for accessing performers
-    start_index = int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0)
+    start_index = max(0, int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0))
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or DEFAULT_PAGE_SIZE)
-    limit = min(limit, MAX_PAGE_SIZE)  # Cap at maximum
+    limit = max(1, min(limit, MAX_PAGE_SIZE))  # Enforce min=1, max=MAX_PAGE_SIZE
 
     # Check for searchTerm parameter (Infuse search functionality)
     search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm")
@@ -4480,9 +4480,9 @@ async def endpoint_persons(request):
 
 async def endpoint_studios(request):
     """Return studios list via /Studios endpoint."""
-    start_index = int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0)
+    start_index = max(0, int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0))
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or DEFAULT_PAGE_SIZE)
-    limit = min(limit, MAX_PAGE_SIZE)  # Cap at maximum
+    limit = max(1, min(limit, MAX_PAGE_SIZE))  # Enforce min=1, max=MAX_PAGE_SIZE
 
     try:
         count_q = """query { findStudios { count } }"""
@@ -4650,7 +4650,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.80",
+        "version": "v3.81",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -5061,7 +5061,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.80 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.81 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
