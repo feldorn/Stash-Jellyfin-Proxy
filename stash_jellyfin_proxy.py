@@ -4689,6 +4689,12 @@ async def ui_api_status(request):
 
 async def ui_api_config(request):
     """Get or set configuration."""
+    # Declare globals at top of function (required before any reference)
+    global TAG_GROUPS, LATEST_GROUPS, SERVER_NAME, STASH_TIMEOUT, STASH_RETRIES
+    global STASH_GRAPHQL_PATH, STASH_VERIFY_TLS, ENABLE_FILTERS, ENABLE_IMAGE_RESIZE
+    global IMAGE_CACHE_MAX_SIZE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, REQUIRE_AUTH_FOR_CONFIG
+    global LOG_LEVEL, _config_defined_keys
+    
     if request.method == "GET":
         return JSONResponse({
             "config": {
@@ -4919,12 +4925,6 @@ async def ui_api_config(request):
                 f.writelines(new_lines)
 
             # Apply configuration changes immediately (where safe to do so)
-            # These don't require server restart - just update globals
-            global TAG_GROUPS, LATEST_GROUPS, SERVER_NAME, STASH_TIMEOUT, STASH_RETRIES
-            global STASH_GRAPHQL_PATH, STASH_VERIFY_TLS, ENABLE_FILTERS, ENABLE_IMAGE_RESIZE
-            global IMAGE_CACHE_MAX_SIZE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, REQUIRE_AUTH_FOR_CONFIG
-            global LOG_LEVEL, _config_defined_keys
-            
             # Settings that need restart: PROXY_BIND, PROXY_PORT, UI_PORT, LOG_DIR, LOG_FILE
             # Settings that need restart: STASH_URL, STASH_API_KEY (connection settings)
             # Settings that need restart: SJS_USER, SJS_PASSWORD (auth tokens may be cached)
