@@ -760,7 +760,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Image Cache Size</label>
-                            <input type="number" class="form-input" name="IMAGE_CACHE_MAX_SIZE" placeholder="100" style="width: 100px;">
+                            <input type="number" class="form-input" name="IMAGE_CACHE_MAX_SIZE" placeholder="1000" style="width: 100px;">
                             <div class="form-hint">Maximum resized images to keep in memory</div>
                         </div>
                     </div>
@@ -997,6 +997,36 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             document.getElementById('dashboard-logs').innerHTML = dashboardHtml || '<div class="empty-state">No logs</div>';
         }
 
+        // Default values - if field matches default, show placeholder instead
+        const DEFAULTS = {
+            STASH_URL: '',
+            STASH_API_KEY: '',
+            STASH_GRAPHQL_PATH: '/graphql',
+            STASH_VERIFY_TLS: true,
+            PROXY_BIND: '0.0.0.0',
+            PROXY_PORT: 8096,
+            UI_PORT: 8097,
+            SJS_USER: '',
+            SJS_PASSWORD: '',
+            SERVER_ID: '',
+            SERVER_NAME: 'Stash Media Server',
+            TAG_GROUPS: [],
+            LATEST_GROUPS: ['Scenes'],
+            STASH_TIMEOUT: 30,
+            STASH_RETRIES: 3,
+            ENABLE_FILTERS: true,
+            ENABLE_IMAGE_RESIZE: true,
+            REQUIRE_AUTH_FOR_CONFIG: false,
+            IMAGE_CACHE_MAX_SIZE: 1000,
+            DEFAULT_PAGE_SIZE: 50,
+            MAX_PAGE_SIZE: 200,
+            LOG_LEVEL: 'INFO',
+            LOG_DIR: '.',
+            LOG_FILE: 'stash_jellyfin_proxy.log',
+            LOG_MAX_SIZE_MB: 10,
+            LOG_BACKUP_COUNT: 3
+        };
+
         async function fetchConfig() {
             try {
                 const res = await fetch('/api/config');
@@ -1004,12 +1034,19 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 Object.entries(state.config).forEach(([key, value]) => {
                     const input = document.querySelector(`[name="${key}"]`);
                     if (input) {
+                        const defaultVal = DEFAULTS[key];
                         if (input.type === 'checkbox') {
                             input.checked = value === true || value === 'true';
                         } else if (Array.isArray(value)) {
-                            input.value = value.join(', ');
+                            const valStr = value.join(', ');
+                            const defStr = Array.isArray(defaultVal) ? defaultVal.join(', ') : '';
+                            // Only set value if different from default (let placeholder show)
+                            input.value = (valStr !== defStr) ? valStr : '';
                         } else {
-                            input.value = value;
+                            // Only set value if different from default (let placeholder show)
+                            const strVal = String(value);
+                            const strDef = String(defaultVal ?? '');
+                            input.value = (strVal !== strDef) ? value : '';
                         }
                     }
                 });
@@ -1027,12 +1064,18 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'REQUIRE_AUTH_FOR_CONFIG', 'STASH_VERIFY_TLS'];
             
             formData.forEach((value, key) => {
+                // If field is empty, use the default value
+                const defaultVal = DEFAULTS[key];
                 if (key === 'TAG_GROUPS' || key === 'LATEST_GROUPS') {
-                    config[key] = value.split(',').map(s => s.trim()).filter(Boolean);
+                    if (value.trim() === '' && Array.isArray(defaultVal)) {
+                        config[key] = defaultVal;
+                    } else {
+                        config[key] = value.split(',').map(s => s.trim()).filter(Boolean);
+                    }
                 } else if (intFields.includes(key)) {
-                    config[key] = parseInt(value) || 0;
+                    config[key] = value.trim() === '' ? defaultVal : (parseInt(value) || 0);
                 } else {
-                    config[key] = value;
+                    config[key] = value.trim() === '' ? (defaultVal ?? '') : value;
                 }
             });
             
