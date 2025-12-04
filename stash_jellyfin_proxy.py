@@ -716,7 +716,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.85</span>
+                <span id="version">v3.86</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1052,7 +1052,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.85';
+                document.getElementById('version').textContent = data.version || 'v3.86';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -4008,6 +4008,7 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600,
 
     try:
         from PIL import ImageDraw, ImageFont
+        import os
 
         # Create portrait image with dark background
         img = Image.new('RGB', (width, height), (26, 26, 46))
@@ -4016,11 +4017,11 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600,
         # Text color (Stash-like blue)
         text_color = (74, 144, 217)  # #4a90d9
 
-        # Uniform font size
-        UNIFORM_FONT_SIZE = 48
-        font = None
+        # Maximum text area (leave padding on sides)
+        PADDING = 30
+        max_text_width = width - (PADDING * 2)
 
-        # Try to load a nice font
+        # Try to load a font
         font_paths = [
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
             "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
@@ -4028,57 +4029,79 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600,
             "/System/Library/Fonts/Helvetica.ttc",
             "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         ]
-
-        import os
+        
+        font_path_found = None
         for font_path in font_paths:
             if os.path.exists(font_path):
-                try:
-                    font = ImageFont.truetype(font_path, UNIFORM_FONT_SIZE)
-                    logger.debug(f"Loaded font: {font_path} at size {UNIFORM_FONT_SIZE}")
-                    break
-                except (IOError, OSError) as e:
-                    logger.debug(f"Font {font_path} exists but failed to load: {e}")
-                    continue
+                font_path_found = font_path
+                break
 
-        if font is None:
-            logger.warning(f"No TrueType fonts found, using Pillow default font")
-            font = ImageFont.load_default()
-
-        # Word wrap the text
+        # Word wrap the text first (using character count as rough guide)
         words = text.split()
         lines = []
         current_line = ""
         
         for word in words:
-            # Check if adding this word would exceed the line limit
             test_line = (current_line + " " + word).strip() if current_line else word
             
             if len(test_line) <= max_chars_per_line:
                 current_line = test_line
             else:
-                # Word doesn't fit on current line
                 if current_line:
                     lines.append(current_line)
-                # If the word itself is too long, truncate it
                 if len(word) > max_chars_per_line:
                     current_line = word[:max_chars_per_line - 3] + "..."
                 else:
                     current_line = word
         
-        # Don't forget the last line
         if current_line:
             lines.append(current_line)
         
         # Truncate to max lines
         if len(lines) > max_lines:
             lines = lines[:max_lines]
-            # Add ellipsis to last line if we truncated
             if len(lines[-1]) > max_chars_per_line - 3:
                 lines[-1] = lines[-1][:max_chars_per_line - 3] + "..."
             else:
                 lines[-1] = lines[-1] + "..."
 
-        # Calculate total text block height
+        # Now find the right font size that fits all lines within max_text_width
+        # Start at 48px and scale down if needed
+        font_size = 48
+        min_font_size = 24
+        font = None
+        
+        while font_size >= min_font_size:
+            if font_path_found:
+                try:
+                    font = ImageFont.truetype(font_path_found, font_size)
+                except (IOError, OSError):
+                    font = ImageFont.load_default()
+                    break
+            else:
+                font = ImageFont.load_default()
+                break
+            
+            # Check if all lines fit
+            all_fit = True
+            for line in lines:
+                bbox = draw.textbbox((0, 0), line, font=font)
+                line_width = bbox[2] - bbox[0]
+                if line_width > max_text_width:
+                    all_fit = False
+                    break
+            
+            if all_fit:
+                break
+            
+            font_size -= 2  # Try smaller font
+
+        if font is None:
+            font = ImageFont.load_default()
+        
+        logger.debug(f"Icon '{text}': {len(lines)} lines, font size {font_size}px")
+
+        # Calculate line dimensions with final font
         line_heights = []
         line_widths = []
         for line in lines:
@@ -4086,21 +4109,18 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600,
             line_widths.append(bbox[2] - bbox[0])
             line_heights.append(bbox[3] - bbox[1])
         
-        line_spacing = 10  # pixels between lines
+        line_spacing = 10
         total_height = sum(line_heights) + (len(lines) - 1) * line_spacing if lines else 0
         
-        # Starting Y position to center the text block vertically
+        # Center vertically
         start_y = (height - total_height) // 2
 
         # Draw each line centered horizontally
         current_y = start_y
         for i, line in enumerate(lines):
-            line_width = line_widths[i]
-            x = (width - line_width) // 2
+            x = (width - line_widths[i]) // 2
             draw.text((x, current_y), line, fill=text_color, font=font)
             current_y += line_heights[i] + line_spacing
-
-        logger.debug(f"Drawing '{text}' as {len(lines)} lines, size {UNIFORM_FONT_SIZE}px")
 
         # Save as PNG
         output = io.BytesIO()
@@ -4722,7 +4742,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.85",
+        "version": "v3.86",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -5264,7 +5284,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.85 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.86 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 

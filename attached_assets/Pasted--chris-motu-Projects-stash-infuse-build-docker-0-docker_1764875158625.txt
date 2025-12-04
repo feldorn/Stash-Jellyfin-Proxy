@@ -1,0 +1,34 @@
+[chris@motu:~/Projects/stash_infuse/build_docker][0]$ docker logs -f stash-jellyfin-proxy
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+Loaded config from /config/stash_jellyfin_proxy.conf
+  User: chris
+  Password: configured (19 chars)
+  Stash URL: https://stash:9999
+  GraphQL path: /graphql
+  TLS verify: disabled
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: efbf7f038f254927ac504a76b94eab7e
+  Tag groups: Tit Worship, JOI, Gooning, Cum Countdown, Big Tits Worship, Assorted Additional Tags
+  Latest groups: Scenes
+  Log level: INFO (20)
+  Log file: /config/stash_jellyfin_proxy.log
+2025-12-04 13:03:41,906 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.85 ---
+2025-12-04 13:03:41,906 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-04 13:03:41,906 - stash-jellyfin-proxy - INFO - Stash URL: https://stash:9999
+2025-12-04 13:03:41,906 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash:9999/graphql...
+2025-12-04 13:03:41,906 - stash-jellyfin-proxy - INFO - TLS verification disabled (STASH_VERIFY_TLS=false)
+2025-12-04 13:03:41,906 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-04 13:03:41,926 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-04 13:03:41,926 - stash-jellyfin-proxy - INFO - Web UI: http://0.0.0.0:8097
+2025-12-04 13:03:41,926 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-04 13:04:19,816 - stash-jellyfin-proxy - INFO - Config changed: SERVER_ID: "efbf7f038f254927ac504a76b94eab7e" -> "efbf7f038f254927ac504a76b94eab7f"
+2025-12-04 13:04:19,817 - stash-jellyfin-proxy - INFO - Requires restart: SERVER_ID
+2025-12-04 13:04:58,805 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-04 13:04:58,805 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-04 13:04:58,806 - stash-jellyfin-proxy - INFO - Login attempt -> 200 (1ms)
+
