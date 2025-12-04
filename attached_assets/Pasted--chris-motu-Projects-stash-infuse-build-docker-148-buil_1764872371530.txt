@@ -1,0 +1,126 @@
+[chris@motu:~/Projects/stash_infuse/build_docker_148]$ ./build_docker.sh  --no-cache
+Preparing build context...
+Building stash-jellyfin-proxy:latest...
+
+[+] Building 8.1s (14/14) FINISHED                                                                                                                       docker:default
+ => [internal] load build definition from Dockerfile                                                                                                               0.0s
+ => => transferring dockerfile: 1.05kB                                                                                                                             0.0s
+ => [internal] load metadata for docker.io/library/python:3.11-slim-bookworm                                                                                       0.3s
+ => [internal] load .dockerignore                                                                                                                                  0.0s
+ => => transferring context: 2B                                                                                                                                    0.0s
+ => CACHED [1/9] FROM docker.io/library/python:3.11-slim-bookworm@sha256:2c5bc243b1cc47985ee4fb768bb0bbd4490481c5d0897a62da31b7f30b7304a7                          0.0s
+ => [internal] load build context                                                                                                                                  0.0s
+ => => transferring context: 239.15kB                                                                                                                              0.0s
+ => [2/9] RUN apt-get update && apt-get install -y --no-install-recommends     bash     curl     gosu     tzdata     && rm -rf /var/lib/apt/lists/*                2.7s
+ => [3/9] RUN pip install --no-cache-dir     hypercorn     starlette     requests     Pillow                                                                       4.5s
+ => [4/9] RUN mkdir -p /app /config &&     chmod 755 /app /config                                                                                                  0.1s
+ => [5/9] COPY stash_jellyfin_proxy.py /app/                                                                                                                       0.0s
+ => [6/9] RUN chmod +x /app/stash_jellyfin_proxy.py                                                                                                                0.2s
+ => [7/9] COPY docker-entrypoint.sh /docker-entrypoint.sh                                                                                                          0.0s
+ => [8/9] RUN chmod +x /docker-entrypoint.sh                                                                                                                       0.2s
+ => [9/9] WORKDIR /app                                                                                                                                             0.0s
+ => exporting to image                                                                                                                                             0.1s
+ => => exporting layers                                                                                                                                            0.1s
+ => => writing image sha256:3834266dfde1a1f8d6d466ae457f3e6a2718ef6f3267a8c9282c59c2b03798cb                                                                       0.0s
+ => => naming to docker.io/library/stash-jellyfin-proxy:latest                                                                                                     0.0s
+ => => naming to docker.io/library/stash-jellyfin-proxy:3.76                                                                                                       0.0s
+
+Build successful!
+
+Images created:
+  stash-jellyfin-proxy:latest
+  stash-jellyfin-proxy:3.76
+
+To run the container:
+  docker run -d \
+    --name stash-jellyfin-proxy \
+    -p 8096:8096 \
+    -p 8097:8097 \
+    -v /path/to/config:/config \
+    -e PUID=1000 \
+    -e PGID=1000 \
+    -e TZ=America/New_York \
+    stash-jellyfin-proxy:latest
+
+Or use docker-compose:
+  docker-compose -f /home/chris/Projects/stash_infuse/build_docker/docker-compose.yml up -d
+stash-jellyfin-proxy
+stash-jellyfin-proxy
+~/docker ~/Projects/stash_infuse/build_docker
+[+] Running 37/37
+ ✔ Container stash-jellyfin-proxy      Started                                                                                                                     0.2s
+ ✔ Container abs-tract                 Running                                                                                                                     0.0s
+ ✔ Container komga                     Running                                                                                                                     0.0s
+ ✔ Container kavita                    Running                                                                                                                     0.0s
+ ✔ Container unpackerr                 Running                                                                                                                     0.0s
+ ✔ Container subgen                    Running                                                                                                                     0.0s
+ ✔ Container audiobookshelf            Running                                                                                                                     0.0s
+ ✔ Container mealie                    Running                                                                                                                     0.0s
+ ✔ Container metube                    Running                                                                                                                     0.0s
+ ✔ Container decluttarr                Running                                                                                                                     0.0s
+ ✔ Container vaultwarden               Running                                                                                                                     0.0s
+ ✔ Container kometa                    Running                                                                                                                     0.0s
+ ✔ Container auto-m4b                  Running                                                                                                                     0.0s
+ ✔ Container plex-music-grabber        Running                                                                                                                     0.0s
+ ✔ Container swag                      Running                                                                                                                     0.0s
+ ✔ Container portainer                 Running                                                                                                                     0.0s
+ ✔ Container gluetun                   Running                                                                                                                     0.0s
+ ✔ Container tautulli                  Running                                                                                                                     0.0s
+ ✔ Container pihole                    Running                                                                                                                     0.0s
+ ✔ Container calibre                   Running                                                                                                                     0.0s
+ ✔ Container organizr                  Running                                                                                                                     0.0s
+ ✔ Container prowlarr                  Running                                                                                                                     0.0s
+ ✔ Container sabnzbd                   Running                                                                                                                     0.0s
+ ✔ Container qbittorrent               Running                                                                                                                     0.0s
+ ✔ Container whisparr                  Running                                                                                                                     0.0s
+ ✔ Container chromedp                  Running                                                                                                                     0.0s
+ ✔ Container qbittorrent-myanonamouse  Running                                                                                                                     0.0s
+ ✔ Container stash                     Running                                                                                                                     0.0s
+ ✔ Container monitorr                  Running                                                                                                                     0.0s
+ ✔ Container calibre-web               Running                                                                                                                     0.0s
+ ✔ Container free-games-claimer        Running                                                                                                                     0.0s
+ ✔ Container free-games                Running                                                                                                                     0.0s
+ ✔ Container mylar3                    Running                                                                                                                     0.0s
+ ✔ Container radarr                    Running                                                                                                                     0.0s
+ ✔ Container sonarr                    Running                                                                                                                     0.0s
+ ✔ Container overseerr                 Running                                                                                                                     0.0s
+ ✔ Container bazarr                    Running                                                                                                                     0.0s
+~/Projects/stash_infuse/build_docker
+[chris@motu:~/Projects/stash_infuse/build_docker_0]$ docker logs -f stash-jellyfin-proxy
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+Loaded config from /config/stash_jellyfin_proxy.conf
+  User: chris
+  Password: configured (19 chars)
+  Stash URL: https://stash:9999
+  GraphQL path: /graphql
+  TLS verify: disabled
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: efbf7f038f254927ac504a76b94eab7a
+  Tag groups: Tit Worship, JOI, Gooning, Cum Countdown, Alley
+  Latest groups: Scenes
+  Log level: INFO (20)
+  Log file: /config/stash_jellyfin_proxy.log
+2025-12-04 12:16:43,217 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v3.83 ---
+2025-12-04 12:16:43,217 - stash-jellyfin-proxy - INFO - Binding: 0.0.0.0:8096
+2025-12-04 12:16:43,217 - stash-jellyfin-proxy - INFO - Stash URL: https://stash:9999
+2025-12-04 12:16:43,217 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash:9999/graphql...
+2025-12-04 12:16:43,218 - stash-jellyfin-proxy - INFO - TLS verification disabled (STASH_VERIFY_TLS=false)
+2025-12-04 12:16:43,218 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-04 12:16:43,236 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-04 12:16:43,237 - stash-jellyfin-proxy - INFO - Web UI: http://0.0.0.0:8097
+2025-12-04 12:16:43,237 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-04 12:17:45,200 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-04 12:17:45,200 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-04 12:17:45,201 - stash-jellyfin-proxy - INFO - Login attempt -> 200 (1ms)
+2025-12-04 12:18:26,913 - stash-jellyfin-proxy - INFO - Config changed: TAG_GROUPS: "Tit Worship, JOI, Gooning, Cum Countdown, Alley" -> "Tit Worship, JOI, Gooning, Cum Countdown, Arch"
+2025-12-04 12:18:26,914 - stash-jellyfin-proxy - INFO - Applied immediately: TAG_GROUPS
+2025-12-04 12:18:29,641 - stash-jellyfin-proxy - WARNING - No TrueType fonts found (checked: ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', '/usr/share/fonts/TTF/DejaVuSans-Bold.ttf', '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf', '/System/Library/Fonts/Helvetica.ttc', '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf']), using Pillow default font - text will be small
+2025-12-04 12:18:35,800 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-04 12:18:35,801 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-04 12:18:35,802 - stash-jellyfin-proxy - INFO - Login attempt -> 200 (1ms)
+
