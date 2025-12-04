@@ -878,7 +878,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             <!-- Configuration Page -->
             <div id="page-config" class="page hidden">
                 <h2 class="page-title">Configuration</h2>
-                <form id="config-form">
+                <form id="config-form" autocomplete="off">
                     <div class="card">
                         <h3 class="card-title">Stash Connection</h3>
                         <div class="form-group">
@@ -888,7 +888,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         </div>
                         <div class="form-group">
                             <label class="form-label">API Key</label>
-                            <input type="password" class="form-input" name="STASH_API_KEY" placeholder="Enter API key">
+                            <input type="password" class="form-input" name="STASH_API_KEY" placeholder="Enter API key" autocomplete="off" data-1p-ignore data-lpignore="true">
                             <div class="form-hint">Found in Stash: Settings → Security → API Key. Changes require a server restart.</div>
                         </div>
                         <div class="form-group">
@@ -941,12 +941,12 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Username</label>
-                                <input type="text" class="form-input" name="SJS_USER" placeholder="e.g. admin">
+                                <input type="text" class="form-input" name="SJS_USER" placeholder="e.g. admin" autocomplete="off" data-1p-ignore data-lpignore="true">
                                 <div class="form-hint">Username for connecting from Infuse. Changes require a server restart.</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Password</label>
-                                <input type="password" class="form-input" name="SJS_PASSWORD" placeholder="Enter password">
+                                <input type="password" class="form-input" name="SJS_PASSWORD" placeholder="Enter password" autocomplete="new-password" data-1p-ignore data-lpignore="true">
                                 <div class="form-hint">Password for connecting from Infuse. Changes require a server restart.</div>
                             </div>
                         </div>
@@ -1076,7 +1076,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Banned IPs</label>
-                            <textarea class="form-input" name="BANNED_IPS" rows="3" placeholder="192.168.1.100, 10.0.0.50" style="resize: vertical;"></textarea>
+                            <textarea class="form-input" name="BANNED_IPS" rows="3" placeholder="e.g. 192.168.1.100, 10.0.0.50" style="resize: vertical;"></textarea>
                             <div class="form-hint">Comma-separated list of banned IP addresses. Edit to add/remove bans manually.</div>
                         </div>
                     </div>
