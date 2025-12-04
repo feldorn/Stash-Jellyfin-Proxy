@@ -2378,6 +2378,12 @@ async def endpoint_authenticate_by_name(request):
 
     # Accept config password (strip whitespace from both for comparison)
     if pw.strip() == SJS_PASSWORD.strip():
+        # Clear any failed auth attempts for this IP on successful login
+        client_ip = get_client_ip(request.scope)
+        if client_ip in _ip_failures:
+            del _ip_failures[client_ip]
+            logger.debug(f"Cleared auth failure tracking for {client_ip} after successful login")
+        
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
         return JSONResponse({
             "User": {
