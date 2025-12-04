@@ -2968,9 +2968,11 @@ async def endpoint_items(request):
         count_res = stash_query(count_q)
         scene_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
 
-        # Check if there are saved filters for scenes
-        saved_filters = stash_get_saved_filters("SCENES")
-        has_filters = len(saved_filters) > 0
+        # Check if there are saved filters for scenes (only if ENABLE_FILTERS is on)
+        has_filters = False
+        if ENABLE_FILTERS:
+            saved_filters = stash_get_saved_filters("SCENES")
+            has_filters = len(saved_filters) > 0
 
         # On first page, add FILTERS folder at the top if there are saved filters
         # We add it as an extra item (not affecting pagination of actual scenes)
@@ -2999,9 +3001,11 @@ async def endpoint_items(request):
         count_res = stash_query(count_q)
         studio_count = count_res.get("data", {}).get("findStudios", {}).get("count", 0)
 
-        # Check if there are saved filters for studios
-        saved_filters = stash_get_saved_filters("STUDIOS")
-        has_filters = len(saved_filters) > 0
+        # Check if there are saved filters for studios (only if ENABLE_FILTERS is on)
+        has_filters = False
+        if ENABLE_FILTERS:
+            saved_filters = stash_get_saved_filters("STUDIOS")
+            has_filters = len(saved_filters) > 0
 
         # On first page, add FILTERS folder at the top if there are saved filters
         # We add it as an extra item (not affecting pagination of actual studios)
@@ -3072,9 +3076,11 @@ async def endpoint_items(request):
         count_res = stash_query(count_q)
         performer_count = count_res.get("data", {}).get("findPerformers", {}).get("count", 0)
 
-        # Check if there are saved filters for performers
-        saved_filters = stash_get_saved_filters("PERFORMERS")
-        has_filters = len(saved_filters) > 0
+        # Check if there are saved filters for performers (only if ENABLE_FILTERS is on)
+        has_filters = False
+        if ENABLE_FILTERS:
+            saved_filters = stash_get_saved_filters("PERFORMERS")
+            has_filters = len(saved_filters) > 0
 
         # On first page, add FILTERS folder at the top if there are saved filters
         # We add it as an extra item (not affecting pagination of actual performers)
@@ -3148,9 +3154,11 @@ async def endpoint_items(request):
         count_res = stash_query(count_q)
         group_count = count_res.get("data", {}).get("findMovies", {}).get("count", 0)
 
-        # Check if there are saved filters for groups
-        saved_filters = stash_get_saved_filters("GROUPS")
-        has_filters = len(saved_filters) > 0
+        # Check if there are saved filters for groups (only if ENABLE_FILTERS is on)
+        has_filters = False
+        if ENABLE_FILTERS:
+            saved_filters = stash_get_saved_filters("GROUPS")
+            has_filters = len(saved_filters) > 0
 
         # On first page, add FILTERS folder at the top if there are saved filters
         # We add it as an extra item (not affecting pagination of actual groups)
