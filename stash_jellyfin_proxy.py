@@ -806,7 +806,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Username</label>
-                                <input type="text" class="form-input" name="SJS_USER" placeholder="admin">
+                                <input type="text" class="form-input" name="SJS_USER" placeholder="e.g. admin">
                                 <div class="form-hint">Username for connecting from Infuse</div>
                             </div>
                             <div class="form-group">
@@ -840,7 +840,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <h3 class="card-title">Library Organization</h3>
                         <div class="form-group">
                             <label class="form-label">Tag Groups</label>
-                            <input type="text" class="form-input" name="TAG_GROUPS" placeholder="Favorites, VR, 4K">
+                            <input type="text" class="form-input" name="TAG_GROUPS" placeholder="e.g. Favorites, VR, 4K">
                             <div class="form-hint">Comma-separated Stash tag names to create as library folders in Infuse</div>
                         </div>
                         <div class="form-group">
