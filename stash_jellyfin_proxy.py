@@ -582,7 +582,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.77</span>
+                <span id="version">v3.78</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -890,7 +890,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.77';
+                document.getElementById('version').textContent = data.version || 'v3.78';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -1187,8 +1187,11 @@ logger = setup_logging()
 
 # --- Middleware for Request Logging ---
 # Track active streams to detect start/resume/stop
-# scene_id -> {"last_seen": timestamp, "started": timestamp, "title": str, "user": str, "client_ip": str, "client_type": str}
+# scene_id -> {"last_seen": timestamp, "started": timestamp, "title": str, "user": str, "client_ip": str, "client_type": str, "client_key": str}
 _active_streams = {}
+# Track which client is watching which scene (for single-stream-per-client enforcement)
+# client_key -> scene_id
+_client_streams = {}
 STREAM_RESUME_THRESHOLD = 90  # seconds of inactivity before considering it a "resume" (Infuse buffers ~60s)
 
 def get_scene_title(scene_id: str) -> str:
@@ -1213,7 +1216,26 @@ def get_scene_title(scene_id: str) -> str:
 def mark_stream_stopped(scene_id: str):
     """Mark a stream as stopped so next request shows as 'started'."""
     if scene_id in _active_streams:
+        stream_info = _active_streams[scene_id]
+        client_key = stream_info.get("client_key")
+        # Remove from client tracking
+        if client_key and _client_streams.get(client_key) == scene_id:
+            del _client_streams[client_key]
         del _active_streams[scene_id]
+
+def cancel_client_streams(client_key: str, new_scene_id: str = None) -> list:
+    """Cancel any existing streams from this client (except new_scene_id). Returns list of cancelled scene_ids."""
+    cancelled = []
+    current_scene = _client_streams.get(client_key)
+    if current_scene and current_scene != new_scene_id:
+        # Client is starting a different video - cancel the old one
+        if current_scene in _active_streams:
+            old_info = _active_streams[current_scene]
+            logger.info(f"⏹ Stream cancelled: {old_info.get('title', current_scene)} ({current_scene}) - client started new video")
+            del _active_streams[current_scene]
+            cancelled.append(current_scene)
+        del _client_streams[client_key]
+    return cancelled
 
 class RequestLoggingMiddleware:
     """Pure ASGI middleware that doesn't wrap streaming responses (avoids BaseHTTPMiddleware issues)."""
@@ -1299,12 +1321,18 @@ class RequestLoggingMiddleware:
                 client_type = "Jellyfin"
             else:
                 client_type = user_agent.split("/")[0][:20] if user_agent else "Unknown"
+            
+            # Create a unique client key (IP + client type)
+            client_key = f"{client_ip}|{client_type}"
 
             # Check if this is a new stream, resume, or continuation
             stream_info = _active_streams.get(scene_id)
 
             if stream_info is None:
-                # New stream - fetch title and log
+                # New stream for this scene - check if client is switching from another video
+                cancel_client_streams(client_key, scene_id)
+                
+                # Now start tracking the new stream
                 title = get_scene_title(scene_id)
                 _active_streams[scene_id] = {
                     "last_seen": now,
@@ -1312,8 +1340,10 @@ class RequestLoggingMiddleware:
                     "title": title,
                     "user": user,
                     "client_ip": client_ip,
-                    "client_type": client_type
+                    "client_type": client_type,
+                    "client_key": client_key
                 }
+                _client_streams[client_key] = scene_id
                 logger.info(f"▶ Stream started: {title} ({scene_id}) by {user} from {client_ip} [{client_type}]")
             elif (now - stream_info["last_seen"]) > STREAM_RESUME_THRESHOLD:
                 # Gap in activity = resumed after pause
@@ -4359,7 +4389,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.77",
+        "version": "v3.78",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -4702,7 +4732,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.77 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.78 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 

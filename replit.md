@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.77
+## Current Version: v3.78
 
 ## User Preferences
 
@@ -141,6 +141,7 @@ Environment variables ALWAYS override config file values when set.
 
 ## Recent Changes
 
+- v3.78: Smart stream cleanup - when a client starts a new video, their previous stream is automatically cancelled; prevents abandoned streams from accumulating in dashboard
 - v3.77: Fixed performer/studio images not appearing in search results - /Persons and /Studios endpoints now use correct ImageTags format; Docker restart button now works (uses exit(0) + restart policy instead of os.execv)
 - v3.76: Docker containerization - Dockerfile, docker-entrypoint.sh, build_container.sh, docker-compose.yml; CONFIG_FILE env var support; auto-generated SERVER_ID; script continues with warning if Stash connection fails
 - v3.74: Added uptime display to dashboard; fixed config save to properly uncomment and update commented values; fixed restart to execute after event loop exits
