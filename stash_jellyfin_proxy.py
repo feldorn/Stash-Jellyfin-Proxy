@@ -1648,6 +1648,14 @@ PLAY_COOLDOWN_BUFFER = 1800  # 30 minutes buffer on top of video duration
 # In-memory tracking: (scene_id, client_ip) -> {"timestamp": float, "cooldown_seconds": float}
 _play_cooldowns = {}
 
+# Smart stream counting - track position to detect intentional new plays vs seeking
+# Constants for stream counting thresholds
+STREAM_COUNT_COOLDOWN = 1800  # 30 minutes - always count as new stream after this gap
+STREAM_START_GAP = 300  # 5 minutes - minimum gap needed for "seek to start" to count
+STREAM_START_THRESHOLD = 0.05  # 5% - seeking to first 5% of file considered "start"
+# In-memory tracking: (scene_id, client_ip) -> {"last_position": int, "last_time": float, "file_size": int}
+_stream_positions = {}
+
 # --- Proxy Statistics Tracking ---
 # Stats are persisted to JSON file and survive restarts
 STATS_FILE = os.path.join(os.path.dirname(CONFIG_FILE) if CONFIG_FILE else ".", "proxy_stats.json")
@@ -1704,8 +1712,62 @@ def reset_daily_stats_if_needed():
         _proxy_stats["streams_today_date"] = today
         _proxy_stats["unique_ips_today"] = []
 
-def record_stream_started(scene_id: str, title: str, performer: str, client_ip: str, duration: float = 0):
-    """Record a stream play for statistics with cooldown protection.
+def should_count_as_new_stream(scene_id: str, client_ip: str, byte_position: int, file_size: int) -> bool:
+    """Determine if this stream request should count as a new stream.
+    
+    Uses smart detection based on playback position:
+    - 30+ min since last activity → always counts as new stream
+    - Seek to start (first 5%) with 5+ min gap → counts as new stream
+    - Otherwise (seeking within video) → doesn't count
+    
+    Returns True if this should be counted as a new stream.
+    """
+    position_key = (scene_id, client_ip)
+    now = time.time()
+    
+    # First time seeing this scene from this client - always count
+    if position_key not in _stream_positions:
+        _stream_positions[position_key] = {
+            "last_position": byte_position,
+            "last_time": now,
+            "file_size": file_size
+        }
+        return True
+    
+    last_info = _stream_positions[position_key]
+    elapsed = now - last_info["last_time"]
+    
+    # Update position tracking
+    _stream_positions[position_key] = {
+        "last_position": byte_position,
+        "last_time": now,
+        "file_size": file_size or last_info["file_size"]
+    }
+    
+    # Check 1: 30+ minute gap - definitely a new stream
+    if elapsed >= STREAM_COUNT_COOLDOWN:
+        logger.debug(f"New stream counted for {scene_id}: {int(elapsed/60)}min gap exceeds cooldown")
+        return True
+    
+    # Check 2: Seek to start with sufficient gap
+    effective_file_size = file_size or last_info["file_size"]
+    if effective_file_size > 0:
+        position_ratio = byte_position / effective_file_size
+        is_at_start = position_ratio <= STREAM_START_THRESHOLD
+        has_sufficient_gap = elapsed >= STREAM_START_GAP
+        
+        if is_at_start and has_sufficient_gap:
+            logger.debug(f"New stream counted for {scene_id}: seek to start ({position_ratio:.1%}) with {int(elapsed/60)}min gap")
+            return True
+        elif is_at_start:
+            logger.debug(f"Seek to start ignored for {scene_id}: only {int(elapsed)}s gap (need {STREAM_START_GAP}s)")
+    
+    # Otherwise, this is just seeking/buffering within the same session
+    logger.debug(f"Same stream session for {scene_id}: position {byte_position}, {int(elapsed)}s since last")
+    return False
+
+def record_play_count(scene_id: str, title: str, performer: str, client_ip: str, duration: float = 0):
+    """Record a play count for the Top Played list with duration-based cooldown.
     
     Args:
         scene_id: The scene identifier
@@ -1714,21 +1776,11 @@ def record_stream_started(scene_id: str, title: str, performer: str, client_ip: 
         client_ip: Client IP address
         duration: Video duration in seconds (for cooldown calculation)
     
-    The play count is only incremented if the same client hasn't played this video
-    within the cooldown period (video duration + 30 min buffer).
+    Play counts use duration-based cooldown (duration + 30 min buffer) to count unique views.
+    Stream counts are handled separately by should_count_as_new_stream().
     """
     global _stats_dirty
-    reset_daily_stats_if_needed()
     
-    # Always update stream counters (these track activity, not unique plays)
-    _proxy_stats["total_streams"] += 1
-    _proxy_stats["streams_today"] += 1
-    
-    # Track unique IPs
-    if client_ip not in _proxy_stats["unique_ips_today"]:
-        _proxy_stats["unique_ips_today"].append(client_ip)
-    
-    # Check cooldown before counting this as a unique play
     # Ensure duration is a valid positive number (guard against None/negative)
     safe_duration = max(0, float(duration or 0))
     cooldown_key = (scene_id, client_ip)
@@ -1819,13 +1871,13 @@ def get_scene_title(scene_id: str) -> str:
     return info.get("title", scene_id)
 
 def get_scene_info(scene_id: str) -> dict:
-    """Fetch scene title, performer, and duration from Stash."""
+    """Fetch scene title, performer, duration, and file size from Stash."""
     try:
         numeric_id = scene_id.replace("scene-", "")
         query = """query($id: ID!) { 
             findScene(id: $id) { 
                 title 
-                files { basename duration } 
+                files { basename duration size } 
                 performers { name }
             } 
         }"""
@@ -1834,12 +1886,15 @@ def get_scene_info(scene_id: str) -> dict:
         if scene:
             title = scene.get("title")
             duration = 0
+            file_size = 0
             files = scene.get("files", [])
             if files:
                 if not title and files[0].get("basename"):
                     title = files[0]["basename"]
                 # Get duration from first file (in seconds)
                 duration = files[0].get("duration", 0) or 0
+                # Get file size in bytes
+                file_size = files[0].get("size", 0) or 0
             if not title:
                 title = scene_id
             
@@ -1849,10 +1904,10 @@ def get_scene_info(scene_id: str) -> dict:
             if len(performers) > 1:
                 performer = f"{performer} +{len(performers)-1}"
             
-            return {"title": title, "performer": performer, "duration": duration}
+            return {"title": title, "performer": performer, "duration": duration, "file_size": file_size}
     except:
         pass
-    return {"title": scene_id, "performer": "", "duration": 0}
+    return {"title": scene_id, "performer": "", "duration": 0, "file_size": 0}
 
 def mark_stream_stopped(scene_id: str, from_stop_notification: bool = False):
     """Mark a stream as stopped so next request shows as 'started'."""
@@ -2192,12 +2247,48 @@ class RequestLoggingMiddleware:
                 client_type = "Jellyfin"
             else:
                 client_type = user_agent.split("/")[0][:20] if user_agent else "Unknown"
+            
+            # Extract byte position from Range header (e.g., "bytes=12345-" or "bytes=12345-67890")
+            range_header = headers.get("range", "")
+            byte_position = 0
+            if range_header.startswith("bytes="):
+                try:
+                    range_spec = range_header[6:]  # Remove "bytes="
+                    byte_position = int(range_spec.split("-")[0])
+                except (ValueError, IndexError):
+                    pass
 
             # Create a unique client key (IP + client type)
             client_key = f"{client_ip}|{client_type}"
 
             # Check if this is a new stream, resume, or continuation
             stream_info = _active_streams.get(scene_id)
+            
+            # Get scene info for file_size (needed for position-based counting)
+            cached_file_size = stream_info.get("file_size", 0) if stream_info else 0
+            if not cached_file_size:
+                scene_info = get_scene_info(scene_id)
+                cached_file_size = scene_info.get("file_size", 0)
+            
+            # Smart stream counting: check on EVERY request if this should count as new stream
+            # This runs independently of _active_streams tracking (which is for UI display)
+            if should_count_as_new_stream(scene_id, client_ip, byte_position, cached_file_size):
+                reset_daily_stats_if_needed()
+                _proxy_stats["total_streams"] += 1
+                _proxy_stats["streams_today"] += 1
+                # Track unique IPs
+                if client_ip not in _proxy_stats["unique_ips_today"]:
+                    _proxy_stats["unique_ips_today"].append(client_ip)
+                global _stats_dirty
+                _stats_dirty = True
+                maybe_save_stats()
+            
+            # Check if stream_info has expired (gap > 30 min = treat as new for UI purposes)
+            if stream_info and (now - stream_info["last_seen"]) >= STREAM_COUNT_COOLDOWN:
+                logger.debug(f"Stream expired for {scene_id}: {int((now - stream_info['last_seen'])/60)}min gap")
+                # Mark as stopped and clear
+                mark_stream_stopped(scene_id, from_stop_notification=False)
+                stream_info = None
 
             if stream_info is None:
                 # Check if this stream was recently stopped (prevents false start after stop notification)
@@ -2213,11 +2304,15 @@ class RequestLoggingMiddleware:
                     if scene_id in _recently_stopped:
                         del _recently_stopped[scene_id]
 
-                    # Now start tracking the new stream
-                    scene_info = get_scene_info(scene_id)
+                    # Now start tracking the new stream (for UI display)
+                    if not cached_file_size:
+                        scene_info = get_scene_info(scene_id)
+                    else:
+                        scene_info = get_scene_info(scene_id)
                     title = scene_info.get("title", scene_id)
                     performer = scene_info.get("performer", "")
                     duration = scene_info.get("duration", 0)
+                    file_size = scene_info.get("file_size", 0)
                     _active_streams[scene_id] = {
                         "last_seen": now,
                         "started": now,
@@ -2226,11 +2321,12 @@ class RequestLoggingMiddleware:
                         "user": user,
                         "client_ip": client_ip,
                         "client_type": client_type,
-                        "client_key": client_key
+                        "client_key": client_key,
+                        "file_size": file_size
                     }
                     _client_streams[client_key] = scene_id
-                    # Record stats for this stream (with cooldown based on duration)
-                    record_stream_started(scene_id, title, performer, client_ip, duration)
+                    # Record play count (with duration-based cooldown, separate from stream counting)
+                    record_play_count(scene_id, title, performer, client_ip, duration)
                     logger.info(f"▶ Stream started: {title} ({scene_id}) by {user} from {client_ip} [{client_type}]")
             elif (now - stream_info["last_seen"]) > STREAM_RESUME_THRESHOLD:
                 # Gap in activity = resumed after pause
