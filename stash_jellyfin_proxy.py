@@ -42,7 +42,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.getenv("CONFIG_FILE", os.path.join(SCRIPT_DIR, "stash_jellyfin_proxy.conf"))
 
 # Default Configuration (can be overridden by config file)
-STASH_URL = "https://stash.feldorn.com"
+STASH_URL = "https://stash:9999"
 STASH_API_KEY = ""  # Real Stash API key from Settings -> Security -> API Key
 PROXY_BIND = "0.0.0.0"
 PROXY_PORT = 8096
@@ -697,7 +697,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <h3 class="card-title">Stash Connection</h3>
                         <div class="form-group">
                             <label class="form-label">Stash URL</label>
-                            <input type="text" class="form-input" name="STASH_URL" placeholder="http://localhost:9999">
+                            <input type="text" class="form-input" name="STASH_URL" placeholder="https://stash:9999">
                             <div class="form-hint">Full URL including port (e.g., http://localhost:9999 or https://stash.example.com)</div>
                         </div>
                         <div class="form-group">
