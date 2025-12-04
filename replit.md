@@ -144,7 +144,7 @@ Environment variables ALWAYS override config file values when set.
 
 ## Recent Changes
 
-- v3.88: IP-based security with auto-banning - AuthenticationMiddleware enforces ACCESS_TOKEN on protected endpoints; failed auth attempts tracked per IP with rolling 15-min window; auto-ban after 10 failures (configurable via BAN_THRESHOLD/BAN_WINDOW_MINUTES); BANNED_IPS persisted to config file; Web UI config page shows banned IP editor; unauthorized requests logged with IP, user agent, and path; banned IPs receive 403 Forbidden immediately
+- v3.88: IP-based security with auto-banning - AuthenticationMiddleware enforces ACCESS_TOKEN on protected endpoints; failed auth attempts tracked per IP with rolling 15-min window; auto-ban after 10 failures (configurable via BAN_THRESHOLD/BAN_WINDOW_MINUTES); BANNED_IPS persisted to config file; Web UI config page shows banned IP editor; unauthorized requests logged with IP, user agent, and path; banned IPs get silent drop (no response, causes timeout) to avoid confirming ban to attackers
 - v3.87: Fixed critical security vulnerability - implemented AuthenticationMiddleware that validates ACCESS_TOKEN on all protected endpoints; public endpoints (/System/Info/Public, /Users, etc.) remain accessible for client discovery; protected endpoints now require valid token from Jellyfin client auth flow
 - v3.86: Dynamic font scaling for folder icons - 48px max font size that scales down to fit text width; text wraps differently for menu icons (12 chars/4 lines) vs filter icons (10 chars/6 lines) to prevent cutoff
 - v3.85: Font rendering improvements - DejaVu Sans Bold font loading with proper error handling

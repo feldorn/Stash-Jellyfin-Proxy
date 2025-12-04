@@ -1686,21 +1686,11 @@ class AuthenticationMiddleware:
                 break
 
         # Check if IP is banned FIRST (before any other processing)
+        # Silent drop - don't respond at all, forcing client timeout
+        # This doesn't confirm to attackers that their IP is banned
         if client_ip in BANNED_IPS:
-            logger.warning(f"🚫 Blocked banned IP: {client_ip} -> {path}")
-            response_body = b'{"error": "Forbidden"}'
-            await send({
-                "type": "http.response.start",
-                "status": 403,
-                "headers": [
-                    [b"content-type", b"application/json"],
-                    [b"content-length", str(len(response_body)).encode()],
-                ],
-            })
-            await send({
-                "type": "http.response.body",
-                "body": response_body,
-            })
+            logger.debug(f"🚫 Silent drop for banned IP: {client_ip} -> {path}")
+            # Simply return without sending any response - connection will timeout
             return
 
         # Check if this is a public endpoint
