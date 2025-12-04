@@ -904,7 +904,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             <div class="form-group">
                                 <label class="form-label">Log Directory</label>
                                 <input type="text" class="form-input" name="LOG_DIR" placeholder="/config">
-                                <div class="form-hint">Directory for log files (. = current directory)</div>
+                                <div class="form-hint">Directory for log files</div>
                             </div>
                         </div>
                         <div class="form-row">
