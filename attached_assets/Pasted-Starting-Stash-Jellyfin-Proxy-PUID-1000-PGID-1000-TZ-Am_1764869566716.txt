@@ -1,0 +1,73 @@
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+  File "/app/stash_jellyfin_proxy.py", line 30
+    -n|--name)
+             ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '[' on line 28
+[chris@motu:~/Projects/stash_infuse/build_docker_0]$
