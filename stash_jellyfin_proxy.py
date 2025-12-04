@@ -133,6 +133,49 @@ def normalize_path(path, default="/graphql"):
         p = p.rstrip('/')
     return p
 
+def generate_server_id():
+    """Generate a random 32-character server ID (like UUID without dashes)."""
+    import uuid
+    return uuid.uuid4().hex
+
+def save_server_id_to_config(config_file, server_id):
+    """Save SERVER_ID to config file, updating existing entry or adding new one."""
+    if not os.path.isfile(config_file):
+        # Create minimal config file with just SERVER_ID
+        with open(config_file, 'w') as f:
+            f.write(f'# Auto-generated config\nSERVER_ID = {server_id}\n')
+        return True
+    
+    # Read existing config
+    with open(config_file, 'r') as f:
+        lines = f.readlines()
+    
+    # Try to find and update SERVER_ID line
+    updated = False
+    new_lines = []
+    for line in lines:
+        stripped = line.strip()
+        # Match both commented and uncommented SERVER_ID lines
+        if stripped.startswith('#') and 'SERVER_ID' in stripped and '=' in stripped:
+            # Commented SERVER_ID - uncomment and set value
+            new_lines.append(f'SERVER_ID = {server_id}\n')
+            updated = True
+        elif stripped.startswith('SERVER_ID') and '=' in stripped:
+            # Existing SERVER_ID - update value
+            new_lines.append(f'SERVER_ID = {server_id}\n')
+            updated = True
+        else:
+            new_lines.append(line)
+    
+    # If no SERVER_ID line found, append it
+    if not updated:
+        new_lines.append(f'\n# Server identification (auto-generated)\nSERVER_ID = {server_id}\n')
+    
+    # Write back
+    with open(config_file, 'w') as f:
+        f.writelines(new_lines)
+    return True
+
 _config, _config_defined_keys = load_config(CONFIG_FILE)
 if _config:
     STASH_URL = _config.get("STASH_URL", STASH_URL)
@@ -280,14 +323,17 @@ if TAG_GROUPS:
 if LATEST_GROUPS:
     print(f"  Latest groups: {', '.join(LATEST_GROUPS)}")
 
-# Validate required config: SERVER_ID
+# Auto-generate SERVER_ID if not set
 if not SERVER_ID:
-    print("ERROR: SERVER_ID is not set in config file!")
-    print("  SERVER_ID is required for Jellyfin client compatibility.")
-    print("  Add SERVER_ID to your config file with a unique identifier.")
-    print("  Example: SERVER_ID = \"a1b2c3d4e5f6a1b2c3d4e5f6\"")
-    print("  Note: Once set, do not change it or Infuse will need to be reconfigured.")
-    sys.exit(1)
+    SERVER_ID = generate_server_id()
+    print(f"  Generated new Server ID: {SERVER_ID}")
+    try:
+        save_server_id_to_config(CONFIG_FILE, SERVER_ID)
+        print(f"  Saved Server ID to {CONFIG_FILE}")
+        _config_defined_keys.add("SERVER_ID")
+    except Exception as e:
+        print(f"  Warning: Could not save Server ID to config: {e}")
+        print("  Server ID will be regenerated on next restart unless saved manually.")
 
 # Session management for cookie-based auth
 STASH_SESSION = None  # Will hold requests.Session with auth cookies
