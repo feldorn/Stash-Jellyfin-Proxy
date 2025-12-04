@@ -640,20 +640,35 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-group">
                             <label class="form-label">Stash URL</label>
                             <input type="text" class="form-input" name="STASH_URL" placeholder="http://localhost:9999">
+                            <div class="form-hint">Full URL including port (e.g., http://localhost:9999 or https://stash.example.com)</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">API Key</label>
                             <input type="password" class="form-input" name="STASH_API_KEY" placeholder="Enter API key">
-                            <div class="form-hint">Get from Stash: Settings > Security > API Key</div>
+                            <div class="form-hint">Found in Stash: Settings → Security → API Key</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">GraphQL Path</label>
+                            <input type="text" class="form-input" name="STASH_GRAPHQL_PATH" placeholder="/graphql">
+                            <div class="form-hint">Usually /graphql but can be overridden for advanced proxy configurations</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="checkbox" name="STASH_VERIFY_TLS" checked style="width: auto;">
+                                Verify TLS Certificate
+                            </label>
+                            <div class="form-hint">Disable for self-signed certificates (not recommended for production)</div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Timeout (seconds)</label>
-                                <input type="number" class="form-input" name="STASH_TIMEOUT" value="30">
+                                <input type="number" class="form-input" name="STASH_TIMEOUT" placeholder="30">
+                                <div class="form-hint">API request timeout</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Retries</label>
-                                <input type="number" class="form-input" name="STASH_RETRIES" value="3">
+                                <input type="number" class="form-input" name="STASH_RETRIES" placeholder="3">
+                                <div class="form-hint">Retry count on failure</div>
                             </div>
                         </div>
                     </div>
@@ -662,16 +677,18 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Bind Address</label>
-                                <input type="text" class="form-input" name="PROXY_BIND" value="0.0.0.0">
+                                <input type="text" class="form-input" name="PROXY_BIND" placeholder="0.0.0.0">
+                                <div class="form-hint">Use 0.0.0.0 for all interfaces, or 127.0.0.1 for local only</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Proxy Port</label>
-                                <input type="number" class="form-input" name="PROXY_PORT" value="8096">
+                                <input type="number" class="form-input" name="PROXY_PORT" placeholder="8096">
+                                <div class="form-hint">Port for Jellyfin API (default 8096)</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">UI Port</label>
-                                <input type="number" class="form-input" name="UI_PORT" value="8097">
-                                <div class="form-hint">Set to 0 to disable Web UI</div>
+                                <input type="number" class="form-input" name="UI_PORT" placeholder="8097">
+                                <div class="form-hint">Port for this Web UI (0 to disable)</div>
                             </div>
                         </div>
                     </div>
@@ -681,10 +698,12 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             <div class="form-group">
                                 <label class="form-label">Username</label>
                                 <input type="text" class="form-input" name="SJS_USER" placeholder="admin">
+                                <div class="form-hint">Username for connecting from Infuse</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Password</label>
                                 <input type="password" class="form-input" name="SJS_PASSWORD" placeholder="Enter password">
+                                <div class="form-hint">Password for connecting from Infuse</div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -692,7 +711,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                                 <input type="checkbox" name="REQUIRE_AUTH_FOR_CONFIG" style="width: auto;">
                                 Require Password for Configuration
                             </label>
-                            <div class="form-hint">Prompt for password before accessing config page</div>
+                            <div class="form-hint">Prompt for password before accessing this config page</div>
                         </div>
                     </div>
                     <div class="card">
@@ -700,11 +719,12 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-group">
                             <label class="form-label">Server ID</label>
                             <input type="text" class="form-input" name="SERVER_ID" readonly>
-                            <div class="form-hint" style="color: var(--warning);">Do not change - will break Infuse pairing</div>
+                            <div class="form-hint" style="color: var(--warning);">Warning: Changing this value will likely break existing client pairings</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Server Name</label>
                             <input type="text" class="form-input" name="SERVER_NAME" placeholder="Stash Media Server">
+                            <div class="form-hint">Display name shown in Infuse and other clients</div>
                         </div>
                     </div>
                     <div class="card">
@@ -712,12 +732,12 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-group">
                             <label class="form-label">Tag Groups</label>
                             <input type="text" class="form-input" name="TAG_GROUPS" placeholder="Favorites, VR, 4K">
-                            <div class="form-hint">Comma-separated tag names to show as library folders</div>
+                            <div class="form-hint">Comma-separated Stash tag names to create as library folders in Infuse</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Latest Groups</label>
-                            <input type="text" class="form-input" name="LATEST_GROUPS" placeholder="Scenes, VR">
-                            <div class="form-hint">Libraries to show on Infuse home screen. "Scenes" = all scenes.</div>
+                            <input type="text" class="form-input" name="LATEST_GROUPS" placeholder="Scenes">
+                            <div class="form-hint">Libraries to show on Infuse home screen (use "Scenes" for all scenes)</div>
                         </div>
                     </div>
                     <div class="card">
@@ -728,20 +748,20 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                                     <input type="checkbox" name="ENABLE_FILTERS" checked style="width: auto;">
                                     Enable Filters
                                 </label>
-                                <div class="form-hint">Show FILTERS folder in library (requires saved filters in Stash)</div>
+                                <div class="form-hint">Show FILTERS folder in library (uses saved filters from Stash)</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
                                     <input type="checkbox" name="ENABLE_IMAGE_RESIZE" checked style="width: auto;">
                                     Enable Image Resize
                                 </label>
-                                <div class="form-hint">Resize thumbnails for performers/studios</div>
+                                <div class="form-hint">Resize studio logos to fit Infuse tiles better</div>
                             </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Image Cache Size</label>
-                            <input type="number" class="form-input" name="IMAGE_CACHE_MAX_SIZE" value="100" style="width: 100px;">
-                            <div class="form-hint">Max items to cache for resized images</div>
+                            <input type="number" class="form-input" name="IMAGE_CACHE_MAX_SIZE" placeholder="100" style="width: 100px;">
+                            <div class="form-hint">Maximum resized images to keep in memory</div>
                         </div>
                     </div>
                     <div class="card">
@@ -749,13 +769,13 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Default Page Size</label>
-                                <input type="number" class="form-input" name="DEFAULT_PAGE_SIZE" value="50">
-                                <div class="form-hint">Items per page when client doesn't specify</div>
+                                <input type="number" class="form-input" name="DEFAULT_PAGE_SIZE" placeholder="50">
+                                <div class="form-hint">Items per page when Infuse doesn't specify a limit</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Max Page Size</label>
-                                <input type="number" class="form-input" name="MAX_PAGE_SIZE" value="200">
-                                <div class="form-hint">Maximum items in a single request</div>
+                                <input type="number" class="form-input" name="MAX_PAGE_SIZE" placeholder="200">
+                                <div class="form-hint">Maximum items allowed in a single API request</div>
                             </div>
                         </div>
                     </div>
@@ -770,24 +790,29 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                                     <option value="WARNING">WARNING</option>
                                     <option value="ERROR">ERROR</option>
                                 </select>
+                                <div class="form-hint">DEBUG shows all details, INFO shows key events only</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Log Directory</label>
                                 <input type="text" class="form-input" name="LOG_DIR" placeholder=".">
+                                <div class="form-hint">Directory for log files (. = current directory)</div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Log File</label>
                                 <input type="text" class="form-input" name="LOG_FILE" placeholder="stash_jellyfin_proxy.log">
+                                <div class="form-hint">Log filename</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Max Size (MB)</label>
-                                <input type="number" class="form-input" name="LOG_MAX_SIZE_MB" value="10">
+                                <input type="number" class="form-input" name="LOG_MAX_SIZE_MB" placeholder="10">
+                                <div class="form-hint">Max file size before rotation</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Backup Count</label>
-                                <input type="number" class="form-input" name="LOG_BACKUP_COUNT" value="3">
+                                <input type="number" class="form-input" name="LOG_BACKUP_COUNT" placeholder="3">
+                                <div class="form-hint">Old log files to keep</div>
                             </div>
                         </div>
                     </div>
@@ -999,7 +1024,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             const formData = new FormData(e.target);
             const config = {};
             const intFields = ['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT', 'DEFAULT_PAGE_SIZE', 'MAX_PAGE_SIZE', 'IMAGE_CACHE_MAX_SIZE'];
-            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'REQUIRE_AUTH_FOR_CONFIG'];
+            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'REQUIRE_AUTH_FOR_CONFIG', 'STASH_VERIFY_TLS'];
             
             formData.forEach((value, key) => {
                 if (key === 'TAG_GROUPS' || key === 'LATEST_GROUPS') {
@@ -4429,6 +4454,8 @@ async def ui_api_config(request):
         return JSONResponse({
             "STASH_URL": STASH_URL,
             "STASH_API_KEY": "*" * min(len(STASH_API_KEY), 20) if STASH_API_KEY else "",
+            "STASH_GRAPHQL_PATH": STASH_GRAPHQL_PATH,
+            "STASH_VERIFY_TLS": STASH_VERIFY_TLS,
             "PROXY_BIND": PROXY_BIND,
             "PROXY_PORT": PROXY_PORT,
             "UI_PORT": UI_PORT,
@@ -4456,7 +4483,8 @@ async def ui_api_config(request):
         try:
             data = await request.json()
             config_keys = [
-                "STASH_URL", "STASH_API_KEY", "PROXY_BIND", "PROXY_PORT", "UI_PORT",
+                "STASH_URL", "STASH_API_KEY", "STASH_GRAPHQL_PATH", "STASH_VERIFY_TLS",
+                "PROXY_BIND", "PROXY_PORT", "UI_PORT",
                 "SJS_USER", "SJS_PASSWORD", "SERVER_ID", "SERVER_NAME",
                 "TAG_GROUPS", "LATEST_GROUPS", "STASH_TIMEOUT", "STASH_RETRIES",
                 "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "REQUIRE_AUTH_FOR_CONFIG", "IMAGE_CACHE_MAX_SIZE",
@@ -4492,6 +4520,8 @@ async def ui_api_config(request):
             current_running = {
                 "STASH_URL": STASH_URL,
                 "STASH_API_KEY": STASH_API_KEY,
+                "STASH_GRAPHQL_PATH": STASH_GRAPHQL_PATH,
+                "STASH_VERIFY_TLS": "true" if STASH_VERIFY_TLS else "false",
                 "PROXY_BIND": PROXY_BIND,
                 "PROXY_PORT": str(PROXY_PORT),
                 "UI_PORT": str(UI_PORT),
