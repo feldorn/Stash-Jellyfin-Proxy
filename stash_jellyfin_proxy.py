@@ -1550,6 +1550,7 @@ def cancel_client_streams(client_key: str, new_scene_id: str = None) -> list:
 # Endpoints that don't require authentication (for client discovery)
 PUBLIC_ENDPOINTS = {
     "/",
+    "/favicon.ico",  # Browser requests this automatically
     "/System/Info/Public",
     "/System/Info",
     "/System/Ping",
