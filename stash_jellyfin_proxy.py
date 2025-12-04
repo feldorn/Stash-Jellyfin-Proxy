@@ -4112,7 +4112,7 @@ def generate_text_icon(text: str, width: int = 400, height: int = 600,
         return PLACEHOLDER_PNG, "image/png"
 
 def generate_menu_icon(icon_type: str, width: int = 400, height: int = 600) -> Tuple[bytes, str]:
-    """Generate a menu icon for top-level folders (16 chars wide, 4 lines max)."""
+    """Generate a menu icon for top-level folders (12 chars wide, 4 lines max)."""
     icon_names = {
         "root-scenes": "Scenes",
         "root-studios": "Studios",
@@ -4122,7 +4122,7 @@ def generate_menu_icon(icon_type: str, width: int = 400, height: int = 600) -> T
     }
 
     text = icon_names.get(icon_type, icon_type.replace("root-", "").replace("-", " ").title())
-    return generate_text_icon(text, width, height, max_chars_per_line=16, max_lines=4)
+    return generate_text_icon(text, width, height, max_chars_per_line=12, max_lines=4)
 
 def generate_filter_icon(text: str, width: int = 400, height: int = 600) -> Tuple[bytes, str]:
     """Generate a filter icon (10 chars wide, 6 lines max for poster-sized display)."""
