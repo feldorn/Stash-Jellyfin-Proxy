@@ -421,7 +421,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stash-Jellyfin Proxy</title>
+    <title>{{SERVER_NAME}}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -5445,7 +5445,8 @@ PROXY_START_TIME = None  # Track when proxy started
 
 async def ui_index(request):
     """Serve the Web UI."""
-    return Response(WEB_UI_HTML, media_type="text/html")
+    html = WEB_UI_HTML.replace("{{SERVER_NAME}}", SERVER_NAME)
+    return Response(html, media_type="text/html")
 
 async def ui_api_status(request):
     """Return proxy status."""
