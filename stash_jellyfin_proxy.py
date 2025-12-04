@@ -187,22 +187,40 @@ else:
 
 # Environment variables ALWAYS override config file (for Docker deployment flexibility)
 # This allows docker-compose env vars to take precedence over the mounted config file
+# Note: Dockerfile sets defaults for PROXY_BIND, PROXY_PORT, UI_PORT, LOG_DIR
+# Only mark as "override" if the value differs from Docker defaults (user explicitly set it)
+_DOCKER_ENV_DEFAULTS = {
+    "PROXY_BIND": "0.0.0.0",
+    "PROXY_PORT": "8096",
+    "UI_PORT": "8097",
+    "LOG_DIR": "/config",
+}
 _env_overrides = []
+
 if os.getenv("STASH_URL"):
     STASH_URL = os.getenv("STASH_URL")
     _env_overrides.append("STASH_URL")
 if os.getenv("STASH_API_KEY"):
     STASH_API_KEY = os.getenv("STASH_API_KEY")
     _env_overrides.append("STASH_API_KEY")
+# These have Docker ENV defaults - only mark as override if value differs
 if os.getenv("PROXY_BIND"):
     PROXY_BIND = os.getenv("PROXY_BIND")
-    _env_overrides.append("PROXY_BIND")
+    if os.getenv("PROXY_BIND") != _DOCKER_ENV_DEFAULTS["PROXY_BIND"]:
+        _env_overrides.append("PROXY_BIND")
 if os.getenv("PROXY_PORT"):
     PROXY_PORT = int(os.getenv("PROXY_PORT"))
-    _env_overrides.append("PROXY_PORT")
+    if os.getenv("PROXY_PORT") != _DOCKER_ENV_DEFAULTS["PROXY_PORT"]:
+        _env_overrides.append("PROXY_PORT")
 if os.getenv("UI_PORT"):
     UI_PORT = int(os.getenv("UI_PORT"))
-    _env_overrides.append("UI_PORT")
+    if os.getenv("UI_PORT") != _DOCKER_ENV_DEFAULTS["UI_PORT"]:
+        _env_overrides.append("UI_PORT")
+if os.getenv("LOG_DIR"):
+    LOG_DIR = os.getenv("LOG_DIR")
+    if os.getenv("LOG_DIR") != _DOCKER_ENV_DEFAULTS["LOG_DIR"]:
+        _env_overrides.append("LOG_DIR")
+# Regular env overrides (no Docker defaults)
 if os.getenv("SJS_USER"):
     SJS_USER = os.getenv("SJS_USER")
     _env_overrides.append("SJS_USER")
@@ -215,9 +233,6 @@ if os.getenv("SERVER_ID"):
 if os.getenv("REQUIRE_AUTH_FOR_CONFIG"):
     REQUIRE_AUTH_FOR_CONFIG = os.getenv("REQUIRE_AUTH_FOR_CONFIG", "").lower() in ('true', 'yes', '1', 'on')
     _env_overrides.append("REQUIRE_AUTH_FOR_CONFIG")
-if os.getenv("LOG_DIR"):
-    LOG_DIR = os.getenv("LOG_DIR")
-    _env_overrides.append("LOG_DIR")
 if os.getenv("STASH_GRAPHQL_PATH"):
     STASH_GRAPHQL_PATH = os.getenv("STASH_GRAPHQL_PATH")
     _env_overrides.append("STASH_GRAPHQL_PATH")
@@ -453,6 +468,16 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         .env-locked:disabled {
             opacity: 0.8;
         }
+        .env-locked-label {
+            color: #ff9933 !important;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+        .env-locked-label::after {
+            content: ' (env)';
+            font-size: 11px;
+            color: #b35900;
+        }
         .env-notice {
             background: rgba(179, 89, 0, 0.15);
             border: 1px solid #b35900;
@@ -604,7 +629,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.79</span>
+                <span id="version">v3.80</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -940,7 +965,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.79';
+                document.getElementById('version').textContent = data.version || 'v3.80';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -1076,14 +1101,20 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         
                         // Mark env fields as read-only with visual indicator
                         if (isEnvField) {
-                            input.readOnly = true;
-                            input.disabled = input.tagName === 'SELECT';
-                            input.classList.add('env-locked');
+                            if (input.type === 'checkbox') {
+                                // For checkboxes, disable and style the label
+                                input.disabled = true;
+                                const label = input.closest('label');
+                                if (label) label.classList.add('env-locked-label');
+                            } else {
+                                input.readOnly = true;
+                                input.disabled = input.tagName === 'SELECT';
+                                input.classList.add('env-locked');
+                            }
                         }
                         
                         if (input.type === 'checkbox') {
                             input.checked = value === true || value === 'true';
-                            if (isEnvField) input.disabled = true;
                         } else if (input.tagName === 'SELECT') {
                             // Always set select value (dropdowns should show selection)
                             input.value = value;
@@ -4532,7 +4563,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.79",
+        "version": "v3.80",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -4883,7 +4914,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.79 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.80 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
