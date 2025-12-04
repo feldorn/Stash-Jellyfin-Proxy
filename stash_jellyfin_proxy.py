@@ -1075,6 +1075,13 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             document.querySelector(`[data-page="${page}"]`).classList.add('active');
             document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
             document.getElementById(`page-${page}`).classList.remove('hidden');
+            
+            // Refresh data when switching pages
+            if (page === 'config') {
+                fetchConfig();
+            } else if (page === 'logs') {
+                fetchLogs();
+            }
         }
 
         // API calls
