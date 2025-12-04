@@ -754,12 +754,12 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         <div class="form-group">
                             <label class="form-label">Stash URL</label>
                             <input type="text" class="form-input" name="STASH_URL" placeholder="https://stash:9999">
-                            <div class="form-hint">Full URL including port (e.g., http://localhost:9999 or https://stash.example.com)</div>
+                            <div class="form-hint">Full URL including port (e.g., http://localhost:9999 or https://stash.example.com). Changes require a server restart.</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">API Key</label>
                             <input type="password" class="form-input" name="STASH_API_KEY" placeholder="Enter API key">
-                            <div class="form-hint">Found in Stash: Settings → Security → API Key</div>
+                            <div class="form-hint">Found in Stash: Settings → Security → API Key. Changes require a server restart.</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">GraphQL Path</label>
@@ -792,17 +792,17 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             <div class="form-group">
                                 <label class="form-label">Bind Address</label>
                                 <input type="text" class="form-input" name="PROXY_BIND" placeholder="0.0.0.0">
-                                <div class="form-hint">Use 0.0.0.0 for all interfaces, or 127.0.0.1 for local only</div>
+                                <div class="form-hint">Use 0.0.0.0 for all interfaces, or 127.0.0.1 for local only. Changes require a server restart.</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Proxy Port</label>
                                 <input type="number" class="form-input" name="PROXY_PORT" placeholder="8096">
-                                <div class="form-hint">Port for Jellyfin API (default 8096)</div>
+                                <div class="form-hint">Port for Jellyfin API (default 8096). Changes require a server restart.</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">UI Port</label>
                                 <input type="number" class="form-input" name="UI_PORT" placeholder="8097">
-                                <div class="form-hint">Port for this Web UI (0 to disable)</div>
+                                <div class="form-hint">Port for this Web UI (0 to disable). Changes require a server restart.</div>
                             </div>
                         </div>
                     </div>
@@ -812,12 +812,12 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             <div class="form-group">
                                 <label class="form-label">Username</label>
                                 <input type="text" class="form-input" name="SJS_USER" placeholder="e.g. admin">
-                                <div class="form-hint">Username for connecting from Infuse</div>
+                                <div class="form-hint">Username for connecting from Infuse. Changes require a server restart.</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Password</label>
                                 <input type="password" class="form-input" name="SJS_PASSWORD" placeholder="Enter password">
-                                <div class="form-hint">Password for connecting from Infuse</div>
+                                <div class="form-hint">Password for connecting from Infuse. Changes require a server restart.</div>
                             </div>
                         </div>
                         <div class="form-group">
@@ -909,14 +909,14 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             <div class="form-group">
                                 <label class="form-label">Log Directory</label>
                                 <input type="text" class="form-input" name="LOG_DIR" placeholder="/config">
-                                <div class="form-hint">Directory for log files</div>
+                                <div class="form-hint">Directory for log files. Changes require a server restart.</div>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Log File</label>
                                 <input type="text" class="form-input" name="LOG_FILE" placeholder="stash_jellyfin_proxy.log">
-                                <div class="form-hint">Log filename</div>
+                                <div class="form-hint">Log filename. Changes require a server restart.</div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Max Size (MB)</label>
