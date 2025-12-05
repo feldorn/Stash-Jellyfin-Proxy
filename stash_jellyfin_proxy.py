@@ -3229,7 +3229,6 @@ async def endpoint_authenticate_by_name(request):
                 },
                 "AdditionalUsers": [],
                 "Capabilities": {
-                    "PlayableMediaTypes": ["Video"],
                     "SupportedCommands": [],
                     "SupportsMediaControl": False,
                     "SupportsPersistentIdentifier": True
