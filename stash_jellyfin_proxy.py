@@ -3031,8 +3031,8 @@ async def endpoint_user_views(request):
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-tags"}
         })
 
-    # Add tag group folders
-    for tag_name in TAG_GROUPS:
+    # Add tag group folders (sorted alphabetically)
+    for tag_name in sorted(TAG_GROUPS, key=str.lower):
         tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
         items.append({
             "Name": tag_name,
@@ -3093,8 +3093,8 @@ async def endpoint_virtual_folders(request):
             "ItemId": "root-tags"
         })
 
-    # Add tag group folders
-    for tag_name in TAG_GROUPS:
+    # Add tag group folders (sorted alphabetically)
+    for tag_name in sorted(TAG_GROUPS, key=str.lower):
         tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
         folders.append({
             "Name": tag_name,
