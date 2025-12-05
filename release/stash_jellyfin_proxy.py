@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stash-Jellyfin Proxy v5.01
+Stash-Jellyfin Proxy v5.02
 Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
 
 # =============================================================================
@@ -836,7 +836,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v5.01</span>
+                <span id="version">v5.02</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1245,7 +1245,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v5.01';
+                document.getElementById('version').textContent = data.version || 'v5.02';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -2170,6 +2170,73 @@ def save_banned_ips_to_config():
         logger.info(f"Saved banned IPs to config: {banned_str if banned_str else '(none)'}")
     except Exception as e:
         logger.error(f"Failed to save banned IPs to config: {e}")
+
+# Path segment normalization map for Jellyfin API endpoints
+# Maps lowercase -> proper casing for common path segments
+PATH_SEGMENT_MAP = {
+    "system": "System", "info": "Info", "public": "Public", "ping": "Ping",
+    "branding": "Branding", "configuration": "Configuration",
+    "users": "Users", "authenticatebyname": "AuthenticateByName",
+    "views": "Views", "items": "Items", "latest": "Latest", "resume": "Resume",
+    "groupingoptions": "GroupingOptions", "favoriteitems": "FavoriteItems",
+    "rating": "Rating", "delete": "Delete", "playeditems": "PlayedItems",
+    "playingitems": "PlayingItems", "unplayeditems": "UnplayedItems",
+    "library": "Library", "virtualfolders": "VirtualFolders",
+    "displaypreferences": "DisplayPreferences",
+    "shows": "Shows", "nextup": "NextUp",
+    "counts": "Counts", "playbackinfo": "PlaybackInfo",
+    "similar": "Similar", "intros": "Intros", "specialfeatures": "SpecialFeatures",
+    "videos": "Videos", "stream": "stream", "subtitles": "Subtitles",
+    "images": "Images", "primary": "Primary", "thumb": "Thumb",
+    "sessions": "Sessions", "playing": "Playing", "progress": "Progress",
+    "stopped": "Stopped", "capabilities": "Capabilities", "full": "Full",
+    "collections": "Collections", "playlists": "Playlists",
+    "genres": "Genres", "musicgenres": "MusicGenres",
+    "persons": "Persons", "studios": "Studios", "artists": "Artists",
+    "years": "Years", "movies": "Movies", "recommendations": "Recommendations",
+    "instantmix": "InstantMix", "mediasegments": "MediaSegments",
+    "quickconnect": "QuickConnect", "enabled": "Enabled", "initiate": "Initiate",
+    "connect": "Connect", "localization": "Localization", "options": "Options",
+    "audio": "Audio",
+}
+
+def normalize_jellyfin_path(path: str) -> str:
+    """Normalize path to match Jellyfin API casing expectations."""
+    if not path or path == "/":
+        return path
+    
+    segments = path.split("/")
+    normalized = []
+    for segment in segments:
+        if not segment:
+            normalized.append(segment)
+            continue
+        # Check if segment looks like a GUID/ID (preserve as-is)
+        if len(segment) == 32 or (len(segment) == 36 and segment.count("-") == 4):
+            normalized.append(segment)
+        # Check if it's a file extension like .mp4, .srt, .vtt
+        elif "." in segment:
+            normalized.append(segment)
+        else:
+            # Look up in map, fallback to original
+            normalized.append(PATH_SEGMENT_MAP.get(segment.lower(), segment))
+    return "/".join(normalized)
+
+class PathNormalizationMiddleware:
+    """ASGI middleware that normalizes path casing for Jellyfin API compatibility."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            original_path = scope.get("path", "")
+            normalized_path = normalize_jellyfin_path(original_path)
+            if normalized_path != original_path:
+                # Create a new scope with the normalized path
+                scope = dict(scope)
+                scope["path"] = normalized_path
+        await self.app(scope, receive, send)
 
 class AuthenticationMiddleware:
     """ASGI middleware that validates ACCESS_TOKEN on protected endpoints and enforces IP bans."""
@@ -6011,7 +6078,8 @@ routes = [
 ]
 
 middleware = [
-    Middleware(AuthenticationMiddleware),  # Token validation first
+    Middleware(PathNormalizationMiddleware),  # Normalize path casing first
+    Middleware(AuthenticationMiddleware),  # Token validation
     Middleware(RequestLoggingMiddleware),
     Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 ]
@@ -6032,7 +6100,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v5.01",
+        "version": "v5.02",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6686,7 +6754,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v5.01 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v5.02 ---")
 
     stash_ok = check_stash_connection()
     if not stash_ok:
