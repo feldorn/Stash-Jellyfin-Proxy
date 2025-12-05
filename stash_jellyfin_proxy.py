@@ -2303,7 +2303,7 @@ class RequestLoggingMiddleware:
         if is_error and status > 0:
             logger.warning(f"{path} -> {status} ({ms}ms)")
         elif is_auth:
-            logger.info(f"Login attempt -> {status} ({ms}ms)")
+            logger.debug(f"Login request completed -> {status} ({ms}ms)")
         elif is_stream:
             # Extract scene ID from path like /Videos/scene-35734/stream
             match = re.search(r'/(scene-\d+)/', path)
