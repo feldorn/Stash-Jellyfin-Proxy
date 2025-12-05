@@ -2397,6 +2397,10 @@ class RequestLoggingMiddleware:
         ms = int(process_time * 1000)
         status = response_status[0]
 
+        # VERBOSE: Log ALL requests for debugging Swiftfin
+        method = scope.get("method", "?")
+        logger.debug(f"REQUEST: {method} {path} -> {status} ({ms}ms)")
+
         # Determine log level based on request type and result
         is_error = status >= 400
         is_auth = "/Authenticate" in path
