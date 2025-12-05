@@ -1,0 +1,303 @@
+Starting Stash-Jellyfin Proxy...
+  PUID: 1000
+  PGID: 1000
+  TZ: America/Chicago
+  Config: /config/stash_jellyfin_proxy.conf
+Loaded config from /config/stash_jellyfin_proxy.conf
+  User: chris
+  Password: configured (19 chars)
+  Stash URL: https://stash:9999
+  GraphQL path: /graphql
+  TLS verify: disabled
+  Proxy: 0.0.0.0:8096
+  API key: configured (147 chars)
+  Server ID: efbf7f038f254927ac504a76b94eabab
+  Tag groups: Tit Worship, JOI, Gooning, Cum Countdown
+  Latest groups: Scenes
+  Log level: DEBUG (10)
+  Log file: /config/stash_jellyfin_proxy.log
+2025-12-05 14:06:25,315 - stash-jellyfin-proxy - INFO - --- Stash-Jellyfin Proxy v5.03 ---
+2025-12-05 14:06:25,315 - stash-jellyfin-proxy - INFO - Testing connection to Stash at https://stash:9999/graphql...
+2025-12-05 14:06:25,315 - stash-jellyfin-proxy - INFO - TLS verification disabled (STASH_VERIFY_TLS=false)
+2025-12-05 14:06:25,316 - stash-jellyfin-proxy - INFO - Session configured with ApiKey header (key length: 147)
+2025-12-05 14:06:25,335 - stash-jellyfin-proxy - INFO - ✅ Connected to Stash! Version: v0.29.3
+2025-12-05 14:06:25,335 - stash-jellyfin-proxy - DEBUG - Loaded proxy stats from /config/proxy_stats.json
+2025-12-05 14:06:25,335 - stash-jellyfin-proxy - INFO - Web UI: http://0.0.0.0:8097
+2025-12-05 14:06:25,335 - stash-jellyfin-proxy - INFO - Starting Hypercorn server...
+2025-12-05 14:06:29,697 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-05 14:06:29,698 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=19, expected len=19
+2025-12-05 14:06:29,698 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-05 14:06:29,698 - stash-jellyfin-proxy - DEBUG - AUTH RESPONSE JSON: {
+  "User": {
+    "Name": "chris",
+    "ServerId": "efbf7f038f254927ac504a76b94eabab",
+    "Id": "6b34fe24ac2ff8103f6fce1f0da2ef57",
+    "HasPassword": true,
+    "HasConfiguredPassword": true,
+    "HasConfiguredEasyPassword": false,
+    "EnableAutoLogin": false,
+    "Configuration": {
+      "PlayDefaultAudioTrack": true,
+      "SubtitleLanguagePreference": "",
+      "DisplayMissingEpisodes": false,
+      "GroupedFolders": [],
+      "SubtitleMode": "Default",
+      "DisplayCollectionsView": false,
+      "EnableLocalPassword": false,
+      "OrderedViews": [],
+      "LatestItemsExcludes": [],
+      "MyMediaExcludes": [],
+      "HidePlayedInLatest": true,
+      "RememberAudioSelections": true,
+      "RememberSubtitleSelections": true,
+      "EnableNextEpisodeAutoPlay": true
+    },
+    "Policy": {
+      "IsAdministrator": true,
+      "IsHidden": false,
+      "IsDisabled": false,
+      "EnableUserPreferenceAccess": true,
+      "EnableRemoteAccess": true,
+      "EnableContentDeletion": false,
+      "EnablePlaybackRemuxing": true,
+      "ForceRemoteSourceTranscoding": false,
+      "EnableMediaPlayback": true,
+      "EnableAudioPlaybackTranscoding": true,
+      "EnableVideoPlaybackTranscoding": true,
+      "EnableAllFolders": true,
+      "EnableAllChannels": true,
+      "EnableAllDevices": true,
+      "EnabledDevices": [],
+      "EnabledChannels": [],
+      "EnabledFolders": [],
+      "BlockedTags": [],
+      "AllowedTags": [],
+      "AccessSchedules": [],
+      "BlockUnratedItems": [],
+      "EnableContentDeletionFromFolders": [],
+      "SyncPlayAccess": "CreateAndJoinGroups"
+    }
+  },
+  "SessionInfo": {
+    "PlayState": {
+      "CanSeek": false,
+      "IsPaused": false,
+      "IsMuted": false,
+      "RepeatMode": "RepeatNone"
+    },
+    "AdditionalUsers": [],
+    "Capabilities": {
+      "PlayableMediaTypes": [
+        "Video"
+      ],
+      "SupportedCommands": [],
+      "SupportsMediaControl": false,
+      "SupportsPersistentIdentifier": true
+    },
+    "PlayableMediaTypes": [],
+    "Id": "6caffae738df3e04f2fc0a1ac9c0a77a",
+    "UserId": "6b34fe24ac2ff8103f6fce1f0da2ef57",
+    "UserName": "chris",
+    "Client": "Stash Proxy Client",
+    "DeviceName": "Unknown",
+    "DeviceId": "stash-proxy-device",
+    "ApplicationVersion": "1.0",
+    "IsActive": true,
+    "SupportsMediaControl": false,
+    "SupportsRemoteControl": false,
+    "NowPlayingQueue": [],
+    "NowPlayingQueueFullItems": [],
+    "HasCustomDeviceName": false,
+    "ServerId": "efbf7f038f254927ac504a76b94eabab",
+    "SupportedCommands": []
+  },
+  "AccessToken": "b742dbab-f436-4589-8b92-ce10c37ad29b",
+  "ServerId": "efbf7f038f254927ac504a76b94eabab"
+}
+2025-12-05 14:06:29,699 - stash-jellyfin-proxy - DEBUG - REQUEST: POST /Users/AuthenticateByName -> 200 (1ms)
+2025-12-05 14:06:29,699 - stash-jellyfin-proxy - DEBUG - Login request completed -> 200 (1ms)
+2025-12-05 14:06:35,151 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-05 14:06:35,151 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=19, expected len=19
+2025-12-05 14:06:35,152 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-05 14:06:35,152 - stash-jellyfin-proxy - DEBUG - AUTH RESPONSE JSON: {
+  "User": {
+    "Name": "chris",
+    "ServerId": "efbf7f038f254927ac504a76b94eabab",
+    "Id": "6b34fe24ac2ff8103f6fce1f0da2ef57",
+    "HasPassword": true,
+    "HasConfiguredPassword": true,
+    "HasConfiguredEasyPassword": false,
+    "EnableAutoLogin": false,
+    "Configuration": {
+      "PlayDefaultAudioTrack": true,
+      "SubtitleLanguagePreference": "",
+      "DisplayMissingEpisodes": false,
+      "GroupedFolders": [],
+      "SubtitleMode": "Default",
+      "DisplayCollectionsView": false,
+      "EnableLocalPassword": false,
+      "OrderedViews": [],
+      "LatestItemsExcludes": [],
+      "MyMediaExcludes": [],
+      "HidePlayedInLatest": true,
+      "RememberAudioSelections": true,
+      "RememberSubtitleSelections": true,
+      "EnableNextEpisodeAutoPlay": true
+    },
+    "Policy": {
+      "IsAdministrator": true,
+      "IsHidden": false,
+      "IsDisabled": false,
+      "EnableUserPreferenceAccess": true,
+      "EnableRemoteAccess": true,
+      "EnableContentDeletion": false,
+      "EnablePlaybackRemuxing": true,
+      "ForceRemoteSourceTranscoding": false,
+      "EnableMediaPlayback": true,
+      "EnableAudioPlaybackTranscoding": true,
+      "EnableVideoPlaybackTranscoding": true,
+      "EnableAllFolders": true,
+      "EnableAllChannels": true,
+      "EnableAllDevices": true,
+      "EnabledDevices": [],
+      "EnabledChannels": [],
+      "EnabledFolders": [],
+      "BlockedTags": [],
+      "AllowedTags": [],
+      "AccessSchedules": [],
+      "BlockUnratedItems": [],
+      "EnableContentDeletionFromFolders": [],
+      "SyncPlayAccess": "CreateAndJoinGroups"
+    }
+  },
+  "SessionInfo": {
+    "PlayState": {
+      "CanSeek": false,
+      "IsPaused": false,
+      "IsMuted": false,
+      "RepeatMode": "RepeatNone"
+    },
+    "AdditionalUsers": [],
+    "Capabilities": {
+      "PlayableMediaTypes": [
+        "Video"
+      ],
+      "SupportedCommands": [],
+      "SupportsMediaControl": false,
+      "SupportsPersistentIdentifier": true
+    },
+    "PlayableMediaTypes": [],
+    "Id": "6caffae738df3e04f2fc0a1ac9c0a77a",
+    "UserId": "6b34fe24ac2ff8103f6fce1f0da2ef57",
+    "UserName": "chris",
+    "Client": "Stash Proxy Client",
+    "DeviceName": "Unknown",
+    "DeviceId": "stash-proxy-device",
+    "ApplicationVersion": "1.0",
+    "IsActive": true,
+    "SupportsMediaControl": false,
+    "SupportsRemoteControl": false,
+    "NowPlayingQueue": [],
+    "NowPlayingQueueFullItems": [],
+    "HasCustomDeviceName": false,
+    "ServerId": "efbf7f038f254927ac504a76b94eabab",
+    "SupportedCommands": []
+  },
+  "AccessToken": "b742dbab-f436-4589-8b92-ce10c37ad29b",
+  "ServerId": "efbf7f038f254927ac504a76b94eabab"
+}
+2025-12-05 14:06:35,153 - stash-jellyfin-proxy - DEBUG - REQUEST: POST /Users/AuthenticateByName -> 200 (2ms)
+2025-12-05 14:06:35,154 - stash-jellyfin-proxy - DEBUG - Login request completed -> 200 (2ms)
+2025-12-05 14:06:36,745 - stash-jellyfin-proxy - INFO - Auth attempt for user: chris
+2025-12-05 14:06:36,745 - stash-jellyfin-proxy - DEBUG - Auth password check: input len=19, expected len=19
+2025-12-05 14:06:36,745 - stash-jellyfin-proxy - INFO - Auth SUCCESS for user chris
+2025-12-05 14:06:36,745 - stash-jellyfin-proxy - DEBUG - AUTH RESPONSE JSON: {
+  "User": {
+    "Name": "chris",
+    "ServerId": "efbf7f038f254927ac504a76b94eabab",
+    "Id": "6b34fe24ac2ff8103f6fce1f0da2ef57",
+    "HasPassword": true,
+    "HasConfiguredPassword": true,
+    "HasConfiguredEasyPassword": false,
+    "EnableAutoLogin": false,
+    "Configuration": {
+      "PlayDefaultAudioTrack": true,
+      "SubtitleLanguagePreference": "",
+      "DisplayMissingEpisodes": false,
+      "GroupedFolders": [],
+      "SubtitleMode": "Default",
+      "DisplayCollectionsView": false,
+      "EnableLocalPassword": false,
+      "OrderedViews": [],
+      "LatestItemsExcludes": [],
+      "MyMediaExcludes": [],
+      "HidePlayedInLatest": true,
+      "RememberAudioSelections": true,
+      "RememberSubtitleSelections": true,
+      "EnableNextEpisodeAutoPlay": true
+    },
+    "Policy": {
+      "IsAdministrator": true,
+      "IsHidden": false,
+      "IsDisabled": false,
+      "EnableUserPreferenceAccess": true,
+      "EnableRemoteAccess": true,
+      "EnableContentDeletion": false,
+      "EnablePlaybackRemuxing": true,
+      "ForceRemoteSourceTranscoding": false,
+      "EnableMediaPlayback": true,
+      "EnableAudioPlaybackTranscoding": true,
+      "EnableVideoPlaybackTranscoding": true,
+      "EnableAllFolders": true,
+      "EnableAllChannels": true,
+      "EnableAllDevices": true,
+      "EnabledDevices": [],
+      "EnabledChannels": [],
+      "EnabledFolders": [],
+      "BlockedTags": [],
+      "AllowedTags": [],
+      "AccessSchedules": [],
+      "BlockUnratedItems": [],
+      "EnableContentDeletionFromFolders": [],
+      "SyncPlayAccess": "CreateAndJoinGroups"
+    }
+  },
+  "SessionInfo": {
+    "PlayState": {
+      "CanSeek": false,
+      "IsPaused": false,
+      "IsMuted": false,
+      "RepeatMode": "RepeatNone"
+    },
+    "AdditionalUsers": [],
+    "Capabilities": {
+      "PlayableMediaTypes": [
+        "Video"
+      ],
+      "SupportedCommands": [],
+      "SupportsMediaControl": false,
+      "SupportsPersistentIdentifier": true
+    },
+    "PlayableMediaTypes": [],
+    "Id": "6caffae738df3e04f2fc0a1ac9c0a77a",
+    "UserId": "6b34fe24ac2ff8103f6fce1f0da2ef57",
+    "UserName": "chris",
+    "Client": "Stash Proxy Client",
+    "DeviceName": "Unknown",
+    "DeviceId": "stash-proxy-device",
+    "ApplicationVersion": "1.0",
+    "IsActive": true,
+    "SupportsMediaControl": false,
+    "SupportsRemoteControl": false,
+    "NowPlayingQueue": [],
+    "NowPlayingQueueFullItems": [],
+    "HasCustomDeviceName": false,
+    "ServerId": "efbf7f038f254927ac504a76b94eabab",
+    "SupportedCommands": []
+  },
+  "AccessToken": "b742dbab-f436-4589-8b92-ce10c37ad29b",
+  "ServerId": "efbf7f038f254927ac504a76b94eabab"
+}
+2025-12-05 14:06:36,747 - stash-jellyfin-proxy - DEBUG - REQUEST: POST /Users/AuthenticateByName -> 200 (1ms)
+2025-12-05 14:06:36,747 - stash-jellyfin-proxy - DEBUG - Login request completed -> 200 (1ms)
+

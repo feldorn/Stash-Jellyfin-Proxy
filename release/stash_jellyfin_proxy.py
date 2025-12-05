@@ -3159,6 +3159,10 @@ async def endpoint_authenticate_by_name(request):
                     app_version = version_match.group(1)
                 break
         
+        # Get current time in Jellyfin format
+        from datetime import datetime, timezone
+        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.0000000Z")
+        
         # Build auth response matching real Jellyfin format
         auth_response = {
             "User": {
@@ -3169,6 +3173,8 @@ async def endpoint_authenticate_by_name(request):
                 "HasConfiguredPassword": True,
                 "HasConfiguredEasyPassword": False,
                 "EnableAutoLogin": False,
+                "LastLoginDate": now_iso,
+                "LastActivityDate": now_iso,
                 "Configuration": {
                     "PlayDefaultAudioTrack": True,
                     "SubtitleLanguagePreference": "",
@@ -3216,7 +3222,8 @@ async def endpoint_authenticate_by_name(request):
                     "CanSeek": False,
                     "IsPaused": False,
                     "IsMuted": False,
-                    "RepeatMode": "RepeatNone"
+                    "RepeatMode": "RepeatNone",
+                    "PlaybackOrder": "Default"
                 },
                 "AdditionalUsers": [],
                 "Capabilities": {
@@ -3225,11 +3232,14 @@ async def endpoint_authenticate_by_name(request):
                     "SupportsMediaControl": False,
                     "SupportsPersistentIdentifier": True
                 },
-                "PlayableMediaTypes": [],
+                "RemoteEndPoint": client_ip,
+                "PlayableMediaTypes": ["Video"],
                 "Id": hashlib.md5(f"{device_id}{SJS_USER}".encode()).hexdigest(),
                 "UserId": user_id_hash,
                 "UserName": username,
                 "Client": client_name,
+                "LastActivityDate": now_iso,
+                "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
                 "DeviceName": device_name,
                 "DeviceId": device_id,
                 "ApplicationVersion": app_version,
