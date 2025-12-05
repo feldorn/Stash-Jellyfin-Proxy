@@ -1,5 +1,7 @@
 # Stash-Jellyfin Proxy
 
+**Current Version: v3.92**
+
 ## Overview
 The Stash-Jellyfin Proxy is a Python-based proxy server designed to bridge the gap between Stash media server and Jellyfin-compatible media players like Infuse. It achieves this by emulating the Jellyfin API, allowing users to access their Stash content through familiar Jellyfin client interfaces. The project aims to provide a seamless viewing experience for Stash users who prefer the robust client ecosystem of Jellyfin. Key capabilities include comprehensive Jellyfin API emulation, robust Stash GraphQL integration, and a user-friendly web interface for configuration and monitoring.
 
