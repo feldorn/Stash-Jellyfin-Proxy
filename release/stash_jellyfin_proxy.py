@@ -3124,7 +3124,9 @@ async def endpoint_authenticate_by_name(request):
 
         record_auth_attempt(success=True)
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
-        return JSONResponse({
+        
+        # Build auth response
+        auth_response = {
             "User": {
                 "Name": username,
                 "Id": SJS_USER,
@@ -3173,7 +3175,13 @@ async def endpoint_authenticate_by_name(request):
             },
             "AccessToken": ACCESS_TOKEN,
             "ServerId": SERVER_ID
-        })
+        }
+        
+        # Debug log the full response
+        import json
+        logger.debug(f"AUTH RESPONSE JSON: {json.dumps(auth_response, indent=2)}")
+        
+        return JSONResponse(auth_response)
     else:
         record_auth_attempt(success=False)
         logger.warning("Auth FAILED - Invalid Key")
