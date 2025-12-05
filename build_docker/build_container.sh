@@ -2,7 +2,7 @@
 
 IMAGE_NAME="stash-jellyfin-proxy"
 IMAGE_TAG="latest"
-VERSION_TAG="3.76"
+VERSION_TAG="5.00"
 
 show_help() {
     echo "Stash-Jellyfin Proxy Docker Build Script"
