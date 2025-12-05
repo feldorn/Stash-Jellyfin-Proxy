@@ -1,4 +1,29 @@
 #!/usr/bin/env python3
+"""
+Stash-Jellyfin Proxy v3.96
+Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
+
+# =============================================================================
+# TODO / KNOWN ISSUES
+# =============================================================================
+#
+# Dashboard Freezing During Stream Start
+# --------------------------------------
+# The Web UI dashboard can briefly freeze when Infuse starts a new stream.
+# Cause: Synchronous Stash API calls block the async event loop during metadata
+#        and image fetching, delaying UI polling requests.
+# Possible fixes:
+#   - Replace `requests` with async `httpx` client
+#   - Cache Stash connection status in background instead of live checks
+#   - Run Stash queries in thread pool via asyncio.to_thread()
+#
+# Infuse Image Caching
+# --------------------
+# Infuse aggressively caches images and may not refresh when Stash artwork changes.
+# This is Infuse behavior, not a proxy issue. Users can clear Infuse metadata cache.
+#
+# =============================================================================
+"""
 import os
 import sys
 import json
