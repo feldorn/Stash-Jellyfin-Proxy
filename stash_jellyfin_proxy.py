@@ -89,6 +89,8 @@ MAX_PAGE_SIZE = 200
 # Feature toggles
 ENABLE_FILTERS = True
 ENABLE_IMAGE_RESIZE = True
+ENABLE_TAG_FILTERS = False  # Show Tags folder with tag-based navigation
+ENABLE_ALL_TAGS = False  # Show "All Tags" subfolder (can be large)
 REQUIRE_AUTH_FOR_CONFIG = False
 
 # Performance settings
@@ -235,6 +237,10 @@ if _config:
         ENABLE_FILTERS = parse_bool(_config.get("ENABLE_FILTERS"), ENABLE_FILTERS)
     if "ENABLE_IMAGE_RESIZE" in _config:
         ENABLE_IMAGE_RESIZE = parse_bool(_config.get("ENABLE_IMAGE_RESIZE"), ENABLE_IMAGE_RESIZE)
+    if "ENABLE_TAG_FILTERS" in _config:
+        ENABLE_TAG_FILTERS = parse_bool(_config.get("ENABLE_TAG_FILTERS"), ENABLE_TAG_FILTERS)
+    if "ENABLE_ALL_TAGS" in _config:
+        ENABLE_ALL_TAGS = parse_bool(_config.get("ENABLE_ALL_TAGS"), ENABLE_ALL_TAGS)
     if "REQUIRE_AUTH_FOR_CONFIG" in _config:
         REQUIRE_AUTH_FOR_CONFIG = parse_bool(_config.get("REQUIRE_AUTH_FOR_CONFIG"), REQUIRE_AUTH_FOR_CONFIG)
     if "IMAGE_CACHE_MAX_SIZE" in _config:
@@ -412,6 +418,13 @@ MENU_ICONS = {
         <rect width="400" height="600" fill="#1a1a2e"/>
         <path d="M120,220 L280,220 L320,300 L200,420 L80,300 Z" fill="none" stroke="#4a90d9" stroke-width="12" stroke-linejoin="round"/>
         <circle cx="160" cy="280" r="20" fill="#4a90d9"/>
+    </svg>""",
+    "root-tags": """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+        <rect width="400" height="600" fill="#1a1a2e"/>
+        <path d="M100,200 L240,200 L280,260 L160,380 L60,260 Z" fill="none" stroke="#4a90d9" stroke-width="10" stroke-linejoin="round"/>
+        <path d="M140,240 L280,240 L320,300 L200,420 L100,300 Z" fill="none" stroke="#4a90d9" stroke-width="10" stroke-linejoin="round"/>
+        <circle cx="130" cy="250" r="16" fill="#4a90d9"/>
+        <circle cx="170" cy="290" r="16" fill="#4a90d9"/>
     </svg>"""
 }
 
@@ -1002,6 +1015,22 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                                 <div class="form-hint">Resize studio logos to fit Infuse tiles better</div>
                             </div>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" name="ENABLE_TAG_FILTERS" style="width: auto;">
+                                    Enable Tag Filters
+                                </label>
+                                <div class="form-hint">Show Tags folder for browsing tags and their scenes</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" name="ENABLE_ALL_TAGS" style="width: auto;">
+                                    Enable All Tags
+                                </label>
+                                <div class="form-hint">Show "All Tags" subfolder (may be large in some libraries)</div>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label class="form-label">Image Cache Size</label>
                             <input type="number" class="form-input" name="IMAGE_CACHE_MAX_SIZE" placeholder="1000" style="width: 100px;">
@@ -1334,6 +1363,8 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             STASH_RETRIES: 3,
             ENABLE_FILTERS: true,
             ENABLE_IMAGE_RESIZE: true,
+            ENABLE_TAG_FILTERS: false,
+            ENABLE_ALL_TAGS: false,
             REQUIRE_AUTH_FOR_CONFIG: false,
             IMAGE_CACHE_MAX_SIZE: 1000,
             DEFAULT_PAGE_SIZE: 50,
@@ -1424,7 +1455,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             const formData = new FormData(e.target);
             const config = {};
             const intFields = ['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT', 'DEFAULT_PAGE_SIZE', 'MAX_PAGE_SIZE', 'IMAGE_CACHE_MAX_SIZE', 'BAN_THRESHOLD', 'BAN_WINDOW_MINUTES'];
-            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'REQUIRE_AUTH_FOR_CONFIG', 'STASH_VERIFY_TLS'];
+            const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'ENABLE_TAG_FILTERS', 'ENABLE_ALL_TAGS', 'REQUIRE_AUTH_FOR_CONFIG', 'STASH_VERIFY_TLS'];
 
             formData.forEach((value, key) => {
                 // If field is empty, use the default value
@@ -2574,6 +2605,7 @@ FILTER_MODE_MAP = {
     "root-performers": "PERFORMERS",
     "root-studios": "STUDIOS",
     "root-groups": "GROUPS",
+    "root-tags": "TAGS",
 }
 
 def format_filters_folder(parent_id: str) -> Dict[str, Any]:
@@ -2971,6 +3003,20 @@ async def endpoint_user_views(request):
         }
     ]
 
+    # Add Tags folder if enabled
+    if ENABLE_TAG_FILTERS:
+        items.append({
+            "Name": "Tags",
+            "Id": "root-tags",
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-tags"}
+        })
+
     # Add tag group folders
     for tag_name in TAG_GROUPS:
         tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
@@ -3023,6 +3069,15 @@ async def endpoint_virtual_folders(request):
             "ItemId": "root-groups"
         }
     ]
+
+    # Add Tags folder if enabled
+    if ENABLE_TAG_FILTERS:
+        folders.append({
+            "Name": "Tags",
+            "Locations": [],
+            "CollectionType": "movies",
+            "ItemId": "root-tags"
+        })
 
     # Add tag group folders
     for tag_name in TAG_GROUPS:
@@ -3732,6 +3787,42 @@ async def endpoint_items(request):
                         }
                         items.append(group_item)
 
+                elif filter_mode == "TAGS":
+                    # Count tags with filter
+                    count_q = """query CountTags($tag_filter: TagFilterType) {
+                        findTags(tag_filter: $tag_filter) { count }
+                    }"""
+                    count_res = stash_query(count_q, {"tag_filter": graphql_filter})
+                    total_count = count_res.get("data", {}).get("findTags", {}).get("count", 0)
+
+                    # Get paginated tags
+                    q = """query FindTags($tag_filter: TagFilterType, $page: Int!, $per_page: Int!) {
+                        findTags(
+                            tag_filter: $tag_filter,
+                            filter: {page: $page, per_page: $per_page, sort: "name", direction: ASC}
+                        ) {
+                            tags { id name scene_count image_path favorite }
+                        }
+                    }"""
+                    res = stash_query(q, {"tag_filter": graphql_filter, "page": page, "per_page": limit})
+                    tags = res.get("data", {}).get("findTags", {}).get("tags", [])
+                    logger.debug(f"Saved filter returned {len(tags)} tags (page {page}, total {total_count})")
+                    for t in tags:
+                        tag_item = {
+                            "Name": t["name"],
+                            "Id": f"tagitem-{t['id']}",
+                            "ServerId": SERVER_ID,
+                            "Type": "Folder",
+                            "IsFolder": True,
+                            "CollectionType": "movies",
+                            "ChildCount": t.get("scene_count", 0),
+                            "RecursiveItemCount": t.get("scene_count", 0),
+                            "ParentId": parent_id,
+                            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"},
+                            "ImageTags": {"Primary": "img"} if t.get("image_path") else {}
+                        }
+                        items.append(tag_item)
+
                 else:
                     logger.warning(f"Unsupported filter mode: {filter_mode}")
             else:
@@ -4029,8 +4120,155 @@ async def endpoint_items(request):
         for s in scenes:
             items.append(format_jellyfin_item(s, parent_id=parent_id))
 
+    elif parent_id == "root-tags":
+        # Tags folder: show Favorites, All Tags (if enabled), and saved tag filters
+        items_count = 0
+
+        # Always show "Favorites" subfolder at the top
+        items.append({
+            "Name": "Favorites",
+            "SortName": "!1-Favorites",  # Sort to top
+            "Id": "tags-favorites",
+            "ServerId": SERVER_ID,
+            "Type": "Folder",
+            "IsFolder": True,
+            "CollectionType": "movies",
+            "ParentId": parent_id,
+            "ImageTags": {"Primary": "img"},
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-favorites"}
+        })
+        items_count += 1
+
+        # Show "All Tags" if enabled
+        if ENABLE_ALL_TAGS:
+            items.append({
+                "Name": "All Tags",
+                "SortName": "!2-All Tags",  # Sort after Favorites
+                "Id": "tags-all",
+                "ServerId": SERVER_ID,
+                "Type": "Folder",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ParentId": parent_id,
+                "ImageTags": {"Primary": "img"},
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-all"}
+            })
+            items_count += 1
+
+        # Show saved tag filters
+        saved_filters = stash_get_saved_filters("TAGS")
+        for sf in saved_filters:
+            filter_id = sf.get("id")
+            filter_name = sf.get("name", f"Filter {filter_id}")
+            item_id = f"filter-tags-{filter_id}"
+            items.append({
+                "Name": filter_name,
+                "SortName": filter_name,
+                "Id": item_id,
+                "ServerId": SERVER_ID,
+                "Type": "Folder",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ParentId": parent_id,
+                "ImageTags": {"Primary": "img"},
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
+            })
+            items_count += 1
+
+        total_count = items_count
+
+    elif parent_id == "tags-favorites":
+        # Show favorite tags as browsable folders
+        q = """query FindTags($page: Int!, $per_page: Int!) {
+            findTags(tag_filter: {favorite: true}, filter: {page: $page, per_page: $per_page, sort: "name", direction: ASC}) {
+                count
+                tags { id name scene_count image_path }
+            }
+        }"""
+        page = (start_index // limit) + 1
+        res = stash_query(q, {"page": page, "per_page": limit})
+        data = res.get("data", {}).get("findTags", {})
+        total_count = data.get("count", 0)
+        for t in data.get("tags", []):
+            tag_item = {
+                "Name": t["name"],
+                "Id": f"tagitem-{t['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "Folder",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": t.get("scene_count", 0),
+                "RecursiveItemCount": t.get("scene_count", 0),
+                "ParentId": parent_id,
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": True, "Played": False, "Key": f"tagitem-{t['id']}"}
+            }
+            if t.get("image_path"):
+                tag_item["ImageTags"] = {"Primary": "img"}
+            else:
+                tag_item["ImageTags"] = {}
+            items.append(tag_item)
+
+    elif parent_id == "tags-all":
+        # Show all tags as browsable folders (with paging)
+        q = """query FindTags($page: Int!, $per_page: Int!) {
+            findTags(filter: {page: $page, per_page: $per_page, sort: "name", direction: ASC}) {
+                count
+                tags { id name scene_count image_path favorite }
+            }
+        }"""
+        page = (start_index // limit) + 1
+        res = stash_query(q, {"page": page, "per_page": limit})
+        data = res.get("data", {}).get("findTags", {})
+        total_count = data.get("count", 0)
+        for t in data.get("tags", []):
+            tag_item = {
+                "Name": t["name"],
+                "Id": f"tagitem-{t['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "Folder",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": t.get("scene_count", 0),
+                "RecursiveItemCount": t.get("scene_count", 0),
+                "ParentId": parent_id,
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"}
+            }
+            if t.get("image_path"):
+                tag_item["ImageTags"] = {"Primary": "img"}
+            else:
+                tag_item["ImageTags"] = {}
+            items.append(tag_item)
+
+    elif parent_id and parent_id.startswith("tagitem-"):
+        # Browsing a specific tag - show scenes with this tag
+        tag_id = parent_id.replace("tagitem-", "")
+
+        # Get count for scenes with this tag
+        count_q = """query CountScenes($tid: [ID!]) {
+            findScenes(scene_filter: {tags: {value: $tid, modifier: INCLUDES}}) { count }
+        }"""
+        count_res = stash_query(count_q, {"tid": [tag_id]})
+        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+
+        # Calculate page
+        page = (start_index // limit) + 1
+
+        q = f"""query FindScenes($tid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
+            findScenes(
+                scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
+                filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+            ) {{
+                scenes {{ {scene_fields} }}
+            }}
+        }}"""
+        res = stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        logger.debug(f"Tag {tag_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
+        for s in scenes:
+            items.append(format_jellyfin_item(s, parent_id=parent_id))
+
     elif parent_id and parent_id.startswith("tag-"):
-        # Tag-based folder: find scenes with this tag
+        # Tag-based folder: find scenes with this tag (from TAG_GROUPS config)
         # Extract tag name from parent_id (reverse the slugification)
         tag_slug = parent_id[4:]  # Remove "tag-" prefix
 
@@ -4324,8 +4562,104 @@ async def endpoint_item_details(request):
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
         })
 
+    elif item_id == "root-tags":
+        # Tags folder details
+        # Count is Favorites + (All Tags if enabled) + saved filters count
+        count = 1  # Favorites
+        if ENABLE_ALL_TAGS:
+            count += 1
+        saved_filters = stash_get_saved_filters("TAGS")
+        count += len(saved_filters)
+
+        return JSONResponse({
+            "Name": "Tags",
+            "SortName": "Tags",
+            "Id": "root-tags",
+            "ServerId": SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "icon"},
+            "BackdropImageTags": [],
+            "ChildCount": count,
+            "RecursiveItemCount": count,
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-tags"}
+        })
+
+    elif item_id == "tags-favorites":
+        # Favorites subfolder details
+        count_q = """query { findTags(tag_filter: {favorite: true}) { count } }"""
+        count_res = stash_query(count_q)
+        total_count = count_res.get("data", {}).get("findTags", {}).get("count", 0)
+
+        return JSONResponse({
+            "Name": "Favorites",
+            "SortName": "!1-Favorites",
+            "Id": "tags-favorites",
+            "ServerId": SERVER_ID,
+            "Type": "Folder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "img"},
+            "BackdropImageTags": [],
+            "ChildCount": total_count,
+            "RecursiveItemCount": total_count,
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-favorites"}
+        })
+
+    elif item_id == "tags-all":
+        # All Tags subfolder details
+        count_q = """query { findTags { count } }"""
+        count_res = stash_query(count_q)
+        total_count = count_res.get("data", {}).get("findTags", {}).get("count", 0)
+
+        return JSONResponse({
+            "Name": "All Tags",
+            "SortName": "!2-All Tags",
+            "Id": "tags-all",
+            "ServerId": SERVER_ID,
+            "Type": "Folder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "img"},
+            "BackdropImageTags": [],
+            "ChildCount": total_count,
+            "RecursiveItemCount": total_count,
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-all"}
+        })
+
+    elif item_id.startswith("tagitem-"):
+        # Individual tag details
+        tag_id = item_id.replace("tagitem-", "")
+        q = """query FindTag($id: ID!) { findTag(id: $id) { id name scene_count image_path favorite } }"""
+        res = stash_query(q, {"id": tag_id})
+        tag = res.get("data", {}).get("findTag")
+
+        if not tag:
+            logger.warning(f"Tag not found: {tag_id}")
+            return JSONResponse({"error": "Tag not found"}, status_code=404)
+
+        tag_name = tag.get("name", f"Tag {tag_id}")
+        scene_count = tag.get("scene_count", 0)
+        has_image = bool(tag.get("image_path"))
+
+        return JSONResponse({
+            "Name": tag_name,
+            "SortName": tag_name,
+            "Id": item_id,
+            "ServerId": SERVER_ID,
+            "Type": "Folder",
+            "CollectionType": "movies",
+            "IsFolder": True,
+            "ImageTags": {"Primary": "img"} if has_image else {},
+            "BackdropImageTags": [],
+            "ChildCount": scene_count,
+            "RecursiveItemCount": scene_count,
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": tag.get("favorite", False), "Played": False, "Key": item_id}
+        })
+
     elif item_id.startswith("tag-"):
-        # Tag-based folder
+        # Tag-based folder (from TAG_GROUPS config)
         tag_slug = item_id[4:]  # Remove "tag-" prefix
 
         # Find the matching tag name from TAG_GROUPS config
@@ -4983,6 +5317,51 @@ async def endpoint_image(request):
             from starlette.responses import Response
             return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
 
+    # Handle Tags subfolder icons (tags-favorites, tags-all)
+    if item_id == "tags-favorites":
+        img_data, content_type = generate_filter_icon("Favorites")
+        logger.debug(f"Serving text icon for tags-favorites")
+        from starlette.responses import Response
+        return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
+
+    if item_id == "tags-all":
+        img_data, content_type = generate_filter_icon("All Tags")
+        logger.debug(f"Serving text icon for tags-all")
+        from starlette.responses import Response
+        return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
+
+    # Handle individual tag images (tagitem-{id}) - fetch from Stash or generate text icon
+    if item_id.startswith("tagitem-"):
+        tag_id = item_id.replace("tagitem-", "")
+        # First check if tag has an image in Stash
+        q = """query FindTag($id: ID!) { findTag(id: $id) { name image_path } }"""
+        res = stash_query(q, {"id": tag_id})
+        tag = res.get("data", {}).get("findTag")
+        if tag:
+            if tag.get("image_path"):
+                # Fetch the tag image from Stash
+                tag_img_url = f"{STASH_URL}/tag/{tag_id}/image"
+                image_headers = {"ApiKey": STASH_API_KEY} if STASH_API_KEY else {}
+                try:
+                    data, content_type, _ = fetch_from_stash(tag_img_url, extra_headers=image_headers, timeout=30)
+                    if data and len(data) > 100:
+                        from starlette.responses import Response
+                        return Response(content=data, media_type=content_type, headers=icon_cache_headers)
+                except Exception as e:
+                    logger.debug(f"Failed to fetch tag image, using text icon: {e}")
+            # No image or fetch failed - generate text icon with tag name
+            tag_name = tag.get("name", f"Tag {tag_id}")
+            img_data, content_type = generate_filter_icon(tag_name)
+            logger.debug(f"Serving text icon for tag: {tag_name}")
+            from starlette.responses import Response
+            return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
+        else:
+            # Tag not found - generate generic fallback icon
+            img_data, content_type = generate_filter_icon(f"Tag {tag_id}")
+            logger.debug(f"Tag not found, serving fallback icon for: {tag_id}")
+            from starlette.responses import Response
+            return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
+
     # Check query params for placeholder flag (set when group has no front_image)
     image_tag = request.query_params.get("tag", "")
     if image_tag == "placeholder" and item_id.startswith("group-"):
@@ -5521,6 +5900,8 @@ async def ui_api_config(request):
                 "STASH_RETRIES": STASH_RETRIES,
                 "ENABLE_FILTERS": ENABLE_FILTERS,
                 "ENABLE_IMAGE_RESIZE": ENABLE_IMAGE_RESIZE,
+                "ENABLE_TAG_FILTERS": ENABLE_TAG_FILTERS,
+                "ENABLE_ALL_TAGS": ENABLE_ALL_TAGS,
                 "REQUIRE_AUTH_FOR_CONFIG": REQUIRE_AUTH_FOR_CONFIG,
                 "IMAGE_CACHE_MAX_SIZE": IMAGE_CACHE_MAX_SIZE,
                 "DEFAULT_PAGE_SIZE": DEFAULT_PAGE_SIZE,
@@ -5545,7 +5926,7 @@ async def ui_api_config(request):
                 "PROXY_BIND", "PROXY_PORT", "UI_PORT",
                 "SJS_USER", "SJS_PASSWORD", "SERVER_ID", "SERVER_NAME",
                 "TAG_GROUPS", "LATEST_GROUPS", "STASH_TIMEOUT", "STASH_RETRIES",
-                "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "REQUIRE_AUTH_FOR_CONFIG", "IMAGE_CACHE_MAX_SIZE",
+                "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "ENABLE_TAG_FILTERS", "ENABLE_ALL_TAGS", "REQUIRE_AUTH_FOR_CONFIG", "IMAGE_CACHE_MAX_SIZE",
                 "DEFAULT_PAGE_SIZE", "MAX_PAGE_SIZE",
                 "LOG_LEVEL", "LOG_DIR", "LOG_FILE", "LOG_MAX_SIZE_MB", "LOG_BACKUP_COUNT",
                 "BAN_THRESHOLD", "BAN_WINDOW_MINUTES", "BANNED_IPS"
@@ -5594,6 +5975,8 @@ async def ui_api_config(request):
                 "STASH_RETRIES": str(STASH_RETRIES),
                 "ENABLE_FILTERS": "true" if ENABLE_FILTERS else "false",
                 "ENABLE_IMAGE_RESIZE": "true" if ENABLE_IMAGE_RESIZE else "false",
+                "ENABLE_TAG_FILTERS": "true" if ENABLE_TAG_FILTERS else "false",
+                "ENABLE_ALL_TAGS": "true" if ENABLE_ALL_TAGS else "false",
                 "REQUIRE_AUTH_FOR_CONFIG": "true" if REQUIRE_AUTH_FOR_CONFIG else "false",
                 "IMAGE_CACHE_MAX_SIZE": str(IMAGE_CACHE_MAX_SIZE),
                 "DEFAULT_PAGE_SIZE": str(DEFAULT_PAGE_SIZE),
@@ -5627,6 +6010,8 @@ async def ui_api_config(request):
                 "STASH_RETRIES": "3",
                 "ENABLE_FILTERS": "true",
                 "ENABLE_IMAGE_RESIZE": "true",
+                "ENABLE_TAG_FILTERS": "false",
+                "ENABLE_ALL_TAGS": "false",
                 "REQUIRE_AUTH_FOR_CONFIG": "false",
                 "IMAGE_CACHE_MAX_SIZE": "1000",
                 "DEFAULT_PAGE_SIZE": "50",
@@ -5777,6 +6162,12 @@ async def ui_api_config(request):
                 elif key == "ENABLE_IMAGE_RESIZE":
                     ENABLE_IMAGE_RESIZE = new_val.lower() in ('true', 'yes', '1', 'on')
                     applied_immediately.append(key)
+                elif key == "ENABLE_TAG_FILTERS":
+                    ENABLE_TAG_FILTERS = new_val.lower() in ('true', 'yes', '1', 'on')
+                    applied_immediately.append(key)
+                elif key == "ENABLE_ALL_TAGS":
+                    ENABLE_ALL_TAGS = new_val.lower() in ('true', 'yes', '1', 'on')
+                    applied_immediately.append(key)
                 elif key == "IMAGE_CACHE_MAX_SIZE":
                     IMAGE_CACHE_MAX_SIZE = int(new_val)
                     applied_immediately.append(key)
@@ -5839,6 +6230,12 @@ async def ui_api_config(request):
                     applied_immediately.append(key)
                 elif key == "ENABLE_IMAGE_RESIZE":
                     ENABLE_IMAGE_RESIZE = True
+                    applied_immediately.append(key)
+                elif key == "ENABLE_TAG_FILTERS":
+                    ENABLE_TAG_FILTERS = False
+                    applied_immediately.append(key)
+                elif key == "ENABLE_ALL_TAGS":
+                    ENABLE_ALL_TAGS = False
                     applied_immediately.append(key)
                 elif key == "IMAGE_CACHE_MAX_SIZE":
                     IMAGE_CACHE_MAX_SIZE = 100

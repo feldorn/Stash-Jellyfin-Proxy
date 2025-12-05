@@ -2,7 +2,7 @@
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash media server by emulating the Jellyfin API.
 
-## Current Version: v3.88
+## Current Version: v3.89
 
 ## User Preferences
 
@@ -42,9 +42,10 @@ Preferred communication style: Simple, everyday language.
 
 ### Stash Integration
 - GraphQL API queries for all content types
-- Saved filter transformation (SCENES, PERFORMERS, STUDIOS, GROUPS)
+- Saved filter transformation (SCENES, PERFORMERS, STUDIOS, GROUPS, TAGS)
 - Pagination handling with offset-based slicing
 - Tag-based library folders (TAG_GROUPS)
+- Tags folder for browsing tags and their scenes (ENABLE_TAG_FILTERS)
 - Latest items for home screen (LATEST_GROUPS)
 
 ### Configuration (stash_jellyfin_proxy.conf)
@@ -59,6 +60,8 @@ Preferred communication style: Simple, everyday language.
 | SJS_USER | Infuse login username | (required) |
 | SJS_PASSWORD | Infuse login password | (required) |
 | TAG_GROUPS | Comma-separated tag names for library folders | (empty) |
+| ENABLE_TAG_FILTERS | Show Tags folder for browsing tags and scenes | false |
+| ENABLE_ALL_TAGS | Show "All Tags" subfolder (may be large) | false |
 | LATEST_GROUPS | Libraries to show on home screen | Scenes |
 | SERVER_NAME | Server name shown in clients | Stash Media Server |
 | STASH_TIMEOUT | API request timeout (seconds) | 30 |
@@ -113,7 +116,7 @@ Preferred communication style: Simple, everyday language.
 
 | File | Description |
 |------|-------------|
-| stash_jellyfin_proxy.py | Main proxy server (v3.88) |
+| stash_jellyfin_proxy.py | Main proxy server (v3.89) |
 | stash_jellyfin_proxy.conf | Configuration file |
 | build_docker/Dockerfile | Docker container definition |
 | build_docker/docker-entrypoint.sh | Container entrypoint script |
@@ -144,6 +147,7 @@ Environment variables ALWAYS override config file values when set.
 
 ## Recent Changes
 
+- v3.89: Tags folder feature - new library folder for browsing tags; ENABLE_TAG_FILTERS option shows Tags folder with Favorites (favorite tags), All Tags (optional via ENABLE_ALL_TAGS, may be large), and saved TAGS filters from Stash; clicking a tag shows its scenes; tags show images from Stash if available, otherwise generates text icons; uses existing filter infrastructure for TAGS mode filters; root-tags icon with layered tag shapes
 - v3.88: Dashboard statistics cards - Stash Library stats (scenes/performers/studios/tags/groups counts from GraphQL) and Proxy Usage stats (streams today/total, unique clients today, auth success/fail counts); Top Played list showing top 5 most-played scenes with title, performer, and play count; stats persist to /config/proxy_stats.json and survive restarts; Smart play count cooldown - plays only count once per (scene, client IP) within video duration + 30 min buffer to prevent inflation from start/stop cycles; Smart stream counting - tracks byte position from Range headers; only counts as new stream if 30min+ gap OR seek to start (first 5%) with 5min+ gap; prevents inflation from seeking/buffering; Post-restart handling - detects trailing requests after server restart (mid-file position on first request OR non-zero position with unknown file size) and logs as "Stream resuming (post-restart)" instead of counting as new play; Dashboard browser tab title now uses SERVER_NAME config field; IP-based security with auto-banning - AuthenticationMiddleware enforces ACCESS_TOKEN on protected endpoints; failed auth attempts tracked per IP with rolling 15-min window; auto-ban after 10 failures (configurable via BAN_THRESHOLD/BAN_WINDOW_MINUTES); BANNED_IPS persisted to config file; Web UI config page shows banned IP editor; unauthorized requests logged with IP, user agent, and path; banned IPs get silent drop (no response, causes timeout) to avoid confirming ban to attackers
 - v3.87: Fixed critical security vulnerability - implemented AuthenticationMiddleware that validates ACCESS_TOKEN on all protected endpoints; public endpoints (/System/Info/Public, /Users, etc.) remain accessible for client discovery; protected endpoints now require valid token from Jellyfin client auth flow
 - v3.86: Dynamic font scaling for folder icons - 48px max font size that scales down to fit text width; text wraps differently for menu icons (12 chars/4 lines) vs filter icons (10 chars/6 lines) to prevent cutoff
