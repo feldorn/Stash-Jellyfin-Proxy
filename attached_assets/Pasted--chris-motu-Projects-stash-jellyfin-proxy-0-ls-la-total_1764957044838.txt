@@ -1,0 +1,52 @@
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$ ls -la
+total 328
+drwxrwxr-x 4 chris chris   4096 Dec  5 11:48 .
+drwxrwxr-x 6 chris chris   4096 Dec  5 11:47 ..
+drwxr-xr-x 2 chris chris   4096 Dec  5 11:38 build_docker
+drwxrwxr-x 7 chris chris   4096 Dec  5 11:47 .git
+-rw-r--r-- 1 chris chris   1077 Dec  5 11:38 LICENSE
+-rw-r--r-- 1 chris chris   3158 Dec  5 11:38 README.md
+-rw-r--r-- 1 chris chris   4650 Dec  5 11:38 stash_jellyfin_proxy.conf
+-rw-r--r-- 1 chris chris 302336 Dec  5 11:38 stash_jellyfin_proxy.py
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$ git add -A
+git commit -m "v5.00 - Initial public release"
+[master (root-commit) 7c5cac2] v5.00 - Initial public release
+ Committer: Chris Orr <chris@motu.feldorn.com>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 8 files changed, 7385 insertions(+)
+ create mode 100644 LICENSE
+ create mode 100644 README.md
+ create mode 100644 build_docker/Dockerfile
+ create mode 100755 build_docker/build_container.sh
+ create mode 100644 build_docker/docker-compose.yml
+ create mode 100755 build_docker/docker-entrypoint.sh
+ create mode 100644 stash_jellyfin_proxy.conf
+ create mode 100644 stash_jellyfin_proxy.py
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$
+[chris@motu:~/Projects/stash-jellyfin-proxy][0]$ git remote add origin
+usage: git remote add [<options>] <name> <url>
+
+    -f, --[no-]fetch      fetch the remote branches
+    --[no-]tags           import all tags and associated objects when fetching
+                          or do not fetch any tag at all (--no-tags)
+    -t, --[no-]track <branch>
+                          branch(es) to track
+    -m, --[no-]master <branch>
+                          master branch
+    --[no-]mirror[=(push|fetch)]
+                          set up remote as a mirror to push to or fetch from
+
+[chris@motu:~/Projects/stash-jellyfin-proxy][129]$
