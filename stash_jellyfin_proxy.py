@@ -811,7 +811,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.93</span>
+                <span id="version">v3.94</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1218,7 +1218,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.93';
+                document.getElementById('version').textContent = data.version || 'v3.94';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -2596,8 +2596,69 @@ def stash_query(query: str, variables: Dict[str, Any] = None, retries: int = Non
     logger.error(f"Stash API failed after {retries + 1} attempts: {last_error}")
     return {"errors": [str(last_error)], "data": {}}
 
-def stash_get_saved_filters(mode: str) -> List[Dict[str, Any]]:
-    """Get saved filters from Stash for a specific mode (SCENES, PERFORMERS, STUDIOS, GROUPS)."""
+def is_sort_only_filter(saved_filter: Dict[str, Any]) -> bool:
+    """
+    Check if a saved filter only defines sorting (no actual filter criteria).
+    Sort-only filters are not useful in Infuse since we can't control sort order.
+    Returns True if the filter has no meaningful filtering criteria.
+    """
+    # Get the object_filter (the actual filtering criteria)
+    object_filter = saved_filter.get("object_filter")
+    
+    # Parse if string
+    if isinstance(object_filter, str):
+        try:
+            object_filter = json.loads(object_filter)
+        except:
+            object_filter = {}
+    
+    # Null or empty object_filter means no filtering
+    if not object_filter or object_filter == {}:
+        # Check find_filter for search query
+        find_filter = saved_filter.get("find_filter") or {}
+        # If there's a search query (q), it's not sort-only
+        if find_filter.get("q"):
+            return False
+        # Only has sort/direction or page/per_page - it's sort-only
+        logger.debug(f"Filter '{saved_filter.get('name')}' is sort-only (empty object_filter, no search query)")
+        return True
+    
+    # Check if object_filter only has empty values
+    def has_meaningful_filter(obj):
+        """Recursively check if object has any non-empty filter values."""
+        if obj is None:
+            return False
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                # Skip pagination/sorting keys
+                if key in ('page', 'per_page', 'sort', 'direction'):
+                    continue
+                if has_meaningful_filter(value):
+                    return True
+            return False
+        if isinstance(obj, list):
+            return len(obj) > 0 and any(has_meaningful_filter(v) for v in obj)
+        if isinstance(obj, str):
+            return len(obj) > 0
+        if isinstance(obj, bool):
+            return True  # Boolean criteria like "organized: true" is meaningful
+        if isinstance(obj, (int, float)):
+            return True  # Numeric criteria is meaningful
+        return False
+    
+    if not has_meaningful_filter(object_filter):
+        logger.debug(f"Filter '{saved_filter.get('name')}' is sort-only (no meaningful filter criteria)")
+        return True
+    
+    return False
+
+def stash_get_saved_filters(mode: str, exclude_sort_only: bool = True) -> List[Dict[str, Any]]:
+    """Get saved filters from Stash for a specific mode (SCENES, PERFORMERS, STUDIOS, GROUPS).
+    
+    Args:
+        mode: Filter mode (SCENES, PERFORMERS, STUDIOS, GROUPS, TAGS)
+        exclude_sort_only: If True, exclude filters that only define sorting
+    """
     query = """query FindSavedFilters($mode: FilterMode) {
         findSavedFilters(mode: $mode) {
             id
@@ -2610,6 +2671,14 @@ def stash_get_saved_filters(mode: str) -> List[Dict[str, Any]]:
     }"""
     res = stash_query(query, {"mode": mode})
     filters = res.get("data", {}).get("findSavedFilters", [])
+    
+    if exclude_sort_only:
+        original_count = len(filters)
+        filters = [f for f in filters if not is_sort_only_filter(f)]
+        skipped = original_count - len(filters)
+        if skipped > 0:
+            logger.debug(f"Excluded {skipped} sort-only filters for mode {mode}")
+    
     logger.debug(f"Found {len(filters)} saved filters for mode {mode}")
     return filters
 
@@ -5915,7 +5984,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.93",
+        "version": "v3.94",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6540,7 +6609,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.93 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.94 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
