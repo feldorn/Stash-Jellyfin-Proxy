@@ -2,7 +2,7 @@ FROM python:3.11-slim-bookworm
 
 LABEL maintainer="Stash-Jellyfin Proxy"
 LABEL description="Jellyfin API emulation proxy for Stash media server"
-LABEL version="5.00"
+LABEL version="5.01"
 LABEL org.opencontainers.image.source="https://github.com/feldorn/Stash-Jellyfin-Proxy"
 LABEL org.opencontainers.image.description="Jellyfin API emulation proxy for Stash media server"
 LABEL org.opencontainers.image.licenses="MIT"

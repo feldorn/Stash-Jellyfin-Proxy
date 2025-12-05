@@ -41,7 +41,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=5.00,enable={{is_default_branch}}
+            type=raw,value=5.01,enable={{is_default_branch}}
 
       - name: Copy files to build context
         run: |
