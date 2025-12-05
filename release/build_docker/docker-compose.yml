@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  stash-jellyfin-proxy:
+    image: stash-jellyfin-proxy:latest
+    container_name: stash-jellyfin-proxy
+    restart: unless-stopped
+    
+    ports:
+      - "8096:8096"   # Jellyfin API (for Infuse)
+      - "8097:8097"   # Web UI
+    
+    volumes:
+      - ./config:/config
+    
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+      
+      # Optional: Override settings from config file via environment
+      # These override values in /config/stash_jellyfin_proxy.conf
+      # - STASH_URL=http://stash:9999
+      # - STASH_API_KEY=your_api_key
+      # - SJS_USER=admin
+      # - SJS_PASSWORD=your_password
+      # - REQUIRE_AUTH_FOR_CONFIG=true
+      # - UI_PORT=8097
+      # - PROXY_PORT=8096
+      #
+      # For Docker-to-Docker connection (bypassing SWAG):
+      # - STASH_URL=https://stash:9999
+      # - STASH_GRAPHQL_PATH=/graphql
+      # - STASH_VERIFY_TLS=false
+    
+    # If Stash is also in Docker on the same network, use its container name
+    # Example: STASH_URL=http://stash:9999
+    # networks:
+    #   - stash_network
+    
+    # Healthcheck uses proxy port (more reliable than UI which can be disabled)
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8096/System/Info/Public"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# Uncomment if you need to connect to Stash in another container
+# networks:
+#   stash_network:
+#     external: true
+#
+# FIRST RUN INSTRUCTIONS:
+# 1. Start the container: docker-compose up -d
+# 2. Edit ./config/stash_jellyfin_proxy.conf:
+#    - Set STASH_API_KEY (from Stash > Settings > Security > API Key)
+#    - Set STASH_URL if Stash is not at localhost:9999
+#    - Set SJS_PASSWORD for Infuse login security
+# 3. Restart: docker-compose restart
+# 4. Access Web UI at http://localhost:8097
+# 5. In Infuse: Add server > Jellyfin > http://YOUR_IP:8096
