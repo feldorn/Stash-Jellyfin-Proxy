@@ -5382,14 +5382,24 @@ async def endpoint_image(request):
                 image_headers = {"ApiKey": STASH_API_KEY} if STASH_API_KEY else {}
                 try:
                     data, content_type, _ = fetch_from_stash(tag_img_url, extra_headers=image_headers, timeout=30)
-                    # Check for valid image data - must be non-SVG (Infuse doesn't support SVG)
-                    # Stash returns SVG placeholders for tags without custom images
-                    if data and len(data) > 100 and content_type != "image/svg+xml":
+                    # Check for valid image data:
+                    # - Reject SVG (Infuse doesn't support SVG) 
+                    # - Reject GIF (often transparent placeholders that appear as black boxes)
+                    # - Reject tiny images (<500 bytes, likely 1x1 placeholders)
+                    is_svg = content_type == "image/svg+xml"
+                    is_gif = content_type == "image/gif"
+                    is_tiny = data and len(data) < 500
+                    
+                    if data and len(data) > 100 and not is_svg and not is_gif and not is_tiny:
                         logger.debug(f"Serving Stash image for tag '{tag_name}': {len(data)} bytes, {content_type}")
                         from starlette.responses import Response
                         return Response(content=data, media_type=content_type, headers=icon_cache_headers)
-                    elif content_type == "image/svg+xml":
+                    elif is_svg:
                         logger.debug(f"Tag '{tag_name}' has SVG placeholder, generating PNG text icon instead")
+                    elif is_gif:
+                        logger.debug(f"Tag '{tag_name}' has GIF (often transparent), generating PNG text icon instead")
+                    elif is_tiny:
+                        logger.debug(f"Tag '{tag_name}' has tiny image ({len(data)} bytes), generating PNG text icon instead")
                 except Exception as e:
                     logger.debug(f"Failed to fetch tag image for '{tag_name}', using text icon: {e}")
             # No image, SVG placeholder, or fetch failed - generate text icon with tag name
