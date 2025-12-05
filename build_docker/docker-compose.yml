@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   stash-jellyfin-proxy:
-    image: stash-jellyfin-proxy:latest
+    image: ghcr.io/feldorn/stash-jellyfin-proxy:latest
     container_name: stash-jellyfin-proxy
     restart: unless-stopped
     
