@@ -811,7 +811,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v3.94</span>
+                <span id="version">v3.95</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1218,7 +1218,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v3.94';
+                document.getElementById('version').textContent = data.version || 'v3.95';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -2711,7 +2711,7 @@ def format_filters_folder(parent_id: str) -> Dict[str, Any]:
         "ChildCount": filter_count,
         "RecursiveItemCount": filter_count,
         "ParentId": parent_id,
-        "ImageTags": {"Primary": "img"},
+        "ImageTags": {"Primary": get_image_tag()},
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -2738,7 +2738,7 @@ def format_saved_filter_item(saved_filter: Dict[str, Any], parent_id: str) -> Di
         "IsFolder": True,
         "CollectionType": "movies",
         "ParentId": parent_id,
-        "ImageTags": {"Primary": "img"},
+        "ImageTags": {"Primary": get_image_tag()},
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -2751,6 +2751,17 @@ def format_saved_filter_item(saved_filter: Dict[str, Any], parent_id: str) -> Di
 # --- Jellyfin Models & Helpers ---
 # Note: SERVER_ID is now configured at the top of the file and loaded from config
 ACCESS_TOKEN = str(uuid.uuid4())
+
+def get_image_tag(base_tag: str = "img") -> str:
+    """
+    Generate an image tag for Jellyfin ImageTags.
+    In DEBUG mode, appends a timestamp to force Infuse to refresh images.
+    In normal mode, returns the base tag for efficient caching.
+    """
+    if LOG_LEVEL.upper() == "DEBUG":
+        # Append timestamp to bust Infuse's image cache during testing
+        return f"{base_tag}-{int(time.time())}"
+    return base_tag
 
 def make_guid(numeric_id: str) -> str:
     """Convert a numeric ID to a GUID-like format that Jellyfin clients expect."""
@@ -2798,7 +2809,7 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "IsFolder": False,
         "MediaType": "Video",
         "ParentId": parent_id,
-        "ImageTags": {"Primary": "img"},  # Triggers image requests
+        "ImageTags": {"Primary": get_image_tag()},  # Triggers image requests
         "BackdropImageTags": [],
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
@@ -2840,10 +2851,10 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
                     "Type": "Actor",
                     "Role": "",
                     "Id": f"person-{p.get('id')}",
-                    "PrimaryImageTag": "img" if p.get("image_path") else None
+                    "PrimaryImageTag": get_image_tag() if p.get("image_path") else None
                 }
                 if p.get("image_path"):
-                    person["ImageTags"] = {"Primary": "img"}
+                    person["ImageTags"] = {"Primary": get_image_tag()}
                 people_list.append(person)
         item["People"] = people_list
 
@@ -3047,7 +3058,7 @@ async def endpoint_user_views(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
         },
@@ -3058,7 +3069,7 @@ async def endpoint_user_views(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
         },
@@ -3069,7 +3080,7 @@ async def endpoint_user_views(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-performers"}
         },
@@ -3080,7 +3091,7 @@ async def endpoint_user_views(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-groups"}
         }
@@ -3095,7 +3106,7 @@ async def endpoint_user_views(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-tags"}
         })
@@ -3110,7 +3121,7 @@ async def endpoint_user_views(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": tag_id}
         })
@@ -3794,7 +3805,7 @@ async def endpoint_items(request):
                             "RecursiveItemCount": p.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"},
-                            "ImageTags": {"Primary": "img"} if p.get("image_path") else {}
+                            "ImageTags": {"Primary": get_image_tag()} if p.get("image_path") else {}
                         }
                         items.append(performer_item)
 
@@ -3830,7 +3841,7 @@ async def endpoint_items(request):
                             "RecursiveItemCount": s.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"},
-                            "ImageTags": {"Primary": "img"} if s.get("image_path") else {}
+                            "ImageTags": {"Primary": get_image_tag()} if s.get("image_path") else {}
                         }
                         items.append(studio_item)
 
@@ -3866,7 +3877,7 @@ async def endpoint_items(request):
                             "RecursiveItemCount": g.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{g['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": get_image_tag()}
                         }
                         items.append(group_item)
 
@@ -3924,7 +3935,7 @@ async def endpoint_items(request):
                             "RecursiveItemCount": t.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"},
-                            "ImageTags": {"Primary": "img"}  # Always set - we serve text icon if no Stash image
+                            "ImageTags": {"Primary": get_image_tag()}  # Always set - we serve text icon if no Stash image
                         }
                         items.append(tag_item)
 
@@ -4194,7 +4205,7 @@ async def endpoint_items(request):
                 "RecursiveItemCount": m.get("scene_count", 0),
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"},
                 # Always advertise image - endpoint will try to fetch and fall back to placeholder if needed
-                "ImageTags": {"Primary": "img"}
+                "ImageTags": {"Primary": get_image_tag()}
             }
             items.append(group_item)
 
@@ -4239,7 +4250,7 @@ async def endpoint_items(request):
             "IsFolder": True,
             "CollectionType": "movies",
             "ParentId": parent_id,
-            "ImageTags": {"Primary": "img"},
+            "ImageTags": {"Primary": get_image_tag()},
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-favorites"}
         })
         items_count += 1
@@ -4255,7 +4266,7 @@ async def endpoint_items(request):
                 "IsFolder": True,
                 "CollectionType": "movies",
                 "ParentId": parent_id,
-                "ImageTags": {"Primary": "img"},
+                "ImageTags": {"Primary": get_image_tag()},
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-all"}
             })
             items_count += 1
@@ -4275,7 +4286,7 @@ async def endpoint_items(request):
                 "IsFolder": True,
                 "CollectionType": "movies",
                 "ParentId": parent_id,
-                "ImageTags": {"Primary": "img"},
+                "ImageTags": {"Primary": get_image_tag()},
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
             })
             items_count += 1
@@ -4308,7 +4319,7 @@ async def endpoint_items(request):
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": True, "Played": False, "Key": f"tagitem-{t['id']}"}
             }
             # Always set ImageTags so Infuse requests an image - we serve text icon if no Stash image
-            tag_item["ImageTags"] = {"Primary": "img"}
+            tag_item["ImageTags"] = {"Primary": get_image_tag()}
             items.append(tag_item)
 
     elif parent_id == "tags-all":
@@ -4337,7 +4348,7 @@ async def endpoint_items(request):
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"}
             }
             # Always set ImageTags so Infuse requests an image - we serve text icon if no Stash image
-            tag_item["ImageTags"] = {"Primary": "img"}
+            tag_item["ImageTags"] = {"Primary": get_image_tag()}
             items.append(tag_item)
 
     elif parent_id and parent_id.startswith("tagitem-"):
@@ -4458,7 +4469,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"},
+            "ImageTags": {"Primary": get_image_tag()},
             "BackdropImageTags": [],
             "ChildCount": filter_count,
             "RecursiveItemCount": filter_count,
@@ -4491,7 +4502,7 @@ async def endpoint_item_details(request):
                     "Type": "Folder",
                     "CollectionType": "movies",
                     "IsFolder": True,
-                    "ImageTags": {"Primary": "img"},
+                    "ImageTags": {"Primary": get_image_tag()},
                     "BackdropImageTags": [],
                     "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
                 })
@@ -4557,7 +4568,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"} if has_image else {},
+            "ImageTags": {"Primary": get_image_tag()} if has_image else {},
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4614,7 +4625,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"} if has_image else {},
+            "ImageTags": {"Primary": get_image_tag()} if has_image else {},
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4661,7 +4672,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"} if has_image else {},
+            "ImageTags": {"Primary": get_image_tag()} if has_image else {},
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4685,7 +4696,7 @@ async def endpoint_item_details(request):
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
+            "ImageTags": {"Primary": get_image_tag("icon")},
             "BackdropImageTags": [],
             "ChildCount": count,
             "RecursiveItemCount": count,
@@ -4706,7 +4717,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"},
+            "ImageTags": {"Primary": get_image_tag()},
             "BackdropImageTags": [],
             "ChildCount": total_count,
             "RecursiveItemCount": total_count,
@@ -4727,7 +4738,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"},
+            "ImageTags": {"Primary": get_image_tag()},
             "BackdropImageTags": [],
             "ChildCount": total_count,
             "RecursiveItemCount": total_count,
@@ -4757,7 +4768,7 @@ async def endpoint_item_details(request):
             "Type": "Folder",
             "CollectionType": "movies",
             "IsFolder": True,
-            "ImageTags": {"Primary": "img"} if has_image else {},
+            "ImageTags": {"Primary": get_image_tag()} if has_image else {},
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4802,7 +4813,7 @@ async def endpoint_item_details(request):
                 "Type": "CollectionFolder",
                 "CollectionType": "movies",
                 "IsFolder": True,
-                "ImageTags": {"Primary": "icon"},
+                "ImageTags": {"Primary": get_image_tag("icon")},
                 "BackdropImageTags": [],
                 "ChildCount": scene_count,
                 "RecursiveItemCount": scene_count,
@@ -5801,7 +5812,7 @@ async def endpoint_persons(request):
                 "Id": f"performer-{p['id']}",
                 "ServerId": SERVER_ID,
                 "Type": "Person",
-                "ImageTags": {"Primary": "img"} if has_image else {},
+                "ImageTags": {"Primary": get_image_tag()} if has_image else {},
                 "BackdropImageTags": []
             }
             items.append(item)
@@ -5838,7 +5849,7 @@ async def endpoint_studios(request):
                 "Id": f"studio-{s['id']}",
                 "ServerId": SERVER_ID,
                 "Type": "Studio",
-                "ImageTags": {"Primary": "img"} if has_image else {},
+                "ImageTags": {"Primary": get_image_tag()} if has_image else {},
                 "BackdropImageTags": []
             }
             items.append(item)
@@ -5984,7 +5995,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v3.94",
+        "version": "v3.95",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6609,7 +6620,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v3.94 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v3.95 ---")
     logger.info(f"Binding: {PROXY_BIND}:{PROXY_PORT}")
     logger.info(f"Stash URL: {STASH_URL}")
 
