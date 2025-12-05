@@ -3833,7 +3833,7 @@ async def endpoint_items(request):
                             "RecursiveItemCount": t.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"},
-                            "ImageTags": {"Primary": "img"} if t.get("image_path") else {}
+                            "ImageTags": {"Primary": "img"}  # Always set - we serve text icon if no Stash image
                         }
                         items.append(tag_item)
 
