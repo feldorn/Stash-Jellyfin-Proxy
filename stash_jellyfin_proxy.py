@@ -2041,6 +2041,7 @@ PUBLIC_ENDPOINTS = {
     "/system/info",
     "/system/ping",
     "/users",  # User list for login screen
+    "/users/public",  # Public user list for Swiftfin
     "/users/authenticatebyname",
     "/branding/configuration",
     "/branding/splashscreen",  # Swiftfin requests this on startup
@@ -3180,10 +3181,26 @@ async def endpoint_authenticate_by_name(request):
 
 async def endpoint_users(request):
     return JSONResponse([{
-        "Name": "Stash User",
+        "Name": SJS_USER,
         "Id": SJS_USER,
+        "ServerId": SERVER_ID,
         "HasPassword": True,
+        "HasConfiguredPassword": True,
+        "HasConfiguredEasyPassword": False,
+        "PrimaryImageTag": None,
         "Policy": {"IsAdministrator": True, "EnableContentDeletion": False}
+    }])
+
+async def endpoint_users_public(request):
+    """Return list of public users that can be selected on login screen."""
+    return JSONResponse([{
+        "Name": SJS_USER,
+        "Id": SJS_USER,
+        "ServerId": SERVER_ID,
+        "HasPassword": True,
+        "HasConfiguredPassword": True,
+        "HasConfiguredEasyPassword": False,
+        "PrimaryImageTag": None
     }])
 
 async def endpoint_user_by_id(request):
@@ -6128,6 +6145,8 @@ routes = [
     Route("/QuickConnect/Enabled", endpoint_quickconnect_enabled),
     Route("/QuickConnect/Initiate", endpoint_quickconnect_initiate, methods=["POST"]),
     Route("/Localization/Options", endpoint_localization_options),
+    Route("/Users", endpoint_users),
+    Route("/Users/Public", endpoint_users_public),
     Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST"]),
     Route("/Users/{user_id}", endpoint_user_by_id),
     Route("/Users/{user_id}/Views", endpoint_user_views),
