@@ -3129,17 +3129,62 @@ async def endpoint_authenticate_by_name(request):
         record_auth_attempt(success=True)
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
         
-        # Build auth response
+        # Generate a consistent user ID (GUID format) from the username
+        import hashlib
+        user_id_hash = hashlib.md5(SJS_USER.encode()).hexdigest()
+        
+        # Get client info from request headers for session
+        client_name = "Stash Proxy Client"
+        device_name = "Unknown"
+        device_id = "stash-proxy-device"
+        app_version = "1.0"
+        
+        for key, value in request.scope.get("headers", []):
+            key_lower = key.decode().lower()
+            value_str = value.decode()
+            if key_lower == "x-emby-authorization" or key_lower == "authorization":
+                # Parse: MediaBrowser Client="...", Device="...", DeviceId="...", Version="..."
+                import re
+                client_match = re.search(r'Client="([^"]*)"', value_str)
+                device_match = re.search(r'Device="([^"]*)"', value_str)
+                device_id_match = re.search(r'DeviceId="([^"]*)"', value_str)
+                version_match = re.search(r'Version="([^"]*)"', value_str)
+                if client_match:
+                    client_name = client_match.group(1)
+                if device_match:
+                    device_name = device_match.group(1)
+                if device_id_match:
+                    device_id = device_id_match.group(1)
+                if version_match:
+                    app_version = version_match.group(1)
+                break
+        
+        # Build auth response matching real Jellyfin format
         auth_response = {
             "User": {
                 "Name": username,
-                "Id": SJS_USER,
                 "ServerId": SERVER_ID,
-                "ServerName": SERVER_NAME,
+                "Id": user_id_hash,
                 "HasPassword": True,
                 "HasConfiguredPassword": True,
                 "HasConfiguredEasyPassword": False,
                 "EnableAutoLogin": False,
+                "Configuration": {
+                    "PlayDefaultAudioTrack": True,
+                    "SubtitleLanguagePreference": "",
+                    "DisplayMissingEpisodes": False,
+                    "GroupedFolders": [],
+                    "SubtitleMode": "Default",
+                    "DisplayCollectionsView": False,
+                    "EnableLocalPassword": False,
+                    "OrderedViews": [],
+                    "LatestItemsExcludes": [],
+                    "MyMediaExcludes": [],
+                    "HidePlayedInLatest": True,
+                    "RememberAudioSelections": True,
+                    "RememberSubtitleSelections": True,
+                    "EnableNextEpisodeAutoPlay": True
+                },
                 "Policy": {
                     "IsAdministrator": True,
                     "IsHidden": False,
@@ -3154,27 +3199,47 @@ async def endpoint_authenticate_by_name(request):
                     "EnableVideoPlaybackTranscoding": True,
                     "EnableAllFolders": True,
                     "EnableAllChannels": True,
-                    "EnableAllDevices": True
-                },
-                "Configuration": {
-                    "PlayDefaultAudioTrack": True,
-                    "SubtitleLanguagePreference": "",
-                    "DisplayMissingEpisodes": False,
-                    "SubtitleMode": "Default",
-                    "EnableLocalPassword": False,
-                    "HidePlayedInLatest": True,
-                    "RememberAudioSelections": True,
-                    "RememberSubtitleSelections": True
+                    "EnableAllDevices": True,
+                    "EnabledDevices": [],
+                    "EnabledChannels": [],
+                    "EnabledFolders": [],
+                    "BlockedTags": [],
+                    "AllowedTags": [],
+                    "AccessSchedules": [],
+                    "BlockUnratedItems": [],
+                    "EnableContentDeletionFromFolders": [],
+                    "SyncPlayAccess": "CreateAndJoinGroups"
                 }
             },
             "SessionInfo": {
-                "UserId": SJS_USER,
+                "PlayState": {
+                    "CanSeek": False,
+                    "IsPaused": False,
+                    "IsMuted": False,
+                    "RepeatMode": "RepeatNone"
+                },
+                "AdditionalUsers": [],
+                "Capabilities": {
+                    "PlayableMediaTypes": ["Video"],
+                    "SupportedCommands": [],
+                    "SupportsMediaControl": False,
+                    "SupportsPersistentIdentifier": True
+                },
+                "PlayableMediaTypes": [],
+                "Id": hashlib.md5(f"{device_id}{SJS_USER}".encode()).hexdigest(),
+                "UserId": user_id_hash,
                 "UserName": username,
-                "Id": SERVER_ID,
-                "ServerId": SERVER_ID,
+                "Client": client_name,
+                "DeviceName": device_name,
+                "DeviceId": device_id,
+                "ApplicationVersion": app_version,
                 "IsActive": True,
+                "SupportsMediaControl": False,
                 "SupportsRemoteControl": False,
-                "PlayableMediaTypes": ["Video"],
+                "NowPlayingQueue": [],
+                "NowPlayingQueueFullItems": [],
+                "HasCustomDeviceName": False,
+                "ServerId": SERVER_ID,
                 "SupportedCommands": []
             },
             "AccessToken": ACCESS_TOKEN,
