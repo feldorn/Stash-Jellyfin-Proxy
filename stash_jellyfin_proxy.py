@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stash-Jellyfin Proxy v5.0.7
+Stash-Jellyfin Proxy v5.0.8
 Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
 
 # =============================================================================
@@ -836,7 +836,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v5.0.7</span>
+                <span id="version">v5.0.8</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1245,7 +1245,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v5.0.7';
+                document.getElementById('version').textContent = data.version || 'v5.0.8';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -4935,22 +4935,22 @@ def stash_update_scene_playback(scene_id: str, resume_time: float = None, increm
             
             if resume_time is not None:
                 # Update both play_count and resume_time (clear resume on completion)
-                mutation = """mutation SceneUpdate($id: ID!, $play_count: Int, $resume_time: Float) {
-                    sceneUpdate(input: {id: $id, play_count: $play_count, resume_time: $resume_time}) { id }
+                mutation = """mutation SceneUpdate($input: SceneUpdateInput!) {
+                    sceneUpdate(input: $input) { id play_count resume_time }
                 }"""
-                variables = {"id": scene_id, "play_count": new_count, "resume_time": resume_time}
+                variables = {"input": {"id": scene_id, "play_count": new_count, "resume_time": resume_time}}
             else:
                 # Just update play_count
-                mutation = """mutation SceneUpdate($id: ID!, $play_count: Int) {
-                    sceneUpdate(input: {id: $id, play_count: $play_count}) { id }
+                mutation = """mutation SceneUpdate($input: SceneUpdateInput!) {
+                    sceneUpdate(input: $input) { id play_count }
                 }"""
-                variables = {"id": scene_id, "play_count": new_count}
+                variables = {"input": {"id": scene_id, "play_count": new_count}}
         elif resume_time is not None:
-            # Just update resume_time
-            mutation = """mutation SceneUpdate($id: ID!, $resume_time: Float) {
-                sceneUpdate(input: {id: $id, resume_time: $resume_time}) { id }
+            # Just update resume_time - use input object format
+            mutation = """mutation SceneUpdate($input: SceneUpdateInput!) {
+                sceneUpdate(input: $input) { id resume_time }
             }"""
-            variables = {"id": scene_id, "resume_time": resume_time}
+            variables = {"input": {"id": scene_id, "resume_time": resume_time}}
         else:
             return True  # Nothing to update
         
@@ -6308,7 +6308,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v5.0.7",
+        "version": "v5.0.8",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6962,7 +6962,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v5.0.7 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v5.0.8 ---")
 
     stash_ok = check_stash_connection()
     if not stash_ok:
