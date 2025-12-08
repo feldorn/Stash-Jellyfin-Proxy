@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 5.0.1**
+**Version 5.00**
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash by emulating the Jellyfin API.
 
@@ -8,26 +8,11 @@ A Python proxy server that enables Jellyfin-compatible media players (like Infus
 
 - **Jellyfin API Emulation**: Implements 50+ Jellyfin endpoints for broad client compatibility
 - **Full Stash Integration**: Scenes, Performers, Studios, Groups, and Tags
-- **Playback State Sync**: Bi-directional sync of watched status, resume positions, and ratings with Stash
 - **Tag-Based Libraries**: Create custom library folders based on Stash tags
 - **Saved Filters Support**: Browse your Stash saved filters as folders
 - **Web Configuration UI**: Dashboard with status, active streams, statistics, and settings
 - **Docker Support**: Ready-to-use Docker container with PUID/PGID support
 - **IP Security**: Auto-banning for failed authentication attempts
-
-## Playback Sync (v5.0.1+)
-
-The proxy now syncs playback state between Infuse and Stash:
-
-| Feature | Direction | Stash Field |
-|---------|-----------|-------------|
-| Watched status | Bidirectional | `play_count` |
-| Resume position | Bidirectional | `resume_time` |
-| Ratings | Bidirectional | `rating100` (0-100 scale) |
-
-- When you watch a video in Infuse, the `play_count` increments in Stash
-- When you pause/stop mid-video, the resume position is saved to Stash
-- Rating a video in Infuse updates the Stash rating (converted from 0-10 to 0-100)
 
 ## Quick Start
 

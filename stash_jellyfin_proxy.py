@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stash-Jellyfin Proxy v5.0.8
+Stash-Jellyfin Proxy v5.01
 Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
 
 # =============================================================================
@@ -836,7 +836,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v5.0.8</span>
+                <span id="version">v5.01</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1245,7 +1245,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v5.0.8';
+                document.getElementById('version').textContent = data.version || 'v5.01';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -2800,17 +2800,6 @@ def format_saved_filter_item(saved_filter: Dict[str, Any], parent_id: str) -> Di
 # Note: SERVER_ID is now configured at the top of the file and loaded from config
 ACCESS_TOKEN = str(uuid.uuid4())
 
-# GraphQL fields for querying scenes - includes playback tracking fields for sync
-SCENE_FIELDS = """
-    id title code date details
-    play_count resume_time rating100
-    files { path duration }
-    studio { name }
-    tags { name }
-    performers { name id image_path }
-    captions { language_code caption_type }
-"""
-
 def make_guid(numeric_id: str) -> str:
     """Convert a numeric ID to a GUID-like format that Jellyfin clients expect."""
     # Pad the ID and format as a pseudo-GUID
@@ -2847,40 +2836,6 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
     tags = scene.get("tags", [])
     performers = scene.get("performers", [])
 
-    # Extract playback state from Stash (synced from scene data)
-    play_count = scene.get("play_count") or 0
-    resume_time = scene.get("resume_time") or 0  # Stash stores in seconds
-    rating100 = scene.get("rating100")  # Stash uses 0-100 scale
-
-    # Convert resume_time (seconds) to Jellyfin ticks (100ns units)
-    playback_position_ticks = int(resume_time * 10000000) if resume_time else 0
-    
-    # Calculate played percentage for resume indicator
-    played_percentage = 0.0
-    if duration and duration > 0 and resume_time:
-        played_percentage = (resume_time / duration) * 100.0
-
-    # Log playback state if non-zero (debugging sync issues)
-    if play_count > 0 or resume_time > 0 or rating100:
-        logger.debug(f"Scene {item_id} playback state: play_count={play_count}, resume_time={resume_time}s, rating100={rating100}")
-
-    # Build UserData with real Stash values
-    user_data = {
-        "PlaybackPositionTicks": playback_position_ticks,
-        "PlayCount": play_count,
-        "IsFavorite": False,
-        "Played": play_count > 0,
-        "PlayedPercentage": played_percentage if played_percentage > 0 else None,
-        "Key": item_id
-    }
-    
-    # Remove None values
-    user_data = {k: v for k, v in user_data.items() if v is not None}
-
-    # Add rating if set in Stash (convert 0-100 to 0-10 for Jellyfin)
-    if rating100 is not None:
-        user_data["UserRating"] = rating100 / 10.0
-
     # Simplified item format - minimal fields for compatibility
     item = {
         "Name": title,
@@ -2894,7 +2849,13 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "ImageTags": {"Primary": "img"},  # Triggers image requests
         "BackdropImageTags": [],
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
-        "UserData": user_data
+        "UserData": {
+            "PlaybackPositionTicks": 0,
+            "PlayCount": 0,
+            "IsFavorite": False,
+            "Played": False,
+            "Key": item_id
+        }
     }
 
     # Add optional fields only if they exist
@@ -3274,6 +3235,8 @@ async def endpoint_latest_items(request):
     logger.debug(f"Latest items request - ParentId: {parent_id}, Limit: {limit}")
 
     # Full scene fields for queries
+    scene_fields = "id title code date details files { path duration } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+
     items = []
 
     # Check if this library is in LATEST_GROUPS
@@ -3295,7 +3258,7 @@ async def endpoint_latest_items(request):
         # Return latest scenes (most recently added)
         q = f"""query FindScenes($page: Int!, $per_page: Int!) {{
             findScenes(filter: {{page: $page, per_page: $per_page, sort: "created_at", direction: DESC}}) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"page": 1, "per_page": limit})
@@ -3338,7 +3301,7 @@ async def endpoint_latest_items(request):
                         scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
                         filter: {{page: $page, per_page: $per_page, sort: "created_at", direction: DESC}}
                     ) {{
-                        scenes {{ {SCENE_FIELDS} }}
+                        scenes {{ {scene_fields} }}
                     }}
                 }}"""
                 res = stash_query(q, {"tid": [tag_id], "page": 1, "per_page": limit})
@@ -3668,11 +3631,14 @@ async def endpoint_items(request):
     items = []
     total_count = 0
 
+    # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
+    scene_fields = "id title code date details files { path duration } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+
     if ids:
         # Specific items requested
         id_list = ids.split(',')
         for iid in id_list:
-            q = f"""query FindScene($id: ID!) {{ findScene(id: $id) {{ {SCENE_FIELDS} }} }}"""
+            q = f"""query FindScene($id: ID!) {{ findScene(id: $id) {{ {scene_fields} }} }}"""
             res = stash_query(q, {"id": iid})
             scene = res.get("data", {}).get("findScene")
             if scene:
@@ -3707,7 +3673,7 @@ async def endpoint_items(request):
                 scene_filter: {{performers: {{value: $pid, modifier: INCLUDES}}}},
                 filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
             ) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"pid": [performer_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -3738,7 +3704,7 @@ async def endpoint_items(request):
         # We use date DESC as the secondary sort for consistent ordering
         q = f"""query FindScenes($q: String!, $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
             findScenes(filter: {{q: $q, page: $page, per_page: $per_page, sort: $sort, direction: $direction}}) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"q": clean_search, "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -3829,7 +3795,7 @@ async def endpoint_items(request):
                             scene_filter: $scene_filter,
                             filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
                         ) {{
-                            scenes {{ {SCENE_FIELDS} }}
+                            scenes {{ {scene_fields} }}
                         }}
                     }}"""
                     res = stash_query(q, {
@@ -4041,7 +4007,7 @@ async def endpoint_items(request):
         # Then get paginated scenes with sort from request
         q = f"""query FindScenes($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
             findScenes(filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -4114,7 +4080,7 @@ async def endpoint_items(request):
                 scene_filter: {{studios: {{value: $sid, modifier: INCLUDES}}}},
                 filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
             ) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"sid": [studio_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -4192,7 +4158,7 @@ async def endpoint_items(request):
                 scene_filter: {{performers: {{value: $pid, modifier: INCLUDES}}}},
                 filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
             ) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"pid": [performer_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -4298,7 +4264,7 @@ async def endpoint_items(request):
                 scene_filter: {{movies: {{value: $mid, modifier: INCLUDES}}}},
                 filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
             ) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"mid": [group_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -4441,7 +4407,7 @@ async def endpoint_items(request):
                 scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
                 filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
             ) {{
-                scenes {{ {SCENE_FIELDS} }}
+                scenes {{ {scene_fields} }}
             }}
         }}"""
         res = stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -4495,7 +4461,7 @@ async def endpoint_items(request):
                         scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
                         filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
                     ) {{
-                        scenes {{ {SCENE_FIELDS} }}
+                        scenes {{ {scene_fields} }}
                     }}
                 }}"""
                 res = stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
@@ -4517,6 +4483,9 @@ async def endpoint_items(request):
 
 async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
+
+    # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
+    scene_fields = "id title code date details files { path duration } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     # Handle special folder IDs - return the folder ITSELF (not children)
 
@@ -4901,152 +4870,36 @@ async def endpoint_item_details(request):
     else:
         numeric_id = extract_numeric_id(item_id)
 
-    q = f"""query FindScene($id: ID!) {{ findScene(id: $id) {{ {SCENE_FIELDS} }} }}"""
+    q = f"""query FindScene($id: ID!) {{ findScene(id: $id) {{ {scene_fields} }} }}"""
     res = stash_query(q, {"id": numeric_id})
     scene = res.get("data", {}).get("findScene")
     if not scene:
         return JSONResponse({"error": "Not found"}, status_code=404)
     return JSONResponse(format_jellyfin_item(scene))
 
-def stash_update_scene_playback(scene_id: str, resume_time: float = None, increment_play_count: bool = False):
-    """Update scene playback state in Stash via GraphQL mutation.
-    
-    Args:
-        scene_id: The numeric scene ID (without 'scene-' prefix)
-        resume_time: Resume position in seconds (None = don't update)
-        increment_play_count: If True, increment play_count by 1
-    
-    Returns:
-        True if update succeeded, False otherwise
-    """
-    try:
-        # Build the mutation based on what needs updating
-        if increment_play_count:
-            # First get current play_count
-            query = """query FindScene($id: ID!) {
-                findScene(id: $id) { play_count }
-            }"""
-            result = stash_query(query, {"id": scene_id})
-            current_count = 0
-            if result and result.get("data", {}).get("findScene"):
-                current_count = result["data"]["findScene"].get("play_count") or 0
-            
-            new_count = current_count + 1
-            
-            if resume_time is not None:
-                # Update both play_count and resume_time (clear resume on completion)
-                mutation = """mutation SceneUpdate($input: SceneUpdateInput!) {
-                    sceneUpdate(input: $input) { id play_count resume_time }
-                }"""
-                variables = {"input": {"id": scene_id, "play_count": new_count, "resume_time": resume_time}}
-            else:
-                # Just update play_count
-                mutation = """mutation SceneUpdate($input: SceneUpdateInput!) {
-                    sceneUpdate(input: $input) { id play_count }
-                }"""
-                variables = {"input": {"id": scene_id, "play_count": new_count}}
-        elif resume_time is not None:
-            # Just update resume_time - use input object format
-            mutation = """mutation SceneUpdate($input: SceneUpdateInput!) {
-                sceneUpdate(input: $input) { id resume_time }
-            }"""
-            variables = {"input": {"id": scene_id, "resume_time": resume_time}}
-        else:
-            return True  # Nothing to update
-        
-        logger.debug(f"Stash mutation: scene {scene_id}, vars={variables}")
-        result = stash_query(mutation, variables)
-        
-        # Log full response for debugging
-        logger.debug(f"Stash mutation response: {result}")
-        
-        if result and result.get("data", {}).get("sceneUpdate"):
-            logger.debug(f"Stash mutation SUCCESS: scene {scene_id}")
-            return True
-        else:
-            # Check for errors
-            errors = result.get("errors") if result else None
-            logger.warning(f"Stash mutation FAILED for scene {scene_id}: errors={errors}, result={result}")
-            return False
-    except Exception as e:
-        logger.error(f"Error updating scene playback state: {e}")
-        return False
-
 async def endpoint_sessions(request):
-    """Handle session management endpoints (Playing, Progress, Stopped).
-    
-    Syncs playback state with Stash:
-    - /Sessions/Playing/Progress: Updates resume_time in Stash, caches position
-    - /Sessions/Playing/Stopped: 
-        - If watched to 90%+ → increment play_count, clear resume_time
-        - Otherwise → save current position as resume_time (uses cached if not provided)
-    """
+    """Handle session management endpoints (Playing, Progress, Stopped)."""
     path = request.url.path
 
-    try:
-        body = await request.json()
-        item_id = body.get("ItemId", "unknown")
-        position_ticks = body.get("PositionTicks")  # Don't default to 0 - check if present
-        
-        # Only process scene items
-        if item_id.startswith("scene-"):
-            numeric_id = item_id.replace("scene-", "")
-            
-            # Convert ticks to seconds (Jellyfin uses 100ns ticks)
-            position_seconds = position_ticks / 10000000.0 if position_ticks else 0
-            
-            # Cache the last known position in session state (for use when Stopped omits PositionTicks)
-            if position_ticks and position_seconds > 0:
-                if item_id in _active_streams:
-                    _active_streams[item_id]["last_position_seconds"] = position_seconds
-            
-            if "/Stopped" in path:
-                # If Stopped event lacks PositionTicks, use cached last position
-                if position_ticks is None or position_ticks == 0:
-                    cached_position = _active_streams.get(item_id, {}).get("last_position_seconds", 0)
-                    if cached_position > 0:
-                        position_seconds = cached_position
-                        logger.debug(f"Using cached position for {item_id}: {position_seconds:.0f}s")
-                title = _active_streams.get(item_id, {}).get("title") or get_scene_title(item_id)
+    # Log when video stops at INFO level
+    if "/Stopped" in path:
+        try:
+            body = await request.json()
+            item_id = body.get("ItemId", "unknown")
+            # Get title from active streams cache, or fetch it
+            if item_id in _active_streams:
+                title = _active_streams[item_id]["title"]
                 mark_stream_stopped(item_id, from_stop_notification=True)
-                
-                # Get video duration to determine if completed
-                scene_info = get_scene_info(item_id)
-                duration = scene_info.get("duration", 0)
-                
-                # Consider "completed" if watched 90%+ of the video (or within last 60 seconds)
-                completed = False
-                if duration > 0:
-                    completion_threshold = max(duration * 0.90, duration - 60)
-                    completed = position_seconds >= completion_threshold
-                
-                if completed:
-                    # Video completed - increment play_count, clear resume_time
-                    stash_update_scene_playback(numeric_id, resume_time=0, increment_play_count=True)
-                    logger.info(f"⏹ Completed: {title} ({item_id}) - play_count incremented")
-                elif position_seconds > 10:
-                    # Stopped mid-video - save resume position (don't increment play_count)
-                    stash_update_scene_playback(numeric_id, resume_time=position_seconds)
-                    logger.info(f"⏹ Stopped: {title} ({item_id}) - saved resume at {position_seconds:.0f}s")
-                else:
-                    # Very early stop (< 10s) - ignore, don't save
-                    logger.info(f"⏹ Stopped: {title} ({item_id}) - too early to save ({position_seconds:.0f}s)")
-                
-            elif "/Progress" in path:
-                # Playback progress update - save resume position
-                # Only update if significant position (> 10 seconds)
-                if position_seconds > 10:
-                    stash_update_scene_playback(numeric_id, resume_time=position_seconds)
-                    logger.debug(f"⏸ Progress synced: {item_id} at {position_seconds:.0f}s")
-                    
-        elif "/Stopped" in path:
-            # Non-scene item stopped
-            logger.info(f"⏹ Stream stopped: {item_id}")
-            
-    except Exception as e:
-        if "/Stopped" in path:
-            logger.info(f"⏹ Stream stopped (no details)")
-        logger.debug(f"Session endpoint error: {e}")
+                logger.info(f"⏹ Stream stopped: {title} ({item_id})")
+            elif item_id.startswith("scene-"):
+                # Stream wasn't tracked (e.g., after server restart) - still mark as recently stopped
+                title = get_scene_title(item_id)
+                mark_stream_stopped(item_id, from_stop_notification=True)
+                logger.info(f"⏹ Stream stopped: {title} ({item_id})")
+            else:
+                logger.info(f"⏹ Stream stopped: {item_id}")
+        except:
+            logger.info("⏹ Stream stopped")
 
     return JSONResponse({})
 
@@ -5069,7 +4922,7 @@ async def endpoint_playback_info(request):
 
     numeric_id = item_id.replace("scene-", "")
 
-    # Query scene to get captions and resume position
+    # Query scene to get captions
     query = """
     query FindScene($id: ID!) {
         findScene(id: $id) {
@@ -5077,8 +4930,6 @@ async def endpoint_playback_info(request):
             title
             files { path duration }
             captions { language_code caption_type }
-            resume_time
-            play_count
         }
     }
     """
@@ -5149,12 +5000,7 @@ async def endpoint_playback_info(request):
             "DeliveryUrl": f"Subtitles/{idx + 1}/0/Stream.{caption_type}"
         })
 
-    # Get resume position from Stash
-    resume_time = scene.get("resume_time") or 0
-    play_count = scene.get("play_count") or 0
-    position_ticks = int(resume_time * 10_000_000)
-    
-    logger.debug(f"PlaybackInfo for {item_id}: {len(captions)} subtitles, resume_time={resume_time}s")
+    logger.debug(f"PlaybackInfo for {item_id}: {len(captions)} subtitles")
 
     return JSONResponse({
         "MediaSources": [{
@@ -5168,14 +5014,7 @@ async def endpoint_playback_info(request):
             "SupportsTranscoding": False,
             "MediaStreams": media_streams
         }],
-        "PlaySessionId": f"session-{item_id}",
-        "UserData": {
-            "PlaybackPositionTicks": position_ticks,
-            "PlayCount": play_count,
-            "IsFavorite": False,
-            "Played": play_count > 0,
-            "Key": item_id
-        }
+        "PlaySessionId": f"session-{item_id}"
     })
 
 def get_numeric_id(item_id: str) -> str:
@@ -5846,36 +5685,9 @@ async def endpoint_image(request):
         return Response(content=b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', media_type='image/png', headers=cache_headers)
 
 async def endpoint_user_items_resume(request):
-    """Return resume/in-progress items - scenes with non-zero resume_time in Stash."""
-    limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
-    
-    try:
-        # Query Stash for scenes with non-zero resume_time, sorted by most recently updated
-        query = f"""query FindResumeScenes {{
-            findScenes(
-                scene_filter: {{resume_time: {{value: 0, modifier: GREATER_THAN}}}},
-                filter: {{page: 1, per_page: {limit}, sort: "updated_at", direction: DESC}}
-            ) {{
-                count
-                scenes {{ {SCENE_FIELDS} }}
-            }}
-        }}"""
-        
-        result = stash_query(query)
-        scenes_data = result.get("data", {}).get("findScenes", {})
-        scenes = scenes_data.get("scenes", [])
-        total_count = scenes_data.get("count", 0)
-        
-        items = []
-        for scene in scenes:
-            items.append(format_jellyfin_item(scene, parent_id="root-scenes"))
-        
-        logger.debug(f"Resume items: returning {len(items)} scenes with resume positions (total {total_count})")
-        return JSONResponse({"Items": items, "TotalRecordCount": total_count, "StartIndex": 0})
-        
-    except Exception as e:
-        logger.error(f"Error fetching resume items: {e}")
-        return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
+    """Return resume/in-progress items - currently returns empty."""
+    # TODO: Could integrate with Stash's continue_watching or playback history
+    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
 async def endpoint_ping(request):
     """Simple ping endpoint for connectivity checks."""
@@ -5933,105 +5745,17 @@ async def endpoint_user_item_unfavorite(request):
     return JSONResponse({"IsFavorite": False})
 
 async def endpoint_user_item_rating(request):
-    """Update item rating in Stash.
-    
-    Jellyfin ratings: 0-10 scale (or "likes" boolean)
-    Stash ratings: 0-100 scale (rating100)
-    """
-    item_id = request.path_params.get("item_id")
-    method = request.method
-    
-    if not item_id or not item_id.startswith("scene-"):
-        return JSONResponse({})
-    
-    numeric_id = item_id.replace("scene-", "")
-    
-    try:
-        if method == "DELETE":
-            # Remove rating
-            mutation = """mutation SceneUpdate($id: ID!) {
-                sceneUpdate(input: {id: $id, rating100: null}) { id }
-            }"""
-            stash_query(mutation, {"id": numeric_id})
-            logger.info(f"⭐ Rating removed: {item_id}")
-        else:
-            # Set rating - check for 'likes' boolean or rating value
-            likes = request.query_params.get("likes")
-            
-            if likes is not None:
-                # Boolean like/dislike -> 100 or 0
-                rating100 = 100 if likes.lower() == "true" else 0
-            else:
-                # Try to get rating value from body or query
-                try:
-                    body = await request.json()
-                    rating = body.get("Rating", 5)  # Default to middle
-                except:
-                    rating = float(request.query_params.get("rating", 5))
-                
-                # Convert 0-10 Jellyfin scale to 0-100 Stash scale
-                rating100 = int(min(100, max(0, rating * 10)))
-            
-            mutation = """mutation SceneUpdate($id: ID!, $rating100: Int) {
-                sceneUpdate(input: {id: $id, rating100: $rating100}) { id }
-            }"""
-            stash_query(mutation, {"id": numeric_id, "rating100": rating100})
-            logger.info(f"⭐ Rating set: {item_id} -> {rating100}/100")
-            
-    except Exception as e:
-        logger.error(f"Error updating rating: {e}")
-    
+    """Update item rating - stub that accepts but doesn't persist."""
+    # Stash has a rating100 field (0-100), Jellyfin uses different scales
+    # Could potentially sync this in the future
     return JSONResponse({})
 
 async def endpoint_user_played_items(request):
-    """Mark item as played in Stash (increment play_count if 0)."""
-    item_id = request.path_params.get("item_id")
-    
-    if not item_id or not item_id.startswith("scene-"):
-        return JSONResponse({})
-    
-    numeric_id = item_id.replace("scene-", "")
-    
-    try:
-        # Get current play_count
-        query = """query FindScene($id: ID!) {
-            findScene(id: $id) { play_count }
-        }"""
-        result = stash_query(query, {"id": numeric_id})
-        current_count = 0
-        if result and result.get("data", {}).get("findScene"):
-            current_count = result["data"]["findScene"].get("play_count") or 0
-        
-        # Only increment if not already played
-        if current_count == 0:
-            mutation = """mutation SceneUpdate($id: ID!, $play_count: Int) {
-                sceneUpdate(input: {id: $id, play_count: $play_count}) { id }
-            }"""
-            stash_query(mutation, {"id": numeric_id, "play_count": 1})
-            logger.info(f"✓ Marked as played: {item_id}")
-    except Exception as e:
-        logger.error(f"Error marking played: {e}")
-    
+    """Mark item as played - stub."""
     return JSONResponse({})
 
 async def endpoint_user_unplayed_items(request):
-    """Mark item as unplayed in Stash (set play_count to 0)."""
-    item_id = request.path_params.get("item_id")
-    
-    if not item_id or not item_id.startswith("scene-"):
-        return JSONResponse({})
-    
-    numeric_id = item_id.replace("scene-", "")
-    
-    try:
-        mutation = """mutation SceneUpdate($id: ID!, $play_count: Int, $resume_time: Float) {
-            sceneUpdate(input: {id: $id, play_count: $play_count, resume_time: $resume_time}) { id }
-        }"""
-        stash_query(mutation, {"id": numeric_id, "play_count": 0, "resume_time": 0})
-        logger.info(f"✗ Marked as unplayed: {item_id}")
-    except Exception as e:
-        logger.error(f"Error marking unplayed: {e}")
-    
+    """Mark item as unplayed - stub."""
     return JSONResponse({})
 
 async def endpoint_collections(request):
@@ -6308,7 +6032,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v5.0.8",
+        "version": "v5.01",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6962,7 +6686,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v5.0.8 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v5.01 ---")
 
     stash_ok = check_stash_connection()
     if not stash_ok:
