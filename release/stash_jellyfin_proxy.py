@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stash-Jellyfin Proxy v5.0.4
+Stash-Jellyfin Proxy v5.0.5
 Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
 
 # =============================================================================
@@ -836,7 +836,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v5.0.4</span>
+                <span id="version">v5.0.5</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1245,7 +1245,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v5.0.4';
+                document.getElementById('version').textContent = data.version || 'v5.0.5';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -5046,7 +5046,7 @@ async def endpoint_playback_info(request):
 
     numeric_id = item_id.replace("scene-", "")
 
-    # Query scene to get captions
+    # Query scene to get captions and resume position
     query = """
     query FindScene($id: ID!) {
         findScene(id: $id) {
@@ -5054,6 +5054,8 @@ async def endpoint_playback_info(request):
             title
             files { path duration }
             captions { language_code caption_type }
+            resume_time
+            play_count
         }
     }
     """
@@ -5124,7 +5126,12 @@ async def endpoint_playback_info(request):
             "DeliveryUrl": f"Subtitles/{idx + 1}/0/Stream.{caption_type}"
         })
 
-    logger.debug(f"PlaybackInfo for {item_id}: {len(captions)} subtitles")
+    # Get resume position from Stash
+    resume_time = scene.get("resume_time") or 0
+    play_count = scene.get("play_count") or 0
+    position_ticks = int(resume_time * 10_000_000)
+    
+    logger.debug(f"PlaybackInfo for {item_id}: {len(captions)} subtitles, resume_time={resume_time}s")
 
     return JSONResponse({
         "MediaSources": [{
@@ -5138,7 +5145,14 @@ async def endpoint_playback_info(request):
             "SupportsTranscoding": False,
             "MediaStreams": media_streams
         }],
-        "PlaySessionId": f"session-{item_id}"
+        "PlaySessionId": f"session-{item_id}",
+        "UserData": {
+            "PlaybackPositionTicks": position_ticks,
+            "PlayCount": play_count,
+            "IsFavorite": False,
+            "Played": play_count > 0,
+            "Key": item_id
+        }
     })
 
 def get_numeric_id(item_id: str) -> str:
@@ -6271,7 +6285,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v5.0.4",
+        "version": "v5.0.5",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6925,7 +6939,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v5.0.4 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v5.0.5 ---")
 
     stash_ok = check_stash_connection()
     if not stash_ok:
