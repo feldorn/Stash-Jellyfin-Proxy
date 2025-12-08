@@ -1,0 +1,54 @@
+2025-12-08 08:55:28,347 - stash-jellyfin-proxy - DEBUG - Ignoring mid-file first request for scene-37992: position 36.6% (likely post-restart trailing request)
+2025-12-08 08:55:28,351 - stash-jellyfin-proxy - INFO - ⏸ Stream resuming (post-restart): A Lesson in Edging & Milking (scene-37992) from 192.168.0.233
+2025-12-08 08:55:28,352 - stash-jellyfin-proxy - DEBUG - Seek to start ignored for scene-37992: only 0s gap (need 300s)
+2025-12-08 08:55:28,352 - stash-jellyfin-proxy - DEBUG - Same stream session for scene-37992: position 0, 0s since last
+2025-12-08 08:55:28,352 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37992 (45053ms)
+2025-12-08 08:55:32,367 - stash-jellyfin-proxy - DEBUG - Same stream session for scene-37992: position 235149604, 4s since last
+2025-12-08 08:55:32,367 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37992 (49027ms)
+2025-12-08 08:55:32,367 - stash-jellyfin-proxy - DEBUG - Seek to start ignored for scene-37992: only 0s gap (need 300s)
+2025-12-08 08:55:32,367 - stash-jellyfin-proxy - DEBUG - Same stream session for scene-37992: position 0, 0s since last
+2025-12-08 08:55:32,367 - stash-jellyfin-proxy - DEBUG - Stream continue: scene-37992 (52628ms)
+2025-12-08 08:55:32,369 - stash-jellyfin-proxy - DEBUG - Stash mutation: scene 37992, vars={'id': '37992', 'resume_time': 244.6386839}
+2025-12-08 08:55:32,528 - stash-jellyfin-proxy - DEBUG - Stash mutation SUCCESS: scene 37992
+2025-12-08 08:55:32,528 - stash-jellyfin-proxy - DEBUG - ⏸ Progress synced: scene-37992 at 245s
+2025-12-08 08:55:32,532 - stash-jellyfin-proxy - DEBUG - Stash mutation: scene 37992, vars={'id': '37992', 'resume_time': 250.3840568}
+2025-12-08 08:55:32,683 - stash-jellyfin-proxy - DEBUG - Stash mutation SUCCESS: scene 37992
+2025-12-08 08:55:32,683 - stash-jellyfin-proxy - INFO - ⏹ Stopped: A Lesson in Edging & Milking (scene-37992) - saved resume at 250s
+2025-12-08 08:55:32,684 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-scenes, Limit: 20
+2025-12-08 08:55:32,705 - stash-jellyfin-proxy - DEBUG - Scene scene-38003 playback state: play_count=0, resume_time=47.48170242365347s, rating100=None
+2025-12-08 08:55:32,705 - stash-jellyfin-proxy - DEBUG - Scene scene-37995 playback state: play_count=0, resume_time=12.263329s, rating100=None
+2025-12-08 08:55:32,705 - stash-jellyfin-proxy - DEBUG - Scene scene-37991 playback state: play_count=0, resume_time=52.541045s, rating100=None
+2025-12-08 08:55:32,705 - stash-jellyfin-proxy - DEBUG - Scene scene-37984 playback state: play_count=0, resume_time=1321.334357s, rating100=None
+2025-12-08 08:55:32,705 - stash-jellyfin-proxy - DEBUG - Returning 20 latest items for root-scenes
+2025-12-08 08:55:32,706 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-studios, Limit: 20
+2025-12-08 08:55:32,706 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-studios (not in LATEST_GROUPS)
+2025-12-08 08:55:32,706 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-performers, Limit: 20
+2025-12-08 08:55:32,706 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-performers (not in LATEST_GROUPS)
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-groups, Limit: 20
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-groups (not in LATEST_GROUPS)
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: root-tags, Limit: 20
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Skipping latest for root-tags (not in LATEST_GROUPS)
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-cock-hero, Limit: 20
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-cock-hero (not in LATEST_GROUPS)
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-cum-countdown, Limit: 20
+2025-12-08 08:55:32,707 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-cum-countdown (not in LATEST_GROUPS)
+2025-12-08 08:55:32,708 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-gooning, Limit: 20
+2025-12-08 08:55:32,708 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-gooning (not in LATEST_GROUPS)
+2025-12-08 08:55:32,708 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-joi, Limit: 20
+2025-12-08 08:55:32,708 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-joi (not in LATEST_GROUPS)
+2025-12-08 08:55:32,708 - stash-jellyfin-proxy - DEBUG - Latest items request - ParentId: tag-tit-worship, Limit: 20
+2025-12-08 08:55:32,708 - stash-jellyfin-proxy - DEBUG - Skipping latest for tag-tit-worship (not in LATEST_GROUPS)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (340ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Stopped -> 200 (180ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Shows/NextUp -> 200 (25ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (25ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (3ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (2ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (2ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (2ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (2ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (1ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (1ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (1ms)
+2025-12-08 08:55:32,709 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/Latest -> 200 (1ms)
+

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stash-Jellyfin Proxy v5.0.6
+Stash-Jellyfin Proxy v5.0.7
 Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
 
 # =============================================================================
@@ -836,7 +836,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v5.0.6</span>
+                <span id="version">v5.0.7</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1245,7 +1245,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v5.0.6';
+                document.getElementById('version').textContent = data.version || 'v5.0.7';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -4957,6 +4957,9 @@ def stash_update_scene_playback(scene_id: str, resume_time: float = None, increm
         logger.debug(f"Stash mutation: scene {scene_id}, vars={variables}")
         result = stash_query(mutation, variables)
         
+        # Log full response for debugging
+        logger.debug(f"Stash mutation response: {result}")
+        
         if result and result.get("data", {}).get("sceneUpdate"):
             logger.debug(f"Stash mutation SUCCESS: scene {scene_id}")
             return True
@@ -4973,17 +4976,17 @@ async def endpoint_sessions(request):
     """Handle session management endpoints (Playing, Progress, Stopped).
     
     Syncs playback state with Stash:
-    - /Sessions/Playing/Progress: Updates resume_time in Stash
+    - /Sessions/Playing/Progress: Updates resume_time in Stash, caches position
     - /Sessions/Playing/Stopped: 
         - If watched to 90%+ → increment play_count, clear resume_time
-        - Otherwise → save current position as resume_time
+        - Otherwise → save current position as resume_time (uses cached if not provided)
     """
     path = request.url.path
 
     try:
         body = await request.json()
         item_id = body.get("ItemId", "unknown")
-        position_ticks = body.get("PositionTicks", 0)
+        position_ticks = body.get("PositionTicks")  # Don't default to 0 - check if present
         
         # Only process scene items
         if item_id.startswith("scene-"):
@@ -4992,7 +4995,18 @@ async def endpoint_sessions(request):
             # Convert ticks to seconds (Jellyfin uses 100ns ticks)
             position_seconds = position_ticks / 10000000.0 if position_ticks else 0
             
+            # Cache the last known position in session state (for use when Stopped omits PositionTicks)
+            if position_ticks and position_seconds > 0:
+                if item_id in _active_streams:
+                    _active_streams[item_id]["last_position_seconds"] = position_seconds
+            
             if "/Stopped" in path:
+                # If Stopped event lacks PositionTicks, use cached last position
+                if position_ticks is None or position_ticks == 0:
+                    cached_position = _active_streams.get(item_id, {}).get("last_position_seconds", 0)
+                    if cached_position > 0:
+                        position_seconds = cached_position
+                        logger.debug(f"Using cached position for {item_id}: {position_seconds:.0f}s")
                 title = _active_streams.get(item_id, {}).get("title") or get_scene_title(item_id)
                 mark_stream_stopped(item_id, from_stop_notification=True)
                 
@@ -6294,7 +6308,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v5.0.6",
+        "version": "v5.0.7",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6948,7 +6962,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v5.0.6 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v5.0.7 ---")
 
     stash_ok = check_stash_connection()
     if not stash_ok:
