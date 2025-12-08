@@ -1,0 +1,68 @@
+2025-12-08 08:38:12,711 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash:9999/scene/5869/screenshot: 16512 bytes, type=image/jpeg
+2025-12-08 08:38:12,711 - stash-jellyfin-proxy - DEBUG - Image response: 16512 bytes, type=image/jpeg
+2025-12-08 08:38:12,711 - stash-jellyfin-proxy - DEBUG - Proxying image for scene-13072 from https://stash:9999/scene/13072/screenshot
+2025-12-08 08:38:12,713 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash:9999/scene/13072/screenshot: 101890 bytes, type=image/jpeg
+2025-12-08 08:38:12,713 - stash-jellyfin-proxy - DEBUG - Image response: 101890 bytes, type=image/jpeg
+2025-12-08 08:38:12,713 - stash-jellyfin-proxy - DEBUG - /Items/scene-13068/Images/Primary -> 200 (9ms)
+2025-12-08 08:38:12,713 - stash-jellyfin-proxy - DEBUG - /Items/scene-19799/Images/Primary -> 200 (6ms)
+2025-12-08 08:38:12,714 - stash-jellyfin-proxy - DEBUG - /Items/scene-5869/Images/Primary -> 200 (4ms)
+2025-12-08 08:38:12,714 - stash-jellyfin-proxy - DEBUG - /Items/scene-13072/Images/Primary -> 200 (2ms)
+2025-12-08 08:38:12,714 - stash-jellyfin-proxy - DEBUG - Proxying image for scene-13071 from https://stash:9999/scene/13071/screenshot
+2025-12-08 08:38:12,716 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash:9999/scene/13071/screenshot: 132272 bytes, type=image/jpeg
+2025-12-08 08:38:12,716 - stash-jellyfin-proxy - DEBUG - Image response: 132272 bytes, type=image/jpeg
+2025-12-08 08:38:12,716 - stash-jellyfin-proxy - DEBUG - Proxying image for scene-13070 from https://stash:9999/scene/13070/screenshot
+2025-12-08 08:38:12,718 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash:9999/scene/13070/screenshot: 160569 bytes, type=image/jpeg
+2025-12-08 08:38:12,718 - stash-jellyfin-proxy - DEBUG - Image response: 160569 bytes, type=image/jpeg
+2025-12-08 08:38:12,719 - stash-jellyfin-proxy - DEBUG - /Items/scene-13071/Images/Primary -> 200 (4ms)
+2025-12-08 08:38:12,719 - stash-jellyfin-proxy - DEBUG - /Items/scene-13070/Images/Primary -> 200 (2ms)
+2025-12-08 08:38:13,348 - stash-jellyfin-proxy - DEBUG - Sort mapping: SortName -> SortName -> title ASC
+2025-12-08 08:38:13,348 - stash-jellyfin-proxy - DEBUG - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'sortBy': 'SortName', 'sortOrder': 'Ascending', 'includeItemTypes': 'Series,Movie,MusicVideo,Video', 'recursive': 'true', 'personIds': 'performer-1729', 'startIndex': '0', 'limit': '50'}
+2025-12-08 08:38:13,348 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: None, Ids: None, PersonIds: performer-1729, SearchTerm: None, StartIndex: 0, Limit: 50, Sort: title ASC
+2025-12-08 08:38:13,348 - stash-jellyfin-proxy - DEBUG - PersonIds filter: fetching scenes for performer 1729
+2025-12-08 08:38:13,355 - stash-jellyfin-proxy - DEBUG - PersonIds filter: returned 5 scenes (page 1, total 5)
+2025-12-08 08:38:13,355 - stash-jellyfin-proxy - DEBUG - Items response: returning 5 items, TotalRecordCount=5, StartIndex=0
+2025-12-08 08:38:13,356 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items -> 200 (7ms)
+2025-12-08 08:38:13,561 - stash-jellyfin-proxy - DEBUG - Proxying image for scene-19803 from https://stash:9999/scene/19803/screenshot
+2025-12-08 08:38:13,566 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash:9999/scene/19803/screenshot: 98800 bytes, type=image/jpeg
+2025-12-08 08:38:13,566 - stash-jellyfin-proxy - DEBUG - Image response: 98800 bytes, type=image/jpeg
+2025-12-08 08:38:13,566 - stash-jellyfin-proxy - DEBUG - /Items/scene-19803/Images/Primary -> 200 (5ms)
+2025-12-08 08:38:13,567 - stash-jellyfin-proxy - DEBUG - Proxying image for scene-19804 from https://stash:9999/scene/19804/screenshot
+2025-12-08 08:38:13,568 - stash-jellyfin-proxy - DEBUG - Fetch success from https://stash:9999/scene/19804/screenshot: 98800 bytes, type=image/jpeg
+2025-12-08 08:38:13,568 - stash-jellyfin-proxy - DEBUG - Image response: 98800 bytes, type=image/jpeg
+2025-12-08 08:38:13,569 - stash-jellyfin-proxy - DEBUG - /Items/scene-19804/Images/Primary -> 200 (2ms)
+2025-12-08 08:38:14,275 - stash-jellyfin-proxy - DEBUG - Sort mapping: PremiereDate -> PremiereDate -> date DESC
+2025-12-08 08:38:14,275 - stash-jellyfin-proxy - DEBUG - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'searchTerm': 'Codi', 'recursive': 'true', 'limit': '24'}
+2025-12-08 08:38:14,275 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: None, Ids: None, PersonIds: None, SearchTerm: Codi, StartIndex: 0, Limit: 24, Sort: date DESC
+2025-12-08 08:38:14,275 - stash-jellyfin-proxy - INFO - 🔍 Search: 'Codi'
+2025-12-08 08:38:14,396 - stash-jellyfin-proxy - DEBUG - Search 'Codi' returned 21 scenes (page 1, total 21)
+2025-12-08 08:38:14,396 - stash-jellyfin-proxy - DEBUG - Items response: returning 21 items, TotalRecordCount=21, StartIndex=0
+2025-12-08 08:38:14,397 - stash-jellyfin-proxy - DEBUG - Persons search: 'Codi'
+2025-12-08 08:38:14,405 - stash-jellyfin-proxy - DEBUG - Persons search 'Codi' returned 4 matches
+2025-12-08 08:38:14,405 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items -> 200 (130ms)
+2025-12-08 08:38:14,405 - stash-jellyfin-proxy - DEBUG - /Persons -> 200 (8ms)
+2025-12-08 08:38:15,026 - stash-jellyfin-proxy - DEBUG - Sort mapping: SortName -> SortName -> title ASC
+2025-12-08 08:38:15,026 - stash-jellyfin-proxy - DEBUG - Items endpoint - ALL PARAMS: {'excludeLocationTypes': 'Virtual', 'fields': 'DateCreated,Etag,Genres,MediaSources,AlternateMediaSources,Overview,ParentId,Path,ProviderIds,SortName,RecursiveItemCount,ChildCount', 'sortBy': 'SortName', 'sortOrder': 'Ascending', 'includeItemTypes': 'Series,Movie,MusicVideo,Video', 'recursive': 'true', 'personIds': 'performer-3', 'startIndex': '0', 'limit': '50'}
+2025-12-08 08:38:15,026 - stash-jellyfin-proxy - DEBUG - Items endpoint - ParentId: None, Ids: None, PersonIds: performer-3, SearchTerm: None, StartIndex: 0, Limit: 50, Sort: title ASC
+2025-12-08 08:38:15,027 - stash-jellyfin-proxy - DEBUG - PersonIds filter: fetching scenes for performer 3
+2025-12-08 08:38:15,039 - stash-jellyfin-proxy - DEBUG - PersonIds filter: returned 8 scenes (page 1, total 8)
+2025-12-08 08:38:15,040 - stash-jellyfin-proxy - DEBUG - Items response: returning 8 items, TotalRecordCount=8, StartIndex=0
+2025-12-08 08:38:15,041 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items -> 200 (15ms)
+2025-12-08 08:38:22,042 - stash-jellyfin-proxy - DEBUG - PlaybackInfo for scene-5015: 0 subtitles
+2025-12-08 08:38:22,043 - stash-jellyfin-proxy - DEBUG - /Items/scene-5015/PlaybackInfo -> 200 (7ms)
+2025-12-08 08:38:22,068 - stash-jellyfin-proxy - DEBUG - /MediaSegments/scene-5015 -> 200 (8ms)
+2025-12-08 08:38:22,068 - stash-jellyfin-proxy - DEBUG - /Users/chris/Items/scene-5015 -> 200 (7ms)
+2025-12-08 08:38:22,072 - stash-jellyfin-proxy - DEBUG - Proxying stream for scene-5015 from https://stash:9999/scene/5015/stream
+2025-12-08 08:38:22,076 - stash-jellyfin-proxy - DEBUG - Stream response: 1638991606 bytes, type=video/mp4, status=206
+2025-12-08 08:38:22,748 - stash-jellyfin-proxy - DEBUG - PlaybackInfo for scene-5015: 0 subtitles
+2025-12-08 08:38:22,749 - stash-jellyfin-proxy - DEBUG - /Items/scene-5015/PlaybackInfo -> 200 (5ms)
+2025-12-08 08:38:22,774 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing -> 200 (0ms)
+2025-12-08 08:38:32,945 - stash-jellyfin-proxy - DEBUG - ⏸ Progress synced: scene-5015 at 10s
+2025-12-08 08:38:32,946 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (160ms)
+2025-12-08 08:38:33,582 - stash-jellyfin-proxy - DEBUG - ⏸ Progress synced: scene-5015 at 11s
+2025-12-08 08:38:33,583 - stash-jellyfin-proxy - DEBUG - /Sessions/Playing/Progress -> 200 (152ms)
+2025-12-08 08:38:36,647 - stash-jellyfin-proxy - DEBUG - Seek to start ignored for scene-5015: only 70s gap (need 300s)
+2025-12-08 08:38:36,647 - stash-jellyfin-proxy - DEBUG - Same stream session for scene-5015: position 0, 70s since last
+2025-12-08 08:38:36,651 - stash-jellyfin-proxy - DEBUG - Play cooldown active for scene-5015 from 192.168.0.233 (3566s remaining)
+2025-12-08 08:38:36,651 - stash-jellyfin-proxy - DEBUG - Saved proxy stats to /config/proxy_stats.json
+2025-12-08 08:38:36,651 - stash-jellyfin-proxy - INFO - ▶ Stream started: 30 Minute JOI Edging Challenge (scene-5015) by chris from 192.168.0.233 [Infuse]
+
