@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Stash-Jellyfin Proxy v5.0.1
+Stash-Jellyfin Proxy v5.0.2
 Enables Infuse and other Jellyfin clients to connect to Stash by emulating the Jellyfin API.
 
 # =============================================================================
@@ -836,7 +836,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         <nav class="sidebar">
             <div class="logo">
                 <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v5.0.1</span>
+                <span id="version">v5.0.2</span>
             </div>
             <a class="nav-item active" data-page="dashboard">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
@@ -1245,7 +1245,7 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                 document.getElementById('stash-status').textContent = data.stashConnected ? 'Connected' : 'Disconnected';
                 document.getElementById('stash-status').className = 'status-value ' + (data.stashConnected ? 'connected' : 'disconnected');
                 document.getElementById('stash-version').textContent = data.stashVersion || '-';
-                document.getElementById('version').textContent = data.version || 'v5.0.1';
+                document.getElementById('version').textContent = data.version || 'v5.0.2';
                 document.getElementById('proxy-uptime').textContent = data.uptime ? `Uptime: ${formatDuration(data.uptime)}` : '';
             } catch (e) {
                 console.error('Failed to fetch status:', e);
@@ -4956,7 +4956,9 @@ async def endpoint_sessions(request):
     
     Syncs playback state with Stash:
     - /Sessions/Playing/Progress: Updates resume_time in Stash
-    - /Sessions/Playing/Stopped: Increments play_count, clears resume_time
+    - /Sessions/Playing/Stopped: 
+        - If watched to 90%+ → increment play_count, clear resume_time
+        - Otherwise → save current position as resume_time
     """
     path = request.url.path
 
@@ -4973,13 +4975,30 @@ async def endpoint_sessions(request):
             position_seconds = position_ticks / 10000000.0 if position_ticks else 0
             
             if "/Stopped" in path:
-                # Playback stopped - increment play_count and clear resume position
                 title = _active_streams.get(item_id, {}).get("title") or get_scene_title(item_id)
                 mark_stream_stopped(item_id, from_stop_notification=True)
                 
-                # Sync to Stash: increment play_count and clear resume_time
-                stash_update_scene_playback(numeric_id, resume_time=0, increment_play_count=True)
-                logger.info(f"⏹ Stream stopped: {title} ({item_id}) - synced to Stash")
+                # Get video duration to determine if completed
+                scene_info = get_scene_info(item_id)
+                duration = scene_info.get("duration", 0)
+                
+                # Consider "completed" if watched 90%+ of the video (or within last 60 seconds)
+                completed = False
+                if duration > 0:
+                    completion_threshold = max(duration * 0.90, duration - 60)
+                    completed = position_seconds >= completion_threshold
+                
+                if completed:
+                    # Video completed - increment play_count, clear resume_time
+                    stash_update_scene_playback(numeric_id, resume_time=0, increment_play_count=True)
+                    logger.info(f"⏹ Completed: {title} ({item_id}) - play_count incremented")
+                elif position_seconds > 10:
+                    # Stopped mid-video - save resume position (don't increment play_count)
+                    stash_update_scene_playback(numeric_id, resume_time=position_seconds)
+                    logger.info(f"⏹ Stopped: {title} ({item_id}) - saved resume at {position_seconds:.0f}s")
+                else:
+                    # Very early stop (< 10s) - ignore, don't save
+                    logger.info(f"⏹ Stopped: {title} ({item_id}) - too early to save ({position_seconds:.0f}s)")
                 
             elif "/Progress" in path:
                 # Playback progress update - save resume position
@@ -6216,7 +6235,7 @@ async def ui_api_status(request):
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
-        "version": "v5.0.1",
+        "version": "v5.0.2",
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
@@ -6870,7 +6889,7 @@ if __name__ == "__main__":
     asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.setLevel(logging.CRITICAL)  # Only show critical asyncio errors
 
-    logger.info(f"--- Stash-Jellyfin Proxy v5.0.1 ---")
+    logger.info(f"--- Stash-Jellyfin Proxy v5.0.2 ---")
 
     stash_ok = check_stash_connection()
     if not stash_ok:
