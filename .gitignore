@@ -1,6 +1,40 @@
-node_modules
-dist
+# Replit workspace files
+.replit
+replit.md
+.config/
+.cache/
+.local/
+.upm/
+node_modules/
+dist/
 .DS_Store
-server/public
-vite.config.ts.*
+
+# Replit scaffolding (not part of this project)
+attached_assets/
+client/
+server/
+shared/
+script/
+package.json
+package-lock.json
+tsconfig.json
+vite.config.ts
+vite-plugin-meta-images.ts
+postcss.config.js
+components.json
+drizzle.config.ts
+tailwind.config.ts
+theme.json
+
+# Build artifacts
 *.tar.gz
+*.zip
+server/public
+
+# Release folder (separate copy, not needed in main repo)
+release/
+
+# Runtime
+__pycache__/
+*.pyc
+*.log
