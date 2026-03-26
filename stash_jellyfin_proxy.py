@@ -2848,8 +2848,6 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
     # Title fallback: title -> code -> filename (without extension) -> Scene #
     title = scene.get("title") or scene.get("code")
     if not title and path:
-        # Extract filename without extension, like Stash does
-        import os
         filename = os.path.basename(path)
         title = os.path.splitext(filename)[0] if filename else None
     if not title:
