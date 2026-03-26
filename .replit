@@ -46,3 +46,8 @@ waitForPort = 5000
 
 [agent]
 mockupState = "FULLSTACK"
+
+[userenv]
+
+[userenv.shared]
+GITHUB_PAT = "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"
