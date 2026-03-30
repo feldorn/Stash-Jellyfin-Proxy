@@ -5868,6 +5868,10 @@ async def endpoint_user_item_unfavorite(request):
     """Remove favorite status - stub."""
     return JSONResponse({"IsFavorite": False})
 
+async def endpoint_local_trailers(request):
+    """Return empty list for local trailers - Stash doesn't support trailers."""
+    return JSONResponse([])
+
 async def endpoint_user_item_rating(request):
     """Update item rating - stub that accepts but doesn't persist."""
     # Stash has a rating100 field (0-100), Jellyfin uses different scales
@@ -6087,6 +6091,7 @@ routes = [
     Route("/Users/{user_id}/Items/Resume", endpoint_user_items_resume),
     Route("/Users/{user_id}/GroupingOptions", endpoint_grouping_options),
     Route("/Users/{user_id}/FavoriteItems", endpoint_user_favorites),
+    Route("/Users/{user_id}/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
     Route("/Users/{user_id}/Items/{item_id}/Rating", endpoint_user_item_rating, methods=["POST", "DELETE"]),
     Route("/Users/{user_id}/FavoriteItems/{item_id}", endpoint_user_item_favorite, methods=["POST"]),
     Route("/Users/{user_id}/FavoriteItems/{item_id}/Delete", endpoint_user_item_unfavorite, methods=["POST", "DELETE"]),
