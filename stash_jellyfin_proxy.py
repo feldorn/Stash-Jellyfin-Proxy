@@ -2882,7 +2882,13 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
     # Add optional fields only if they exist
     if date:
         item["ProductionYear"] = int(date[:4])
-        item["PremiereDate"] = f"{date}T00:00:00.0000000Z"
+        # Ensure date is full YYYY-MM-DD format for valid ISO 8601
+        if len(date) == 4:
+            item["PremiereDate"] = f"{date}-01-01T00:00:00.0000000Z"
+        elif len(date) == 7:
+            item["PremiereDate"] = f"{date}-01T00:00:00.0000000Z"
+        else:
+            item["PremiereDate"] = f"{date}T00:00:00.0000000Z"
 
     # Build overview from description and/or studio
     overview_parts = []
@@ -4560,19 +4566,6 @@ async def endpoint_items(request):
     logger.debug(f"Items response: returning {len(items)} items, TotalRecordCount={total_count}, StartIndex={start_index}")
     if len(items) > 0 and total_count > start_index + len(items):
         logger.debug(f"More items available: next page would start at {start_index + len(items)}")
-
-    # DEBUG: Strip fields to isolate Infuse issue
-    # Phase 6: Strip only Overview and date fields
-    if parent_id == "root-scenes":
-        strip_keys = {"Overview", "ProductionYear", "PremiereDate", "DateCreated"}
-        minimal_items = []
-        for item in items:
-            if item.get("Type") == "Movie":
-                minimal = {k: v for k, v in item.items() if k not in strip_keys}
-                minimal_items.append(minimal)
-            else:
-                minimal_items.append(item)
-        items = minimal_items
 
     # Validate JSON serialization and dump full debug response
     response_data = {"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index}
