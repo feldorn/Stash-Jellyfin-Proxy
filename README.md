@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 5.00**
+**Version 5.03**
 
 A Python proxy server that enables Jellyfin-compatible media players (like Infuse) to connect to Stash by emulating the Jellyfin API.
 
@@ -105,6 +105,26 @@ Access the configuration dashboard at `http://your-server:8097`:
 - Single-user authentication (one set of credentials)
 - Infuse caches images aggressively; clear metadata cache if artwork doesn't update
 - Dashboard may briefly pause during stream initialization
+
+## Changelog
+
+### v5.03
+- **Fixed**: Scenes failing to load in Infuse ("Unexpected server response") caused by partial dates. Scenes with year-only dates (e.g., "2026") produced invalid ISO 8601 timestamps that Infuse couldn't parse. Now properly pads partial dates (year-only, year-month) to full format.
+- **Fixed**: Performer `PrimaryImageTag` set to null for performers without images. Only include image tags when the performer actually has an image.
+- Removed debug instrumentation from v5.02 debugging sessions.
+
+### v5.02
+- Rich MediaStreams metadata (codec details, resolution, bitrate, channel layout)
+- Subtitle support with SRT/VTT delivery
+- Saved Filters browsing support
+- Performer/Studio/Group image serving
+- Tag-based library folders (TAG_GROUPS)
+
+### v5.00
+- Initial release with full Jellyfin API emulation
+- Stash GraphQL integration for scenes, performers, studios, groups, tags
+- Web configuration UI with dashboard, settings, and log viewer
+- Docker support with PUID/PGID
 
 ## License
 
