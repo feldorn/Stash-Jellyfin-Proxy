@@ -4563,6 +4563,30 @@ async def endpoint_items(request):
     if len(items) > 0 and total_count > start_index + len(items):
         logger.debug(f"More items available: next page would start at {start_index + len(items)}")
 
+    # DEBUG: Strip scene items to minimal format to isolate Infuse parsing issue
+    if parent_id == "root-scenes":
+        minimal_items = []
+        for item in items:
+            if item.get("Type") == "Movie":
+                minimal = {
+                    "Name": item.get("Name", ""),
+                    "SortName": item.get("SortName", ""),
+                    "Id": item.get("Id", ""),
+                    "ServerId": item.get("ServerId", ""),
+                    "Type": "Movie",
+                    "IsFolder": False,
+                    "MediaType": "Video",
+                    "ParentId": item.get("ParentId", ""),
+                    "ImageTags": item.get("ImageTags", {}),
+                    "BackdropImageTags": [],
+                    "RunTimeTicks": item.get("RunTimeTicks", 0),
+                    "UserData": item.get("UserData", {}),
+                }
+                minimal_items.append(minimal)
+            else:
+                minimal_items.append(item)
+        items = minimal_items
+
     # Validate JSON serialization and dump full debug response
     response_data = {"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index}
     try:
