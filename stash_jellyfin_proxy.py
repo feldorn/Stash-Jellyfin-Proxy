@@ -2909,9 +2909,9 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
                     "Type": "Actor",
                     "Role": "",
                     "Id": f"person-{p.get('id')}",
-                    "PrimaryImageTag": "img" if p.get("image_path") else None
                 }
                 if p.get("image_path"):
+                    person["PrimaryImageTag"] = "img"
                     person["ImageTags"] = {"Primary": "img"}
                 people_list.append(person)
         item["People"] = people_list
@@ -4563,19 +4563,6 @@ async def endpoint_items(request):
     if len(items) > 0 and total_count > start_index + len(items):
         logger.debug(f"More items available: next page would start at {start_index + len(items)}")
 
-    # DEBUG: Strip scene items to find which field causes Infuse parsing issue
-    # Phase 3: everything EXCEPT People
-    if parent_id == "root-scenes":
-        strip_keys = {"People"}
-        minimal_items = []
-        for item in items:
-            if item.get("Type") == "Movie":
-                minimal = {k: v for k, v in item.items() if k not in strip_keys}
-                minimal_items.append(minimal)
-            else:
-                minimal_items.append(item)
-        items = minimal_items
-
     # Validate JSON serialization and dump full debug response
     response_data = {"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index}
     try:
@@ -4600,10 +4587,7 @@ async def endpoint_items(request):
             except (TypeError, ValueError) as ie:
                 logger.error(f"  Bad item at index {i} (id={item.get('Id','?')}): {ie}")
 
-    # Use raw Response to control exact output (bypass JSONResponse serialization)
-    import json as _json
-    response_body = _json.dumps(response_data, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
-    return Response(content=response_body, media_type="application/json; charset=utf-8")
+    return JSONResponse(response_data)
 
 async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
