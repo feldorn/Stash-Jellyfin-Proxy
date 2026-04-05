@@ -4557,7 +4557,24 @@ async def endpoint_items(request):
     if len(items) > 0 and total_count > start_index + len(items):
         logger.debug(f"More items available: next page would start at {start_index + len(items)}")
 
-    return JSONResponse({"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index})
+    # Validate JSON serialization and log first scene item for debugging
+    response_data = {"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index}
+    try:
+        import json
+        json_str = json.dumps(response_data)
+        if parent_id in ("root-scenes",) and items:
+            scene_items = [i for i in items if i.get("Type") == "Movie"]
+            if scene_items:
+                logger.debug(f"Sample scene JSON: {json.dumps(scene_items[0])}")
+    except (TypeError, ValueError) as e:
+        logger.error(f"JSON serialization error in items response: {e}")
+        for i, item in enumerate(items):
+            try:
+                json.dumps(item)
+            except (TypeError, ValueError) as ie:
+                logger.error(f"  Bad item at index {i} (id={item.get('Id','?')}): {ie}")
+
+    return JSONResponse(response_data)
 
 async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
