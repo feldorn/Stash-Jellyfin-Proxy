@@ -4563,25 +4563,19 @@ async def endpoint_items(request):
     if len(items) > 0 and total_count > start_index + len(items):
         logger.debug(f"More items available: next page would start at {start_index + len(items)}")
 
-    # DEBUG: Strip scene items to minimal format to isolate Infuse parsing issue
+    # DEBUG: Strip scene items to find which field causes Infuse parsing issue
+    # Phase 2: minimal + MediaSources
     if parent_id == "root-scenes":
+        keep_keys = {
+            "Name", "SortName", "Id", "ServerId", "Type", "IsFolder",
+            "MediaType", "ParentId", "ImageTags", "BackdropImageTags",
+            "RunTimeTicks", "UserData", "MediaSources", "Path",
+            "LocationType", "HasSubtitles",
+        }
         minimal_items = []
         for item in items:
             if item.get("Type") == "Movie":
-                minimal = {
-                    "Name": item.get("Name", ""),
-                    "SortName": item.get("SortName", ""),
-                    "Id": item.get("Id", ""),
-                    "ServerId": item.get("ServerId", ""),
-                    "Type": "Movie",
-                    "IsFolder": False,
-                    "MediaType": "Video",
-                    "ParentId": item.get("ParentId", ""),
-                    "ImageTags": item.get("ImageTags", {}),
-                    "BackdropImageTags": [],
-                    "RunTimeTicks": item.get("RunTimeTicks", 0),
-                    "UserData": item.get("UserData", {}),
-                }
+                minimal = {k: v for k, v in item.items() if k in keep_keys}
                 minimal_items.append(minimal)
             else:
                 minimal_items.append(item)
