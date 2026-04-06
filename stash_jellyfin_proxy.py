@@ -2322,6 +2322,40 @@ class AuthenticationMiddleware:
         })
 
 
+class CaseInsensitivePathMiddleware:
+    """Normalize request paths to match route casing (Jellyfin clients vary in casing)."""
+
+    _path_map = None
+
+    def __init__(self, app):
+        self.app = app
+
+    @classmethod
+    def build_path_map(cls, route_list):
+        """Build lowercase->original mapping from route paths (static segments only)."""
+        cls._path_map = {}
+        for r in route_list:
+            p = getattr(r, "path", "")
+            if p and "{" not in p:
+                cls._path_map[p.lower()] = p
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            path_lower = path.lower()
+            if path_lower != path or (self._path_map and path_lower in self._path_map):
+                if self._path_map and path_lower in self._path_map:
+                    scope = dict(scope, path=self._path_map[path_lower])
+                else:
+                    segments = path.split("/")
+                    normalized = "/".join(
+                        seg.capitalize() if seg and seg.isalpha() and seg.islower() else seg
+                        for seg in segments
+                    )
+                    if normalized != path:
+                        scope = dict(scope, path=normalized)
+        await self.app(scope, receive, send)
+
 class RequestLoggingMiddleware:
     """Pure ASGI middleware that doesn't wrap streaming responses (avoids BaseHTTPMiddleware issues)."""
 
@@ -6530,8 +6564,11 @@ routes = [
     Route("/{path:path}", catch_all),
 ]
 
+CaseInsensitivePathMiddleware.build_path_map(routes)
+
 middleware = [
-    Middleware(AuthenticationMiddleware),  # Token validation first
+    Middleware(CaseInsensitivePathMiddleware),
+    Middleware(AuthenticationMiddleware),
     Middleware(RequestLoggingMiddleware),
     Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 ]
