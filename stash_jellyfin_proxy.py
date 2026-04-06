@@ -2274,18 +2274,22 @@ class AuthenticationMiddleware:
             elif key_lower == "x-mediabrowser-token":
                 token = value_str
                 break
-            # Check Authorization header (Bearer token or X-Emby-Authorization)
+            # Check Authorization header (Bearer token or MediaBrowser/Emby token)
             elif key_lower == "authorization":
                 if value_str.startswith("Bearer "):
                     token = value_str[7:]
                 elif "Token=" in value_str:
                     match = re.search(r'Token="([^"]+)"', value_str)
+                    if not match:
+                        match = re.search(r'Token=([^,\s]+)', value_str)
                     if match:
                         token = match.group(1)
                 break
             # Check X-Emby-Authorization header
             elif key_lower == "x-emby-authorization":
                 match = re.search(r'Token="([^"]+)"', value_str)
+                if not match:
+                    match = re.search(r'Token=([^,\s]+)', value_str)
                 if match:
                     token = match.group(1)
                 break
