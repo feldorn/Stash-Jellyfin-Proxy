@@ -3107,11 +3107,26 @@ async def endpoint_public_info(request):
         "OperatingSystem": "Linux"
     })
 
+def parse_emby_auth_header(request):
+    """Extract Client, Device, DeviceId, Version from Jellyfin/Emby auth headers."""
+    info = {"Client": "Jellyfin", "DeviceName": "Unknown", "DeviceId": "", "ApplicationVersion": "0.0.0"}
+    auth_header = ""
+    for key, value in request.headers.items():
+        key_lower = key.lower()
+        if key_lower in ("authorization", "x-emby-authorization"):
+            auth_header = value
+            break
+    if auth_header:
+        for field, json_key in [("Client", "Client"), ("Device", "DeviceName"), ("DeviceId", "DeviceId"), ("Version", "ApplicationVersion")]:
+            match = re.search(rf'{field}="([^"]*)"', auth_header)
+            if match:
+                info[json_key] = match.group(1)
+    return info
+
 async def endpoint_authenticate_by_name(request):
     try:
         data = await request.json()
     except:
-        # Sometimes clients send empty body or form data?
         data = {}
 
     username = data.get("Username", "User")
@@ -3130,6 +3145,10 @@ async def endpoint_authenticate_by_name(request):
 
         record_auth_attempt(success=True)
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
+        client_info = parse_emby_auth_header(request)
+        client_ip = get_client_ip(request.scope)
+        session_id = str(uuid.uuid4())
+        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S.0000000Z", time.gmtime())
         auth_response = {
             "User": {
                 "Name": username,
@@ -3171,24 +3190,39 @@ async def endpoint_authenticate_by_name(request):
                 }
             },
             "SessionInfo": {
+                "Id": session_id,
                 "UserId": USER_ID,
                 "UserName": username,
+                "Client": client_info["Client"],
+                "DeviceName": client_info["DeviceName"],
+                "DeviceId": client_info["DeviceId"],
+                "ApplicationVersion": client_info["ApplicationVersion"],
+                "RemoteEndPoint": client_ip,
                 "IsActive": True,
+                "SupportsMediaControl": False,
+                "SupportsRemoteControl": False,
+                "HasCustomDeviceName": False,
+                "LastActivityDate": now_iso,
+                "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
                 "PlayState": {
                     "CanSeek": False,
                     "IsPaused": False,
                     "IsMuted": False,
-                    "RepeatMode": "RepeatNone"
+                    "RepeatMode": "RepeatNone",
+                    "PositionTicks": 0
                 },
                 "Capabilities": {
                     "PlayableMediaTypes": [],
                     "SupportedCommands": [],
                     "SupportsMediaControl": False,
                     "SupportsContentUploading": False,
-                    "SupportsPersistentIdentifier": True
+                    "SupportsPersistentIdentifier": True,
+                    "SupportsSync": False
                 },
+                "PlayableMediaTypes": [],
                 "AdditionalUsers": [],
                 "NowPlayingQueue": [],
+                "SupportedCommands": [],
                 "ServerId": SERVER_ID
             },
             "AccessToken": ACCESS_TOKEN,
