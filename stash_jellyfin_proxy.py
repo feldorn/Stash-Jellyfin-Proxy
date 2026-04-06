@@ -2881,6 +2881,7 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "Type": "Movie",
         "IsFolder": False,
         "MediaType": "Video",
+        "CanDownload": True,
         "ParentId": parent_id,
         "ImageTags": {"Primary": "img"},  # Triggers image requests
         "BackdropImageTags": ["backdrop"],  # Scene screenshot serves as backdrop
