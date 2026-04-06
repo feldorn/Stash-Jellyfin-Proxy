@@ -3209,7 +3209,12 @@ async def endpoint_authenticate_by_name(request):
                     "ForceRemoteSourceTranscoding": False,
                     "EnableMediaPlayback": True,
                     "EnableAudioPlaybackTranscoding": True,
-                    "EnableVideoPlaybackTranscoding": True
+                    "EnableVideoPlaybackTranscoding": True,
+                    "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+                    "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+                    "EnableCollectionManagement": False,
+                    "EnableSubtitleManagement": False,
+                    "EnableLyricManagement": False
                 },
                 "Configuration": {
                     "PlayDefaultAudioTrack": True,
@@ -3291,7 +3296,7 @@ async def endpoint_users(request):
         "HasConfiguredPassword": True,
         "HasConfiguredEasyPassword": False,
         "EnableAutoLogin": False,
-        "Policy": {"IsAdministrator": True, "EnableContentDeletion": False, "EnableContentDownloading": True}
+        "Policy": {"IsAdministrator": True, "EnableContentDeletion": False, "EnableContentDownloading": True, "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider", "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"}
     }])
 
 async def endpoint_user_by_id(request):
@@ -3315,7 +3320,12 @@ async def endpoint_user_by_id(request):
             "ForceRemoteSourceTranscoding": False,
             "EnableMediaPlayback": True,
             "EnableAudioPlaybackTranscoding": True,
-            "EnableVideoPlaybackTranscoding": True
+            "EnableVideoPlaybackTranscoding": True,
+            "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+            "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+            "EnableCollectionManagement": False,
+            "EnableSubtitleManagement": False,
+            "EnableLyricManagement": False
         },
         "Configuration": {
             "PlayDefaultAudioTrack": True,
