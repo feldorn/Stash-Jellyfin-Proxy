@@ -2305,6 +2305,7 @@ class AuthenticationMiddleware:
 
         # No valid token - record failure and return 401
         reason = "invalid token" if token else "missing token"
+        logger.debug(f"AUTH REJECT: {scope.get('method', '?')} {path} from {client_ip} - {reason}")
         record_auth_failure(client_ip, path, reason, user_agent)
 
         response_body = b'{"error": "Unauthorized"}'
@@ -3182,6 +3183,9 @@ async def endpoint_authenticate_by_name(request):
 
         record_auth_attempt(success=True)
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
+        client_info = parse_emby_auth_header(request)
+        client_ip = get_client_ip(request.scope)
+        session_id = str(uuid.uuid4())
         auth_response = {
             "User": {
                 "Name": username,
@@ -3191,6 +3195,8 @@ async def endpoint_authenticate_by_name(request):
                 "HasConfiguredPassword": True,
                 "HasConfiguredEasyPassword": False,
                 "EnableAutoLogin": False,
+                "LastLoginDate": "2024-01-01T00:00:00.0000000Z",
+                "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
                 "Policy": {
                     "IsAdministrator": True,
                     "IsHidden": False,
@@ -3221,6 +3227,42 @@ async def endpoint_authenticate_by_name(request):
                     "RememberSubtitleSelections": True,
                     "EnableNextEpisodeAutoPlay": True
                 }
+            },
+            "SessionInfo": {
+                "Id": session_id,
+                "UserId": USER_ID,
+                "UserName": username,
+                "Client": client_info["Client"],
+                "DeviceName": client_info["DeviceName"],
+                "DeviceId": client_info["DeviceId"],
+                "ApplicationVersion": client_info["ApplicationVersion"],
+                "RemoteEndPoint": client_ip,
+                "IsActive": True,
+                "SupportsMediaControl": False,
+                "SupportsRemoteControl": False,
+                "HasCustomDeviceName": False,
+                "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
+                "PlayState": {
+                    "CanSeek": False,
+                    "IsPaused": False,
+                    "IsMuted": False,
+                    "RepeatMode": "RepeatNone",
+                    "PositionTicks": 0
+                },
+                "Capabilities": {
+                    "PlayableMediaTypes": [],
+                    "SupportedCommands": [],
+                    "SupportsMediaControl": False,
+                    "SupportsContentUploading": False,
+                    "SupportsPersistentIdentifier": True,
+                    "SupportsSync": False
+                },
+                "PlayableMediaTypes": [],
+                "AdditionalUsers": [],
+                "NowPlayingQueue": [],
+                "NowPlayingQueueFullItems": [],
+                "SupportedCommands": [],
+                "ServerId": SERVER_ID
             },
             "AccessToken": ACCESS_TOKEN,
             "ServerId": SERVER_ID
@@ -6535,9 +6577,9 @@ routes = [
 CaseInsensitivePathMiddleware.build_path_map(routes)
 
 middleware = [
+    Middleware(RequestLoggingMiddleware),
     Middleware(CaseInsensitivePathMiddleware),
     Middleware(AuthenticationMiddleware),
-    Middleware(RequestLoggingMiddleware),
     Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 ]
 
