@@ -3182,9 +3182,6 @@ async def endpoint_authenticate_by_name(request):
 
         record_auth_attempt(success=True)
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
-        client_info = parse_emby_auth_header(request)
-        client_ip = get_client_ip(request.scope)
-        session_id = str(uuid.uuid4())
         auth_response = {
             "User": {
                 "Name": username,
@@ -3224,40 +3221,6 @@ async def endpoint_authenticate_by_name(request):
                     "RememberSubtitleSelections": True,
                     "EnableNextEpisodeAutoPlay": True
                 }
-            },
-            "SessionInfo": {
-                "Id": session_id,
-                "UserId": USER_ID,
-                "UserName": username,
-                "Client": client_info["Client"],
-                "DeviceName": client_info["DeviceName"],
-                "DeviceId": client_info["DeviceId"],
-                "ApplicationVersion": client_info["ApplicationVersion"],
-                "RemoteEndPoint": client_ip,
-                "IsActive": True,
-                "SupportsMediaControl": False,
-                "SupportsRemoteControl": False,
-                "HasCustomDeviceName": False,
-                "PlayState": {
-                    "CanSeek": False,
-                    "IsPaused": False,
-                    "IsMuted": False,
-                    "RepeatMode": "RepeatNone",
-                    "PositionTicks": 0
-                },
-                "Capabilities": {
-                    "PlayableMediaTypes": [],
-                    "SupportedCommands": [],
-                    "SupportsMediaControl": False,
-                    "SupportsContentUploading": False,
-                    "SupportsPersistentIdentifier": True,
-                    "SupportsSync": False
-                },
-                "PlayableMediaTypes": [],
-                "AdditionalUsers": [],
-                "NowPlayingQueue": [],
-                "SupportedCommands": [],
-                "ServerId": SERVER_ID
             },
             "AccessToken": ACCESS_TOKEN,
             "ServerId": SERVER_ID
