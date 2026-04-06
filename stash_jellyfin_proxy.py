@@ -2305,7 +2305,8 @@ class AuthenticationMiddleware:
 
         # No valid token - record failure and return 401
         reason = "invalid token" if token else "missing token"
-        logger.debug(f"AUTH REJECT: {scope.get('method', '?')} {path} from {client_ip} - {reason}")
+        auth_headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", []) if k.decode().lower() in ("authorization", "x-emby-authorization", "x-emby-token", "x-mediabrowser-token")}
+        logger.debug(f"AUTH REJECT: {scope.get('method', '?')} {path} from {client_ip} - {reason} - auth headers: {auth_headers}")
         record_auth_failure(client_ip, path, reason, user_agent)
 
         response_body = b'{"error": "Unauthorized"}'
@@ -3300,6 +3301,53 @@ async def endpoint_users(request):
     }])
 
 async def endpoint_user_by_id(request):
+    return JSONResponse({
+        "Name": SJS_USER or "Stash User",
+        "ServerId": SERVER_ID,
+        "Id": USER_ID,
+        "HasPassword": True,
+        "HasConfiguredPassword": True,
+        "HasConfiguredEasyPassword": False,
+        "EnableAutoLogin": False,
+        "Policy": {
+            "IsAdministrator": True,
+            "IsHidden": False,
+            "IsDisabled": False,
+            "EnableUserPreferenceAccess": True,
+            "EnableRemoteAccess": True,
+            "EnableContentDeletion": False,
+            "EnableContentDownloading": True,
+            "EnablePlaybackRemuxing": True,
+            "ForceRemoteSourceTranscoding": False,
+            "EnableMediaPlayback": True,
+            "EnableAudioPlaybackTranscoding": True,
+            "EnableVideoPlaybackTranscoding": True,
+            "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+            "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+            "EnableCollectionManagement": False,
+            "EnableSubtitleManagement": False,
+            "EnableLyricManagement": False
+        },
+        "Configuration": {
+            "PlayDefaultAudioTrack": True,
+            "SubtitleLanguagePreference": "",
+            "DisplayMissingEpisodes": False,
+            "GroupedFolders": [],
+            "SubtitleMode": "Default",
+            "DisplayCollectionsView": False,
+            "EnableLocalPassword": False,
+            "OrderedViews": [],
+            "LatestItemsExcludes": [],
+            "MyMediaExcludes": [],
+            "HidePlayedInLatest": True,
+            "RememberAudioSelections": True,
+            "RememberSubtitleSelections": True,
+            "EnableNextEpisodeAutoPlay": True
+        }
+    })
+
+async def endpoint_user_me(request):
+    """Return current user info - same as user_by_id but for /Users/Me endpoint."""
     return JSONResponse({
         "Name": SJS_USER or "Stash User",
         "ServerId": SERVER_ID,
@@ -6521,6 +6569,7 @@ routes = [
     Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST"]),
     Route("/Users/Public", endpoint_users_public),
     Route("/UserImage", endpoint_user_image),
+    Route("/Users/Me", endpoint_user_me),
     Route("/Users/{user_id}", endpoint_user_by_id),
     Route("/Users/{user_id}/Views", endpoint_user_views),
     Route("/Users/{user_id}/Items/Latest", endpoint_latest_items),
