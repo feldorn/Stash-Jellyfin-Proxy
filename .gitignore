@@ -41,3 +41,6 @@ push.sh
 __pycache__/
 *.pyc
 *.log
+
+# Claude Code
+CLAUDE.md
