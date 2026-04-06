@@ -3185,7 +3185,6 @@ async def endpoint_authenticate_by_name(request):
         client_info = parse_emby_auth_header(request)
         client_ip = get_client_ip(request.scope)
         session_id = str(uuid.uuid4())
-        now_iso = time.strftime("%Y-%m-%dT%H:%M:%S.0000000Z", time.gmtime())
         auth_response = {
             "User": {
                 "Name": username,
@@ -3239,8 +3238,6 @@ async def endpoint_authenticate_by_name(request):
                 "SupportsMediaControl": False,
                 "SupportsRemoteControl": False,
                 "HasCustomDeviceName": False,
-                "LastActivityDate": now_iso,
-                "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
                 "PlayState": {
                     "CanSeek": False,
                     "IsPaused": False,
