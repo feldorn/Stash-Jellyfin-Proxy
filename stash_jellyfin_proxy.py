@@ -3233,6 +3233,9 @@ def parse_emby_auth_header(request):
     return info
 
 async def endpoint_authenticate_by_name(request):
+    if request.method == "GET":
+        return JSONResponse({})
+
     try:
         data = await request.json()
     except:
@@ -6859,7 +6862,7 @@ routes = [
     Route("/QuickConnect/Enabled", endpoint_quickconnect_enabled),
     Route("/QuickConnect/Initiate", endpoint_quickconnect_stub, methods=["POST", "GET"]),
     Route("/QuickConnect/Connect", endpoint_quickconnect_stub, methods=["POST", "GET"]),
-    Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST"]),
+    Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST", "GET"]),
     Route("/Users/Public", endpoint_users_public),
     Route("/UserImage", endpoint_user_image),
     Route("/Users/Me", endpoint_user_me),
