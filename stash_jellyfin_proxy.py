@@ -3005,8 +3005,9 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "MediaType": "Video",
         "CanDownload": True,
         "ParentId": parent_id,
-        "ImageTags": {"Primary": "img"},  # Triggers image requests
-        "BackdropImageTags": ["backdrop"],  # Scene screenshot serves as backdrop
+        "ImageTags": {"Primary": "img"},
+        "BackdropImageTags": ["backdrop"],
+        "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"backdrop": "000000"}},
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
             "PlaybackPositionTicks": 0,
@@ -6371,13 +6372,32 @@ async def endpoint_user_item_unfavorite(request):
     return JSONResponse({"IsFavorite": False})
 
 async def endpoint_items_filters(request):
-    """Return empty filter options - stub for Swiftfin filter UI."""
-    return JSONResponse({
-        "Genres": [],
-        "Tags": [],
-        "OfficialRatings": [],
-        "Years": [],
-    })
+    """Return filter options populated from Stash data."""
+    parent_id = request.query_params.get("parentId") or request.query_params.get("ParentId")
+
+    try:
+        tags_q = """query { findTags(filter: {per_page: 200, sort: "name", direction: ASC}) { tags { name } } }"""
+        studios_q = """query { findStudios(filter: {per_page: 200, sort: "name", direction: ASC}) { studios { name } } }"""
+        tags_res = stash_query(tags_q)
+        studios_res = stash_query(studios_q)
+
+        tag_names = [t["name"] for t in tags_res.get("data", {}).get("findTags", {}).get("tags", [])]
+        studio_names = [s["name"] for s in studios_res.get("data", {}).get("findStudios", {}).get("studios", [])]
+
+        return JSONResponse({
+            "Genres": studio_names,
+            "Tags": tag_names,
+            "OfficialRatings": [],
+            "Years": [],
+        })
+    except Exception as e:
+        logger.error(f"Failed to fetch filters: {e}")
+        return JSONResponse({
+            "Genres": [],
+            "Tags": [],
+            "OfficialRatings": [],
+            "Years": [],
+        })
 
 async def endpoint_bitrate_test(request):
     """Return random bytes for bitrate testing - Swiftfin uses this before playback."""
