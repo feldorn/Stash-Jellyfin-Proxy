@@ -31,6 +31,7 @@ import logging
 import asyncio
 import signal
 import uuid
+import hashlib
 import argparse
 import time
 import re
@@ -44,7 +45,8 @@ try:
     from hypercorn.asyncio import serve
     from starlette.applications import Starlette
     from starlette.responses import JSONResponse, Response, RedirectResponse
-    from starlette.routing import Route
+    from starlette.routing import Route, WebSocketRoute
+    from starlette.websockets import WebSocket
     from starlette.middleware import Middleware
     from starlette.middleware.base import BaseHTTPMiddleware
     from starlette.middleware.cors import CORSMiddleware
@@ -100,9 +102,9 @@ SJS_PASSWORD = ""
 # Tag groups - comma-separated list of tag names to show as top-level folders
 TAG_GROUPS = []  # e.g., ["Favorites", "VR", "4K"]
 
-# Latest groups - controls which libraries show on Infuse home page
-# "Scenes" = all scenes, other entries must match TAG_GROUPS entries
-LATEST_GROUPS = ["Scenes"]  # e.g., ["Scenes", "VR", "Favorites"]
+# Latest groups - controls which libraries show "Latest" on home page
+# Empty = show all libraries, or list specific ones: "Scenes, VR, Favorites"
+LATEST_GROUPS = []
 
 # Server identity
 SERVER_NAME = "Stash Media Server"
@@ -189,48 +191,57 @@ def normalize_path(path, default="/graphql"):
         p = p.rstrip('/')
     return p
 
-def generate_server_id():
-    """Generate a random 32-character server ID (like UUID without dashes)."""
-    import uuid
-    return uuid.uuid4().hex
+def normalize_server_id(server_id):
+    """Ensure SERVER_ID is in standard UUID format (8-4-4-4-12 with dashes).
+    Converts old dashless 32-char hex IDs to proper UUID format."""
+    clean = server_id.strip().replace("-", "")
+    if len(clean) == 32:
+        try:
+            return str(uuid.UUID(clean))
+        except ValueError:
+            pass
+    return server_id
 
-def save_server_id_to_config(config_file, server_id):
-    """Save SERVER_ID to config file, updating existing entry or adding new one."""
+def generate_server_id():
+    """Generate a server ID in standard UUID format (8-4-4-4-12)."""
+    return str(uuid.uuid4())
+
+def save_config_value(config_file, key, value, comment=None):
+    """Save a key=value to config file, updating existing entry or adding new one."""
     if not os.path.isfile(config_file):
-        # Create minimal config file with just SERVER_ID
         with open(config_file, 'w') as f:
-            f.write(f'# Auto-generated config\nSERVER_ID = {server_id}\n')
+            if comment:
+                f.write(f'# {comment}\n')
+            f.write(f'{key} = {value}\n')
         return True
 
-    # Read existing config
     with open(config_file, 'r') as f:
         lines = f.readlines()
 
-    # Try to find and update SERVER_ID line
     updated = False
     new_lines = []
     for line in lines:
         stripped = line.strip()
-        # Match both commented and uncommented SERVER_ID lines
-        if stripped.startswith('#') and 'SERVER_ID' in stripped and '=' in stripped:
-            # Commented SERVER_ID - uncomment and set value
-            new_lines.append(f'SERVER_ID = {server_id}\n')
+        if stripped.startswith('#') and key in stripped and '=' in stripped:
+            new_lines.append(f'{key} = {value}\n')
             updated = True
-        elif stripped.startswith('SERVER_ID') and '=' in stripped:
-            # Existing SERVER_ID - update value
-            new_lines.append(f'SERVER_ID = {server_id}\n')
+        elif stripped.startswith(key) and '=' in stripped:
+            new_lines.append(f'{key} = {value}\n')
             updated = True
         else:
             new_lines.append(line)
 
-    # If no SERVER_ID line found, append it
     if not updated:
-        new_lines.append(f'\n# Server identification (auto-generated)\nSERVER_ID = {server_id}\n')
+        prefix = f'\n# {comment}\n' if comment else '\n'
+        new_lines.append(f'{prefix}{key} = {value}\n')
 
-    # Write back
     with open(config_file, 'w') as f:
         f.writelines(new_lines)
     return True
+
+def save_server_id_to_config(config_file, server_id):
+    """Save SERVER_ID to config file."""
+    return save_config_value(config_file, "SERVER_ID", server_id, "Server identification (auto-generated)")
 
 _config, _config_defined_keys = load_config(CONFIG_FILE)
 if _config:
@@ -398,7 +409,7 @@ if TAG_GROUPS:
 if LATEST_GROUPS:
     print(f"  Latest groups: {', '.join(LATEST_GROUPS)}")
 
-# Auto-generate SERVER_ID if not set
+# Auto-generate SERVER_ID if not set, or normalize old dashless format
 if not SERVER_ID:
     SERVER_ID = generate_server_id()
     print(f"  Generated new Server ID: {SERVER_ID}")
@@ -409,6 +420,27 @@ if not SERVER_ID:
     except Exception as e:
         print(f"  Warning: Could not save Server ID to config: {e}")
         print("  Server ID will be regenerated on next restart unless saved manually.")
+else:
+    normalized = normalize_server_id(SERVER_ID)
+    if normalized != SERVER_ID:
+        print(f"  Upgraded Server ID to UUID format: {normalized}")
+        SERVER_ID = normalized
+        try:
+            save_server_id_to_config(CONFIG_FILE, SERVER_ID)
+            print(f"  Saved updated Server ID to {CONFIG_FILE}")
+        except Exception as e:
+            print(f"  Warning: Could not save updated Server ID to config: {e}")
+
+# Load or generate ACCESS_TOKEN (persistent across restarts so clients keep working)
+ACCESS_TOKEN = _config.get("ACCESS_TOKEN", "") if _config else ""
+if not ACCESS_TOKEN:
+    ACCESS_TOKEN = str(uuid.uuid4())
+    print(f"  Generated new Access Token")
+    try:
+        save_config_value(CONFIG_FILE, "ACCESS_TOKEN", ACCESS_TOKEN, "Persistent access token for client sessions (auto-generated)")
+        print(f"  Saved Access Token to {CONFIG_FILE}")
+    except Exception as e:
+        print(f"  Warning: Could not save Access Token to config: {e}")
 
 # Stable user UUID derived from server ID + username (required by strict Jellyfin SDK clients)
 import uuid as _uuid_mod
@@ -1166,7 +1198,15 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                             <option value="ERROR">ERROR</option>
                         </select>
                         <input type="text" id="log-search" class="form-input" placeholder="Search logs..." style="width: 300px;">
+                        <select id="log-line-count" class="log-filter" title="Lines to fetch">
+                            <option value="50">50 lines</option>
+                            <option value="100" selected>100 lines</option>
+                            <option value="250">250 lines</option>
+                            <option value="500">500 lines</option>
+                            <option value="1000">1000 lines</option>
+                        </select>
                         <span id="log-count" class="log-count">0 entries</span>
+                        <button id="copy-logs" class="btn btn-secondary">Copy</button>
                         <button id="download-logs" class="btn btn-secondary">Download</button>
                     </div>
                     <div id="full-logs" class="log-viewer" style="max-height: 600px;"></div>
@@ -1306,7 +1346,8 @@ WEB_UI_HTML = '''<!DOCTYPE html>
 
         async function fetchLogs() {
             try {
-                const res = await fetch('/api/logs?limit=100');
+                const limit = document.getElementById('log-line-count').value || 100;
+                const res = await fetch(`/api/logs?limit=${limit}`);
                 const data = await res.json();
                 state.logs = data.entries || [];
                 renderLogs();
@@ -1583,6 +1624,32 @@ WEB_UI_HTML = '''<!DOCTYPE html>
         // Log filters
         document.getElementById('log-level-filter').addEventListener('change', renderLogs);
         document.getElementById('log-search').addEventListener('input', renderLogs);
+        document.getElementById('log-line-count').addEventListener('change', fetchLogs);
+
+        // Copy visible logs to clipboard
+        document.getElementById('copy-logs').addEventListener('click', () => {
+            const levelFilter = document.getElementById('log-level-filter').value;
+            const searchFilter = document.getElementById('log-search').value.toLowerCase();
+            let filtered = state.logs;
+            if (levelFilter) filtered = filtered.filter(l => l.level === levelFilter);
+            if (searchFilter) filtered = filtered.filter(l => l.message.toLowerCase().includes(searchFilter));
+            const text = filtered.map(l => `${l.timestamp} [${l.level}] ${l.message}`).join('\\n');
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copy-logs');
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const btn = document.getElementById('copy-logs');
+                btn.textContent = 'Copied!';
+                setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+            });
+        });
 
         // Download logs
         document.getElementById('download-logs').addEventListener('click', async () => {
@@ -2067,6 +2134,7 @@ PUBLIC_ENDPOINTS = {
 PUBLIC_PREFIXES = [
     "/system/info",
     "/emby/system/info",
+    "/videos/",
 ]
 
 # IP failure tracking: {ip: [(timestamp, path), ...]}
@@ -2234,6 +2302,8 @@ class AuthenticationMiddleware:
                 if path_lower.startswith(prefix):
                     is_public = True
                     break
+        if not is_public and "/images/" in path_lower:
+            is_public = True
 
         # Allow public endpoints without auth
         if is_public:
@@ -2254,18 +2324,22 @@ class AuthenticationMiddleware:
             elif key_lower == "x-mediabrowser-token":
                 token = value_str
                 break
-            # Check Authorization header (Bearer token or X-Emby-Authorization)
+            # Check Authorization header (Bearer token or MediaBrowser/Emby token)
             elif key_lower == "authorization":
                 if value_str.startswith("Bearer "):
                     token = value_str[7:]
                 elif "Token=" in value_str:
                     match = re.search(r'Token="([^"]+)"', value_str)
+                    if not match:
+                        match = re.search(r'Token=([^,\s]+)', value_str)
                     if match:
                         token = match.group(1)
                 break
             # Check X-Emby-Authorization header
             elif key_lower == "x-emby-authorization":
                 match = re.search(r'Token="([^"]+)"', value_str)
+                if not match:
+                    match = re.search(r'Token=([^,\s]+)', value_str)
                 if match:
                     token = match.group(1)
                 break
@@ -2285,6 +2359,8 @@ class AuthenticationMiddleware:
 
         # No valid token - record failure and return 401
         reason = "invalid token" if token else "missing token"
+        auth_headers = {k.decode().lower(): v.decode() for k, v in scope.get("headers", []) if k.decode().lower() in ("authorization", "x-emby-authorization", "x-emby-token", "x-mediabrowser-token")}
+        logger.debug(f"AUTH REJECT: {scope.get('method', '?')} {path} from {client_ip} - {reason} - auth headers: {auth_headers}")
         record_auth_failure(client_ip, path, reason, user_agent)
 
         response_body = b'{"error": "Unauthorized"}'
@@ -2301,6 +2377,55 @@ class AuthenticationMiddleware:
             "body": response_body,
         })
 
+
+class CaseInsensitivePathMiddleware:
+    """Normalize request paths to match route casing (Jellyfin clients vary in casing)."""
+
+    _path_map = None
+
+    def __init__(self, app):
+        self.app = app
+
+    @classmethod
+    def build_path_map(cls, route_list):
+        """Build lowercase->original mapping from route paths.
+        
+        For parameterized routes like /Videos/{item_id}/stream, we store
+        a segment-level mapping so we can fix casing of static segments
+        while preserving dynamic ones.
+        """
+        cls._path_map = {}
+        cls._segment_map = {}
+        for r in route_list:
+            p = getattr(r, "path", "")
+            if not p:
+                continue
+            if "{" not in p:
+                cls._path_map[p.lower()] = p
+            else:
+                for seg in p.split("/"):
+                    if seg and "{" not in seg:
+                        cls._segment_map[seg.lower()] = seg
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            path = scope.get("path", "")
+            path_lower = path.lower()
+            if self._path_map and path_lower in self._path_map:
+                scope = dict(scope, path=self._path_map[path_lower])
+            elif path_lower != path:
+                segments = path.split("/")
+                normalized = []
+                for seg in segments:
+                    seg_lower = seg.lower()
+                    if seg_lower in self._segment_map:
+                        normalized.append(self._segment_map[seg_lower])
+                    else:
+                        normalized.append(seg)
+                new_path = "/".join(normalized)
+                if new_path != path:
+                    scope = dict(scope, path=new_path)
+        await self.app(scope, receive, send)
 
 class RequestLoggingMiddleware:
     """Pure ASGI middleware that doesn't wrap streaming responses (avoids BaseHTTPMiddleware issues)."""
@@ -2798,6 +2923,8 @@ def format_filters_folder(parent_id: str) -> Dict[str, Any]:
         "RecursiveItemCount": filter_count,
         "ParentId": parent_id,
         "ImageTags": {"Primary": "img"},
+        "PrimaryImageAspectRatio": 0.6667,
+        "BackdropImageTags": [],
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -2825,6 +2952,8 @@ def format_saved_filter_item(saved_filter: Dict[str, Any], parent_id: str) -> Di
         "CollectionType": "movies",
         "ParentId": parent_id,
         "ImageTags": {"Primary": "img"},
+        "PrimaryImageAspectRatio": 0.6667,
+        "BackdropImageTags": [],
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -2835,8 +2964,7 @@ def format_saved_filter_item(saved_filter: Dict[str, Any], parent_id: str) -> Di
     }
 
 # --- Jellyfin Models & Helpers ---
-# Note: SERVER_ID is now configured at the top of the file and loaded from config
-ACCESS_TOKEN = str(uuid.uuid4())
+# Note: SERVER_ID and ACCESS_TOKEN are configured/persisted at startup
 
 def make_guid(numeric_id: str) -> str:
     """Convert a numeric ID to a GUID-like format that Jellyfin clients expect."""
@@ -2881,9 +3009,11 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "Type": "Movie",
         "IsFolder": False,
         "MediaType": "Video",
+        "CanDownload": True,
         "ParentId": parent_id,
-        "ImageTags": {"Primary": "img"},  # Triggers image requests
-        "BackdropImageTags": ["backdrop"],  # Scene screenshot serves as backdrop
+        "ImageTags": {"Primary": "img"},
+        "BackdropImageTags": ["backdrop"],
+        "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"backdrop": "000000"}},
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
             "PlaybackPositionTicks": 0,
@@ -2977,22 +3107,29 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
 
         media_streams = [video_stream]
 
-        # Add audio stream if codec is available
+        # Always add audio stream - use reported codec or default to aac
+        # The actual stream contains audio regardless; this metadata tells the player to expect it
         audio_stream_idx = 1
-        if audio_codec:
-            audio_stream = {
-                "Index": audio_stream_idx,
-                "Type": "Audio",
-                "Codec": audio_codec,
-                "IsDefault": True,
-                "IsForced": False,
-                "IsExternal": False,
-                "DisplayTitle": audio_codec.upper(),
-                "Channels": 2,
-                "ChannelLayout": "stereo",
-            }
-            media_streams.append(audio_stream)
-            audio_stream_idx += 1
+        effective_audio_codec = audio_codec if audio_codec else "aac"
+        audio_stream = {
+            "Index": audio_stream_idx,
+            "Type": "Audio",
+            "Codec": effective_audio_codec,
+            "Language": "und",
+            "DisplayLanguage": "Unknown",
+            "IsDefault": True,
+            "IsForced": False,
+            "IsExternal": False,
+            "IsInterlaced": False,
+            "IsTextSubtitleStream": False,
+            "SupportsExternalStream": False,
+            "DisplayTitle": f"{effective_audio_codec.upper()} - Stereo",
+            "Channels": 2,
+            "ChannelLayout": "stereo",
+            "SampleRate": 48000,
+        }
+        media_streams.append(audio_stream)
+        audio_stream_idx += 1
 
         # Add subtitle streams from captions
         captions = scene.get("captions") or []
@@ -3043,6 +3180,8 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
             "SupportsDirectStream": True,
             "SupportsTranscoding": False,
             "MediaStreams": media_streams,
+            "DefaultAudioStreamIndex": 1,
+            "DefaultSubtitleStreamIndex": -1,
         }
         if bit_rate:
             media_source["Bitrate"] = bit_rate
@@ -3067,7 +3206,9 @@ async def endpoint_system_info(request):
         "ServerName": SERVER_NAME,
         "Version": "10.8.13",
         "Id": SERVER_ID,
+        "ProductName": "Jellyfin Server",
         "OperatingSystem": "Linux",
+        "StartupWizardCompleted": True,
         "SupportsLibraryMonitor": False,
         "WebSocketPortNumber": PROXY_PORT,
         "CompletedInstallations": [{"Guid": SERVER_ID, "Name": SERVER_NAME}],
@@ -3083,14 +3224,33 @@ async def endpoint_public_info(request):
         "Version": "10.8.13",
         "Id": SERVER_ID,
         "ProductName": "Jellyfin Server",
-        "OperatingSystem": "Linux"
+        "OperatingSystem": "Linux",
+        "StartupWizardCompleted": True
     })
 
+def parse_emby_auth_header(request):
+    """Extract Client, Device, DeviceId, Version from Jellyfin/Emby auth headers."""
+    info = {"Client": "Jellyfin", "DeviceName": "Unknown", "DeviceId": "", "ApplicationVersion": "0.0.0"}
+    auth_header = ""
+    for key, value in request.headers.items():
+        key_lower = key.lower()
+        if key_lower in ("authorization", "x-emby-authorization"):
+            auth_header = value
+            break
+    if auth_header:
+        for field, json_key in [("Client", "Client"), ("Device", "DeviceName"), ("DeviceId", "DeviceId"), ("Version", "ApplicationVersion")]:
+            match = re.search(rf'{field}="([^"]*)"', auth_header)
+            if match:
+                info[json_key] = match.group(1)
+    return info
+
 async def endpoint_authenticate_by_name(request):
+    if request.method == "GET":
+        return Response(status_code=405, headers={"Allow": "POST"})
+
     try:
         data = await request.json()
     except:
-        # Sometimes clients send empty body or form data?
         data = {}
 
     username = data.get("Username", "User")
@@ -3109,6 +3269,9 @@ async def endpoint_authenticate_by_name(request):
 
         record_auth_attempt(success=True)
         logger.info(f"Auth SUCCESS for user {SJS_USER}")
+        client_info = parse_emby_auth_header(request)
+        client_ip = get_client_ip(request.scope)
+        session_id = str(uuid.uuid4())
         auth_response = {
             "User": {
                 "Name": username,
@@ -3118,6 +3281,8 @@ async def endpoint_authenticate_by_name(request):
                 "HasConfiguredPassword": True,
                 "HasConfiguredEasyPassword": False,
                 "EnableAutoLogin": False,
+                "LastLoginDate": "2024-01-01T00:00:00.0000000Z",
+                "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
                 "Policy": {
                     "IsAdministrator": True,
                     "IsHidden": False,
@@ -3125,11 +3290,17 @@ async def endpoint_authenticate_by_name(request):
                     "EnableUserPreferenceAccess": True,
                     "EnableRemoteAccess": True,
                     "EnableContentDeletion": False,
+                    "EnableContentDownloading": True,
                     "EnablePlaybackRemuxing": True,
                     "ForceRemoteSourceTranscoding": False,
                     "EnableMediaPlayback": True,
                     "EnableAudioPlaybackTranscoding": True,
-                    "EnableVideoPlaybackTranscoding": True
+                    "EnableVideoPlaybackTranscoding": True,
+                    "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+                    "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+                    "EnableCollectionManagement": False,
+                    "EnableSubtitleManagement": False,
+                    "EnableLyricManagement": False
                 },
                 "Configuration": {
                     "PlayDefaultAudioTrack": True,
@@ -3149,30 +3320,53 @@ async def endpoint_authenticate_by_name(request):
                 }
             },
             "SessionInfo": {
+                "Id": session_id,
                 "UserId": USER_ID,
                 "UserName": username,
+                "Client": client_info["Client"],
+                "DeviceName": client_info["DeviceName"],
+                "DeviceId": client_info["DeviceId"],
+                "ApplicationVersion": client_info["ApplicationVersion"],
+                "RemoteEndPoint": client_ip,
                 "IsActive": True,
+                "SupportsMediaControl": False,
+                "SupportsRemoteControl": False,
+                "HasCustomDeviceName": False,
+                "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
                 "PlayState": {
                     "CanSeek": False,
                     "IsPaused": False,
                     "IsMuted": False,
-                    "RepeatMode": "RepeatNone"
+                    "RepeatMode": "RepeatNone",
+                    "PositionTicks": 0
                 },
                 "Capabilities": {
                     "PlayableMediaTypes": [],
                     "SupportedCommands": [],
                     "SupportsMediaControl": False,
                     "SupportsContentUploading": False,
-                    "SupportsPersistentIdentifier": True
+                    "SupportsPersistentIdentifier": True,
+                    "SupportsSync": False
                 },
+                "PlayableMediaTypes": [],
                 "AdditionalUsers": [],
                 "NowPlayingQueue": [],
+                "NowPlayingQueueFullItems": [],
+                "SupportedCommands": [],
                 "ServerId": SERVER_ID
             },
             "AccessToken": ACCESS_TOKEN,
             "ServerId": SERVER_ID
         }
-        logger.debug(f"Auth response: {json.dumps(auth_response)}")
+        auth_json = json.dumps(auth_response, indent=2)
+        logger.debug(f"Auth response ({len(auth_json)} bytes): {auth_json[:200]}...")
+        try:
+            debug_path = os.path.join(os.path.dirname(CONFIG_FILE) if CONFIG_FILE else "/config", "auth_debug.json")
+            with open(debug_path, "w") as f:
+                f.write(auth_json)
+            logger.debug(f"Full auth response written to {debug_path}")
+        except Exception as e:
+            logger.debug(f"Could not write auth debug file: {e}")
         return JSONResponse(auth_response)
     else:
         record_auth_attempt(success=False)
@@ -3181,16 +3375,20 @@ async def endpoint_authenticate_by_name(request):
 
 async def endpoint_users(request):
     return JSONResponse([{
-        "Name": "Stash User",
+        "Name": SJS_USER or "Stash User",
+        "ServerId": SERVER_ID,
         "Id": USER_ID,
         "HasPassword": True,
-        "Policy": {"IsAdministrator": True, "EnableContentDeletion": False}
+        "HasConfiguredPassword": True,
+        "HasConfiguredEasyPassword": False,
+        "EnableAutoLogin": False,
+        "Policy": {"IsAdministrator": True, "EnableContentDeletion": False, "EnableContentDownloading": True, "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider", "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"}
     }])
 
 async def endpoint_user_by_id(request):
-    # Return user profile
     return JSONResponse({
-        "Name": "Stash User",
+        "Name": SJS_USER or "Stash User",
+        "ServerId": SERVER_ID,
         "Id": USER_ID,
         "HasPassword": True,
         "HasConfiguredPassword": True,
@@ -3203,11 +3401,64 @@ async def endpoint_user_by_id(request):
             "EnableUserPreferenceAccess": True,
             "EnableRemoteAccess": True,
             "EnableContentDeletion": False,
+            "EnableContentDownloading": True,
             "EnablePlaybackRemuxing": True,
             "ForceRemoteSourceTranscoding": False,
             "EnableMediaPlayback": True,
             "EnableAudioPlaybackTranscoding": True,
-            "EnableVideoPlaybackTranscoding": True
+            "EnableVideoPlaybackTranscoding": True,
+            "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+            "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+            "EnableCollectionManagement": False,
+            "EnableSubtitleManagement": False,
+            "EnableLyricManagement": False
+        },
+        "Configuration": {
+            "PlayDefaultAudioTrack": True,
+            "SubtitleLanguagePreference": "",
+            "DisplayMissingEpisodes": False,
+            "GroupedFolders": [],
+            "SubtitleMode": "Default",
+            "DisplayCollectionsView": False,
+            "EnableLocalPassword": False,
+            "OrderedViews": [],
+            "LatestItemsExcludes": [],
+            "MyMediaExcludes": [],
+            "HidePlayedInLatest": True,
+            "RememberAudioSelections": True,
+            "RememberSubtitleSelections": True,
+            "EnableNextEpisodeAutoPlay": True
+        }
+    })
+
+async def endpoint_user_me(request):
+    """Return current user info - same as user_by_id but for /Users/Me endpoint."""
+    return JSONResponse({
+        "Name": SJS_USER or "Stash User",
+        "ServerId": SERVER_ID,
+        "Id": USER_ID,
+        "HasPassword": True,
+        "HasConfiguredPassword": True,
+        "HasConfiguredEasyPassword": False,
+        "EnableAutoLogin": False,
+        "Policy": {
+            "IsAdministrator": True,
+            "IsHidden": False,
+            "IsDisabled": False,
+            "EnableUserPreferenceAccess": True,
+            "EnableRemoteAccess": True,
+            "EnableContentDeletion": False,
+            "EnableContentDownloading": True,
+            "EnablePlaybackRemuxing": True,
+            "ForceRemoteSourceTranscoding": False,
+            "EnableMediaPlayback": True,
+            "EnableAudioPlaybackTranscoding": True,
+            "EnableVideoPlaybackTranscoding": True,
+            "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+            "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+            "EnableCollectionManagement": False,
+            "EnableSubtitleManagement": False,
+            "EnableLyricManagement": False
         },
         "Configuration": {
             "PlayDefaultAudioTrack": True,
@@ -3228,81 +3479,62 @@ async def endpoint_user_by_id(request):
     })
 
 async def endpoint_user_views(request):
-    items = [
-        {
-            "Name": "Scenes",
-            "Id": "root-scenes",
+    def make_library(name, lib_id):
+        return {
+            "Name": name,
+            "Id": lib_id,
             "ServerId": SERVER_ID,
+            "Etag": hashlib.md5(lib_id.encode()).hexdigest()[:16],
+            "DateCreated": "2024-01-01T00:00:00.0000000Z",
+            "CanDelete": False,
+            "CanDownload": False,
+            "SortName": name,
+            "ExternalUrls": [],
+            "Path": f"/{lib_id}",
+            "EnableMediaSourceDisplay": False,
+            "Taglines": [],
+            "Genres": [],
+            "PlayAccess": "Full",
+            "RemoteTrailers": [],
+            "ProviderIds": {},
             "Type": "CollectionFolder",
             "CollectionType": "movies",
             "IsFolder": True,
+            "PrimaryImageAspectRatio": 1.0,
+            "DisplayPreferencesId": hashlib.md5(lib_id.encode()).hexdigest()[:32],
+            "Tags": [],
             "ImageTags": {"Primary": "icon"},
             "BackdropImageTags": [],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-scenes"}
-        },
-        {
-            "Name": "Studios",
-            "Id": "root-studios",
-            "ServerId": SERVER_ID,
-            "Type": "CollectionFolder",
-            "CollectionType": "movies",
-            "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
-            "BackdropImageTags": [],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-studios"}
-        },
-        {
-            "Name": "Performers",
-            "Id": "root-performers",
-            "ServerId": SERVER_ID,
-            "Type": "CollectionFolder",
-            "CollectionType": "movies",
-            "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
-            "BackdropImageTags": [],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-performers"}
-        },
-        {
-            "Name": "Groups",
-            "Id": "root-groups",
-            "ServerId": SERVER_ID,
-            "Type": "CollectionFolder",
-            "CollectionType": "movies",
-            "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
-            "BackdropImageTags": [],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-groups"}
+            "ScreenshotImageTags": [],
+            "ImageBlurHashes": {},
+            "LocationType": "FileSystem",
+            "LockedFields": [],
+            "LockData": False,
+            "ChildCount": 100,
+            "SpecialFeatureCount": 0,
+            "UserData": {
+                "PlaybackPositionTicks": 0,
+                "PlayCount": 0,
+                "IsFavorite": False,
+                "Played": False,
+                "Key": lib_id,
+                "UnplayedItemCount": 100
+            }
         }
+
+    items = [
+        make_library("Scenes", "root-scenes"),
+        make_library("Studios", "root-studios"),
+        make_library("Performers", "root-performers"),
+        make_library("Groups", "root-groups"),
     ]
 
-    # Add Tags folder if enabled
     if ENABLE_TAG_FILTERS:
-        items.append({
-            "Name": "Tags",
-            "Id": "root-tags",
-            "ServerId": SERVER_ID,
-            "Type": "CollectionFolder",
-            "CollectionType": "movies",
-            "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
-            "BackdropImageTags": [],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-tags"}
-        })
+        items.append(make_library("Tags", "root-tags"))
 
-    # Add tag group folders (sorted alphabetically)
     for tag_name in sorted(TAG_GROUPS, key=str.lower):
         tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
-        items.append({
-            "Name": tag_name,
-            "Id": tag_id,
-            "ServerId": SERVER_ID,
-            "Type": "CollectionFolder",
-            "CollectionType": "movies",
-            "IsFolder": True,
-            "ImageTags": {"Primary": "icon"},
-            "BackdropImageTags": [],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": tag_id}
-        })
+        items.append(make_library(tag_name, tag_id))
 
     return JSONResponse({
         "Items": items,
@@ -3364,8 +3596,25 @@ async def endpoint_virtual_folders(request):
     return JSONResponse(folders)
 
 async def endpoint_shows_nextup(request):
-    # Infuse requests next up episodes - return empty
-    return JSONResponse({"Items": [], "TotalRecordCount": 0})
+    """Return suggested/random scenes as 'Next Up' to populate Swiftfin home page."""
+    limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
+
+    scene_fields = "id title code date details files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+
+    q = f"""query FindScenes($page: Int!, $per_page: Int!) {{
+        findScenes(filter: {{page: $page, per_page: $per_page, sort: "random", direction: DESC}}) {{
+            findScenes: scenes {{ {scene_fields} }}
+        }}
+    }}"""
+    try:
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        scenes = res.get("data", {}).get("findScenes", {}).get("findScenes", [])
+        items = [format_jellyfin_item(s) for s in scenes]
+        logger.debug(f"NextUp returning {len(items)} random suggestions")
+        return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+    except Exception as e:
+        logger.warning(f"NextUp query failed: {e}")
+        return JSONResponse({"Items": [], "TotalRecordCount": 0})
 
 async def endpoint_latest_items(request):
     """Return recently added items for the Infuse home page, personalized by library."""
@@ -3380,8 +3629,10 @@ async def endpoint_latest_items(request):
 
     items = []
 
-    # Check if this library is in LATEST_GROUPS
+    # Check if this library is in LATEST_GROUPS (if LATEST_GROUPS is empty, show all)
     def is_in_latest_groups(parent_id):
+        if not LATEST_GROUPS:
+            return True
         if parent_id == "root-scenes":
             return "Scenes" in LATEST_GROUPS
         elif parent_id and parent_id.startswith("tag-"):
@@ -3389,7 +3640,7 @@ async def endpoint_latest_items(request):
             for t in TAG_GROUPS:
                 if t.lower().replace(' ', '-') == tag_slug:
                     return t in LATEST_GROUPS
-        return False
+        return not LATEST_GROUPS
 
     if not is_in_latest_groups(parent_id):
         logger.debug(f"Skipping latest for {parent_id} (not in LATEST_GROUPS)")
@@ -3408,10 +3659,7 @@ async def endpoint_latest_items(request):
             items.append(format_jellyfin_item(s, parent_id="root-scenes"))
 
     elif parent_id and parent_id.startswith("tag-"):
-        # Return latest scenes with this specific tag
-        tag_slug = parent_id[4:]  # Remove "tag-" prefix
-
-        # Find the matching tag name from TAG_GROUPS config
+        tag_slug = parent_id[4:]
         tag_name = None
         for t in TAG_GROUPS:
             if t.lower().replace(' ', '-') == tag_slug:
@@ -3419,7 +3667,6 @@ async def endpoint_latest_items(request):
                 break
 
         if tag_name:
-            # Find the tag ID
             tag_query = """query FindTags($filter: FindFilterType!) {
                 findTags(filter: $filter) {
                     tags { id name }
@@ -3427,8 +3674,6 @@ async def endpoint_latest_items(request):
             }"""
             tag_res = stash_query(tag_query, {"filter": {"q": tag_name}})
             tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
-
-            # Find exact match
             tag_id = None
             for t in tags:
                 if t["name"].lower() == tag_name.lower():
@@ -3436,7 +3681,6 @@ async def endpoint_latest_items(request):
                     break
 
             if tag_id:
-                # Query scenes with this tag, sorted by created_at
                 q = f"""query FindScenes($tid: [ID!], $page: Int!, $per_page: Int!) {{
                     findScenes(
                         scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
@@ -3451,19 +3695,104 @@ async def endpoint_latest_items(request):
                 for s in scenes:
                     items.append(format_jellyfin_item(s, parent_id=parent_id))
 
+    elif parent_id == "root-performers":
+        q = """query FindPerformers($page: Int!, $per_page: Int!) {
+            findPerformers(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
+                performers { id name image_path scene_count }
+            }
+        }"""
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        for p in res.get("data", {}).get("findPerformers", {}).get("performers", []):
+            item = {
+                "Name": p["name"],
+                "Id": f"performer-{p['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "BoxSet",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": p.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"}
+            }
+            item["ImageTags"] = {"Primary": "img"} if p.get("image_path") else {}
+            items.append(item)
+
+    elif parent_id == "root-studios":
+        q = """query FindStudios($page: Int!, $per_page: Int!) {
+            findStudios(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
+                studios { id name image_path scene_count }
+            }
+        }"""
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        for s in res.get("data", {}).get("findStudios", {}).get("studios", []):
+            item = {
+                "Name": s["name"],
+                "Id": f"studio-{s['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "BoxSet",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": s.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"}
+            }
+            item["ImageTags"] = {"Primary": "img"} if s.get("image_path") else {}
+            items.append(item)
+
+    elif parent_id == "root-groups":
+        q = """query FindMovies($page: Int!, $per_page: Int!) {
+            findMovies(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
+                movies { id name scene_count }
+            }
+        }"""
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        for m in res.get("data", {}).get("findMovies", {}).get("movies", []):
+            item = {
+                "Name": m["name"],
+                "Id": f"group-{m['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "BoxSet",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": m.get("scene_count", 0),
+                "ImageTags": {"Primary": "img"},
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"}
+            }
+            items.append(item)
+
+    elif parent_id == "root-tags":
+        # Tags don't have a meaningful "latest" concept
+        pass
+
     logger.debug(f"Returning {len(items)} latest items for {parent_id}")
     return JSONResponse(items)
 
 async def endpoint_display_preferences(request):
-    # Infuse requests display/user preferences
+    prefs_id = request.path_params.get("prefs_id", "usersettings")
+
+    if request.method == "POST":
+        return JSONResponse({"Id": prefs_id})
+
     return JSONResponse({
-        "Id": "usersettings",
+        "Id": prefs_id,
         "SortBy": "SortName",
         "SortOrder": "Ascending",
         "RememberIndexing": False,
         "PrimaryImageHeight": 250,
         "PrimaryImageWidth": 250,
-        "CustomPrefs": {},
+        "CustomPrefs": {
+            "homesection0": "smalllibrarytiles",
+            "homesection1": "latestmedia",
+            "homesection2": "nextup",
+            "homesection3": "none",
+            "homesection4": "none",
+            "homesection5": "none",
+            "homesection6": "none",
+        },
         "ScrollDirection": "Horizontal",
         "ShowBackdrop": True,
         "RememberSorting": False,
@@ -3767,13 +4096,18 @@ async def endpoint_items(request):
     # Check for searchTerm parameter (Infuse search functionality)
     search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm")
 
-    # Check includeItemTypes - if client restricts to specific types, don't inject folders
-    include_item_types = request.query_params.get("includeItemTypes") or request.query_params.get("IncludeItemTypes") or ""
-    restrict_to_movies = "Movie" in include_item_types and "Folder" not in include_item_types
+    # Check includeItemTypes - handle both repeated params (includeItemTypes=Movie&includeItemTypes=Series)
+    # and comma-separated values (includeItemTypes=Movie,Series)
+    raw_type_list = [v for k, v in request.query_params.multi_items() if k.lower() == "includeitemtypes"]
+    include_type_list = []
+    for val in raw_type_list:
+        include_type_list.extend([t.strip() for t in val.split(",") if t.strip()])
+    include_types_lower = [t.lower() for t in include_type_list]
+    has_movie_type = not include_type_list or "movie" in include_types_lower or "video" in include_types_lower
+    restrict_to_movies = has_movie_type and "folder" not in include_types_lower and len(include_type_list) > 0
 
-    # Debug: Log ALL query params to understand what Infuse is sending
-    all_params = dict(request.query_params)
-    logger.debug(f"Items endpoint - ALL PARAMS: {all_params}")
+    # Debug: Log ALL query params (show multi-values properly)
+    logger.debug(f"Items endpoint - ALL PARAMS: {dict(request.query_params)}, includeItemTypes={include_type_list}")
     logger.debug(f"Items endpoint - ParentId: {parent_id}, Ids: {ids}, PersonIds: {person_ids}, SearchTerm: {search_term}, StartIndex: {start_index}, Limit: {limit}, Sort: {sort_field} {sort_direction}")
 
     items = []
@@ -3831,35 +4165,38 @@ async def endpoint_items(request):
             items.append(format_jellyfin_item(s, parent_id=f"person-{performer_id}"))
 
     elif search_term:
-        # Handle search from Infuse - query Stash with the search term
-        # Strip any quotes that Infuse might add around the search term
+        # Handle search from Infuse/Swiftfin - query Stash with the search term
+        # Strip any quotes that client might add around the search term
         clean_search = search_term.strip('"\'')
 
-        logger.info(f"🔍 Search: '{clean_search}'")
+        logger.info(f"Search: '{clean_search}' (types={include_type_list})")
 
-        # Get count of matching scenes
-        count_q = """query CountScenes($q: String!) {
-            findScenes(filter: {q: $q}) { count }
-        }"""
-        count_res = stash_query(count_q, {"q": clean_search})
-        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        # Only search for scenes if Movie/Video type is requested (or no type filter)
+        # Skip for Series-only or Episode-only requests since Stash only has movie-type content
+        if not has_movie_type:
+            logger.debug(f"Search skipped - requested types {include_type_list} don't include Movie/Video")
+        else:
+            # Get count of matching scenes
+            count_q = """query CountScenes($q: String!) {
+                findScenes(filter: {q: $q}) { count }
+            }"""
+            count_res = stash_query(count_q, {"q": clean_search})
+            total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
 
-        # Calculate page
-        page = (start_index // limit) + 1
+            # Calculate page
+            page = (start_index // limit) + 1
 
-        # Query Stash with the search term
-        # Note: Stash's q parameter already provides relevance-based filtering
-        # We use date DESC as the secondary sort for consistent ordering
-        q = f"""query FindScenes($q: String!, $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
-            findScenes(filter: {{q: $q, page: $page, per_page: $per_page, sort: $sort, direction: $direction}}) {{
-                scenes {{ {scene_fields} }}
-            }}
-        }}"""
-        res = stash_query(q, {"q": clean_search, "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
-        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-        logger.debug(f"Search '{clean_search}' returned {len(scenes)} scenes (page {page}, total {total_count})")
-        for s in scenes:
-            items.append(format_jellyfin_item(s))
+            # Query Stash with the search term
+            q = f"""query FindScenes($q: String!, $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
+                findScenes(filter: {{q: $q, page: $page, per_page: $per_page, sort: $sort, direction: $direction}}) {{
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = stash_query(q, {"q": clean_search, "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+            scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+            logger.debug(f"Search '{clean_search}' returned {len(scenes)} scenes (page {page}, total {total_count})")
+            for s in scenes:
+                items.append(format_jellyfin_item(s))
 
     elif parent_id and parent_id.startswith("filters-"):
         # List saved filters for a specific mode (filters-scenes, filters-performers, etc.)
@@ -3991,7 +4328,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": p.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(performer_item)
 
@@ -4027,7 +4366,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": s.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(studio_item)
 
@@ -4063,7 +4404,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": g.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{g['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(group_item)
 
@@ -4121,7 +4464,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": t.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"},
-                            "ImageTags": {"Primary": "img"}  # Always set - we serve text icon if no Stash image
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(tag_item)
 
@@ -4143,14 +4488,19 @@ async def endpoint_items(request):
             has_filters = len(saved_filters) > 0
 
         # On first page, add FILTERS folder at the top if there are saved filters
-        # But skip if client restricts to Movie type only (e.g. Infuse includeItemTypes=Movie)
+        # Detect client: Infuse supports folder browsing, others may not
+        client_info = parse_emby_auth_header(request)
+        client_name = client_info.get("Client", "").lower()
+        client_supports_folders = "infuse" in client_name or "senplayer" in client_name
+        show_filters = has_filters and (client_supports_folders or not restrict_to_movies)
+
         filters_added = False
-        if start_index == 0 and has_filters and not restrict_to_movies:
+        if start_index == 0 and show_filters:
             items.append(format_filters_folder("root-scenes"))
             filters_added = True
 
         # Total count includes Filters folder if present
-        show_filters_in_count = has_filters and not restrict_to_movies
+        show_filters_in_count = show_filters
         total_count = scene_count + 1 if show_filters_in_count else scene_count
 
         # Calculate page - Stash uses 1-indexed pages
@@ -4207,9 +4557,10 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ChildCount": s.get("scene_count", 0),
                 "RecursiveItemCount": s.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"}
             }
-            # Add image if available
             if s.get("image_path"):
                 studio_item["ImageTags"] = {"Primary": "img"}
             else:
@@ -4286,6 +4637,8 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ChildCount": p.get("scene_count", 0),
                 "RecursiveItemCount": p.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"}
             }
             if p.get("image_path"):
@@ -4390,8 +4743,9 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ChildCount": m.get("scene_count", 0),
                 "RecursiveItemCount": m.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"},
-                # Always advertise image - endpoint will try to fetch and fall back to placeholder if needed
                 "ImageTags": {"Primary": "img"}
             }
             items.append(group_item)
@@ -4438,6 +4792,8 @@ async def endpoint_items(request):
             "CollectionType": "movies",
             "ParentId": parent_id,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
+            "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-favorites"}
         })
         items_count += 1
@@ -4454,6 +4810,8 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ParentId": parent_id,
                 "ImageTags": {"Primary": "img"},
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-all"}
             })
             items_count += 1
@@ -4474,6 +4832,8 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ParentId": parent_id,
                 "ImageTags": {"Primary": "img"},
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
             })
             items_count += 1
@@ -4503,6 +4863,8 @@ async def endpoint_items(request):
                 "ChildCount": t.get("scene_count", 0),
                 "RecursiveItemCount": t.get("scene_count", 0),
                 "ParentId": parent_id,
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": True, "Played": False, "Key": f"tagitem-{t['id']}"}
             }
             tag_item["ImageTags"] = {"Primary": "img"}
@@ -4531,9 +4893,10 @@ async def endpoint_items(request):
                 "ChildCount": t.get("scene_count", 0),
                 "RecursiveItemCount": t.get("scene_count", 0),
                 "ParentId": parent_id,
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"}
             }
-            # Always set ImageTags so Infuse requests an image - we serve text icon if no Stash image
             tag_item["ImageTags"] = {"Primary": "img"}
             items.append(tag_item)
 
@@ -4624,10 +4987,12 @@ async def endpoint_items(request):
             logger.warning(f"Tag slug '{tag_slug}' not found in TAG_GROUPS config")
 
     elif not parent_id and not ids and not person_ids and not search_term:
-        # Global query with no parent - used by clients like SenPlayer for home screen hero/backdrop.
-        # Return scenes from the global library.
-        include_types = include_item_types.lower()
-        if not include_types or "movie" in include_types or "video" in include_types or "series" in include_types:
+        # Global query with no parent - used by clients for home screen, search filters, etc.
+        # Only return scenes when Movie or Video type is requested (or no filter specified).
+        # Do NOT return scenes for Series/Episode-only requests (Stash only has movies).
+        if not has_movie_type:
+            logger.debug(f"Global query skipped - requested types {include_type_list} don't include Movie/Video")
+        else:
             count_q = "query { findScenes { count } }"
             count_res = stash_query(count_q)
             total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
@@ -4678,6 +5043,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": filter_count,
             "RecursiveItemCount": filter_count,
@@ -4711,6 +5077,7 @@ async def endpoint_item_details(request):
                     "CollectionType": "movies",
                     "IsFolder": True,
                     "ImageTags": {"Primary": "img"},
+                    "PrimaryImageAspectRatio": 0.6667,
                     "BackdropImageTags": [],
                     "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
                 })
@@ -4777,6 +5144,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4834,6 +5202,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4881,6 +5250,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -4926,6 +5296,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": total_count,
             "RecursiveItemCount": total_count,
@@ -4947,6 +5318,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": total_count,
             "RecursiveItemCount": total_count,
@@ -4977,6 +5349,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -5160,19 +5533,25 @@ async def endpoint_playback_info(request):
     media_streams = [video_stream]
 
     audio_stream_idx = 1
-    if audio_codec:
-        media_streams.append({
-            "Index": audio_stream_idx,
-            "Type": "Audio",
-            "Codec": audio_codec,
-            "IsDefault": True,
-            "IsForced": False,
-            "IsExternal": False,
-            "DisplayTitle": audio_codec.upper(),
-            "Channels": 2,
-            "ChannelLayout": "stereo",
-        })
-        audio_stream_idx += 1
+    effective_audio_codec = audio_codec if audio_codec else "aac"
+    media_streams.append({
+        "Index": audio_stream_idx,
+        "Type": "Audio",
+        "Codec": effective_audio_codec,
+        "Language": "und",
+        "DisplayLanguage": "Unknown",
+        "IsDefault": True,
+        "IsForced": False,
+        "IsExternal": False,
+        "IsInterlaced": False,
+        "IsTextSubtitleStream": False,
+        "SupportsExternalStream": False,
+        "DisplayTitle": f"{effective_audio_codec.upper()} - Stereo",
+        "Channels": 2,
+        "ChannelLayout": "stereo",
+        "SampleRate": 48000,
+    })
+    audio_stream_idx += 1
 
     for idx, caption in enumerate(captions):
         lang_code = caption.get("language_code", "und")
@@ -5220,6 +5599,8 @@ async def endpoint_playback_info(request):
         "SupportsDirectStream": True,
         "SupportsTranscoding": False,
         "MediaStreams": media_streams,
+        "DefaultAudioStreamIndex": 1,
+        "DefaultSubtitleStreamIndex": -1,
     }
     if bit_rate:
         media_source["Bitrate"] = bit_rate
@@ -5360,6 +5741,73 @@ async def endpoint_stream(request):
         return JSONResponse({"error": "Stash timeout"}, status_code=504)
     except Exception as e:
         logger.error(f"Stream proxy error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+async def endpoint_download(request):
+    """Handle download requests - proxy the video file from Stash with Content-Disposition."""
+    from starlette.responses import StreamingResponse
+
+    item_id = request.path_params.get("item_id")
+    numeric_id = get_numeric_id(item_id)
+    stash_stream_url = f"{STASH_URL}/scene/{numeric_id}/stream"
+
+    logger.info(f"Download requested for {item_id}")
+
+    try:
+        # Get scene title for filename
+        q = """query FindScene($id: ID!) {
+            findScene(id: $id) { title files { path } }
+        }"""
+        res = stash_query(q, {"id": numeric_id})
+        scene = res.get("data", {}).get("findScene", {})
+        title = scene.get("title") or ""
+        files = scene.get("files") or []
+        if files:
+            import os as _os
+            original_filename = _os.path.basename(files[0].get("path", ""))
+        else:
+            original_filename = f"{title or item_id}.mp4"
+
+        session = get_stash_session()
+        response = session.get(stash_stream_url, timeout=30, stream=True, allow_redirects=True)
+
+        content_type = response.headers.get('Content-Type', 'video/mp4')
+
+        if 'text/html' in content_type:
+            logger.error(f"Got HTML response instead of video for download {stash_stream_url}")
+            return JSONResponse({"error": "Authentication failed"}, status_code=401)
+
+        response.raise_for_status()
+
+        headers = {}
+        if "Content-Length" in response.headers:
+            headers["Content-Length"] = response.headers["Content-Length"]
+        headers["Content-Disposition"] = f'attachment; filename="{original_filename}"'
+
+        async def stream_generator():
+            try:
+                for chunk in response.iter_content(chunk_size=262144):
+                    if chunk:
+                        yield chunk
+            except GeneratorExit:
+                pass
+            except Exception:
+                pass
+            finally:
+                response.close()
+
+        return StreamingResponse(
+            stream_generator(),
+            media_type=content_type,
+            headers=headers,
+            status_code=200
+        )
+
+    except requests.exceptions.Timeout:
+        logger.error(f"Download timeout connecting to Stash: {stash_stream_url}")
+        return JSONResponse({"error": "Stash timeout"}, status_code=504)
+    except Exception as e:
+        logger.error(f"Download proxy error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
 async def endpoint_subtitle(request):
@@ -6028,6 +6476,41 @@ async def endpoint_user_item_unfavorite(request):
     """Remove favorite status - stub."""
     return JSONResponse({"IsFavorite": False})
 
+async def endpoint_items_filters(request):
+    """Return filter options populated from Stash data."""
+    parent_id = request.query_params.get("parentId") or request.query_params.get("ParentId")
+
+    try:
+        tags_q = """query { findTags(filter: {per_page: 200, sort: "name", direction: ASC}) { tags { name } } }"""
+        studios_q = """query { findStudios(filter: {per_page: 200, sort: "name", direction: ASC}) { studios { name } } }"""
+        tags_res = stash_query(tags_q)
+        studios_res = stash_query(studios_q)
+
+        tag_names = [t["name"] for t in tags_res.get("data", {}).get("findTags", {}).get("tags", [])]
+        studio_names = [s["name"] for s in studios_res.get("data", {}).get("findStudios", {}).get("studios", [])]
+
+        return JSONResponse({
+            "Genres": studio_names,
+            "Tags": tag_names,
+            "OfficialRatings": [],
+            "Years": [],
+        })
+    except Exception as e:
+        logger.error(f"Failed to fetch filters: {e}")
+        return JSONResponse({
+            "Genres": [],
+            "Tags": [],
+            "OfficialRatings": [],
+            "Years": [],
+        })
+
+async def endpoint_bitrate_test(request):
+    """Return random bytes for bitrate testing - Swiftfin uses this before playback."""
+    size = int(request.query_params.get("size", 1000000))
+    size = min(size, 10000000)
+    import os
+    return Response(content=os.urandom(size), media_type="application/octet-stream")
+
 async def endpoint_local_trailers(request):
     """Return empty list for local trailers - Stash doesn't support trailers."""
     return JSONResponse([])
@@ -6244,6 +6727,88 @@ async def endpoint_years(request):
     # Could query Stash for distinct years from scenes
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
+async def endpoint_search_hints(request):
+    """Swiftfin search - returns SearchHints format used by /Search/Hints."""
+    search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm") or ""
+    limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
+    limit = max(1, min(limit, 50))
+
+    include_item_types_raw = [v for k, v in request.query_params.multi_items() if k.lower() == "includeitemtypes"]
+    include_item_types = []
+    for val in include_item_types_raw:
+        include_item_types.extend([t.strip().lower() for t in val.split(",") if t.strip()])
+
+    hints = []
+    total_count = 0
+
+    if not search_term.strip():
+        return JSONResponse({"SearchHints": [], "TotalRecordCount": 0})
+
+    clean_search = search_term.strip('"\'')
+
+    search_scenes = not include_item_types or "movie" in include_item_types or "video" in include_item_types
+    search_persons = not include_item_types or "person" in include_item_types
+
+    try:
+        if search_scenes:
+            q = """query FindScenes($q: String!, $per_page: Int!) {
+                findScenes(filter: {q: $q, per_page: $per_page, sort: "date", direction: DESC}) {
+                    count
+                    scenes { id title date files { duration } }
+                }
+            }"""
+            res = stash_query(q, {"q": clean_search, "per_page": limit})
+            data = res.get("data", {}).get("findScenes", {})
+            total_count += data.get("count", 0)
+            for s in data.get("scenes", []):
+                scene_id = f"scene-{s['id']}"
+                duration = 0
+                if s.get("files"):
+                    duration = s["files"][0].get("duration") or 0
+                title = s.get("title") or f"Scene {s['id']}"
+                hint = {
+                    "Name": title,
+                    "Id": scene_id,
+                    "ServerId": SERVER_ID,
+                    "Type": "Movie",
+                    "MediaType": "Video",
+                    "RunTimeTicks": int(duration * 10000000),
+                    "PrimaryImageTag": "img",
+                    "ImageTag": "img",
+                }
+                date = s.get("date")
+                if date:
+                    hint["ProductionYear"] = int(date[:4])
+                hints.append(hint)
+
+        if search_persons:
+            perf_limit = max(5, limit // 2)
+            q = """query FindPerformers($q: String!, $per_page: Int!) {
+                findPerformers(filter: {q: $q, per_page: $per_page}) {
+                    count
+                    performers { id name image_path }
+                }
+            }"""
+            res = stash_query(q, {"q": clean_search, "per_page": perf_limit})
+            data = res.get("data", {}).get("findPerformers", {})
+            total_count += data.get("count", 0)
+            for p in data.get("performers", []):
+                hint = {
+                    "Name": p["name"],
+                    "Id": f"performer-{p['id']}",
+                    "ServerId": SERVER_ID,
+                    "Type": "Person",
+                    "MediaType": "",
+                }
+                if p.get("image_path"):
+                    hint["PrimaryImageTag"] = "img"
+                hints.append(hint)
+    except Exception as e:
+        logger.error(f"Search hints error: {e}")
+
+    logger.debug(f"SearchHints '{clean_search}' -> {len(hints)} hints (total={total_count})")
+    return JSONResponse({"SearchHints": hints, "TotalRecordCount": total_count})
+
 async def endpoint_similar(request):
     """Return similar items - stub."""
     item_id = request.path_params.get("item_id")
@@ -6298,6 +6863,8 @@ async def endpoint_users_public(request):
         "ServerId": SERVER_ID,
         "HasPassword": bool(SJS_PASSWORD),
         "HasConfiguredPassword": bool(SJS_PASSWORD),
+        "HasConfiguredEasyPassword": False,
+        "EnableAutoLogin": False,
     }])
 
 async def endpoint_media_segments(request):
@@ -6320,6 +6887,30 @@ async def catch_all(request):
     # Return empty success to prevent errors
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
+async def endpoint_websocket(websocket: WebSocket):
+    """Jellyfin WebSocket endpoint for clients like Infuse-Direct that require it.
+
+    Accepts the connection and runs a keepalive loop matching Jellyfin's protocol.
+    Without this, newer Infuse versions hang for ~3s after login then retry indefinitely.
+    """
+    await websocket.accept()
+    logger.debug(f"WebSocket connected: path={websocket.url.path} from {websocket.client}")
+    try:
+        # Send initial ForceKeepAlive so the client knows the interval (30s)
+        await websocket.send_json({"MessageType": "ForceKeepAlive", "Data": 30})
+        while True:
+            try:
+                msg = await asyncio.wait_for(websocket.receive_json(), timeout=60.0)
+                msg_type = msg.get("MessageType", "")
+                if msg_type == "KeepAlive":
+                    await websocket.send_json({"MessageType": "KeepAlive"})
+                # All other message types are acknowledged silently
+            except asyncio.TimeoutError:
+                # Send keepalive to prevent client disconnect
+                await websocket.send_json({"MessageType": "KeepAlive"})
+    except Exception as e:
+        logger.debug(f"WebSocket disconnected: {e}")
+
 # --- App Construction ---
 routes = [
     Route("/", endpoint_root),
@@ -6331,9 +6922,13 @@ routes = [
     Route("/QuickConnect/Enabled", endpoint_quickconnect_enabled),
     Route("/QuickConnect/Initiate", endpoint_quickconnect_stub, methods=["POST", "GET"]),
     Route("/QuickConnect/Connect", endpoint_quickconnect_stub, methods=["POST", "GET"]),
-    Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST"]),
+    Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST", "GET"]),
     Route("/Users/Public", endpoint_users_public),
     Route("/UserImage", endpoint_user_image),
+    Route("/Users/Me", endpoint_user_me),
+    Route("/UserViews", endpoint_user_views),
+    Route("/UserItems/Resume", endpoint_user_items_resume),
+    Route("/UserItems/Latest", endpoint_latest_items),
     Route("/Users/{user_id}", endpoint_user_by_id),
     Route("/Users/{user_id}/Views", endpoint_user_views),
     Route("/Users/{user_id}/Items/Latest", endpoint_latest_items),
@@ -6348,19 +6943,27 @@ routes = [
     Route("/Users/{user_id}/PlayingItems/{item_id}", endpoint_user_played_items, methods=["POST", "DELETE"]),
     Route("/Users/{user_id}/UnplayedItems/{item_id}", endpoint_user_unplayed_items, methods=["POST", "DELETE"]),
     Route("/Library/VirtualFolders", endpoint_virtual_folders),
-    Route("/DisplayPreferences/{prefs_id}", endpoint_display_preferences),
+    Route("/DisplayPreferences/{prefs_id}", endpoint_display_preferences, methods=["GET", "POST"]),
     Route("/Shows/NextUp", endpoint_shows_nextup),
     Route("/Users/{user_id}/Items", endpoint_items),
     Route("/Users/{user_id}/Items/{item_id}", endpoint_item_details),
     Route("/Items", endpoint_items),
     Route("/Items/Counts", endpoint_items_counts),
+    Route("/Items/Latest", endpoint_latest_items),
+    Route("/Items/Filters", endpoint_items_filters),
+    Route("/Items/{item_id}/Download", endpoint_download),
     Route("/Items/{item_id}/PlaybackInfo", endpoint_playback_info, methods=["GET", "POST"]),
     Route("/Items/{item_id}/Similar", endpoint_similar),
     Route("/Items/{item_id}/Intros", endpoint_intros),
     Route("/Items/{item_id}/SpecialFeatures", endpoint_special_features),
+    Route("/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
     Route("/Users/{user_id}/Items/{item_id}/SpecialFeatures", endpoint_special_features),
+    Route("/Users/{user_id}/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
+    Route("/Playback/BitrateTest", endpoint_bitrate_test),
     Route("/Videos/{item_id}/stream", endpoint_stream),
+    Route("/Videos/{item_id}/Stream", endpoint_stream),
     Route("/Videos/{item_id}/stream.{ext}", endpoint_stream),
+    Route("/Videos/{item_id}/Stream.{ext}", endpoint_stream),
     Route("/videos/{item_id}/stream", endpoint_stream),
     Route("/videos/{item_id}/stream.{ext}", endpoint_stream),
     Route("/Videos/{item_id}/Subtitles/{subtitle_index}/Stream.srt", endpoint_subtitle),
@@ -6371,6 +6974,7 @@ routes = [
     Route("/Videos/{item_id}/{item_id2}/Subtitles/{subtitle_index}/0/Stream.vtt", endpoint_subtitle),
     Route("/Videos/{item_id}/{item_id2}/Subtitles/{subtitle_index}/Stream.srt", endpoint_subtitle),
     Route("/Videos/{item_id}/{item_id2}/Subtitles/{subtitle_index}/Stream.vtt", endpoint_subtitle),
+    Route("/Items/{item_id}", endpoint_item_details),
     Route("/Items/{item_id}/Images/Primary", endpoint_image),
     Route("/Items/{item_id}/Images/Thumb", endpoint_image),
     Route("/Items/{item_id}/Images/Backdrop", endpoint_image),
@@ -6389,16 +6993,22 @@ routes = [
     Route("/Studios", endpoint_studios),
     Route("/Artists", endpoint_artists),
     Route("/Years", endpoint_years),
+    Route("/Search/Hints", endpoint_search_hints),
     Route("/Movies/Recommendations", endpoint_recommendations),
     Route("/Items/{item_id}/InstantMix", endpoint_instant_mix),
     Route("/MediaSegments/{item_id}", endpoint_media_segments),
     Route("/api/danmu/{item_id}/raw", endpoint_danmu),
+    WebSocketRoute("/socket", endpoint_websocket),
+    WebSocketRoute("/{path:path}", endpoint_websocket),
     Route("/{path:path}", catch_all),
 ]
 
+CaseInsensitivePathMiddleware.build_path_map(routes)
+
 middleware = [
-    Middleware(AuthenticationMiddleware),  # Token validation first
     Middleware(RequestLoggingMiddleware),
+    Middleware(CaseInsensitivePathMiddleware),
+    Middleware(AuthenticationMiddleware),
     Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 ]
 
@@ -6561,7 +7171,7 @@ async def ui_api_config(request):
                 "SERVER_ID": "",
                 "SERVER_NAME": "Stash Media Server",
                 "TAG_GROUPS": "",
-                "LATEST_GROUPS": "Scenes",
+                "LATEST_GROUPS": "",
                 "STASH_TIMEOUT": "30",
                 "STASH_RETRIES": "3",
                 "ENABLE_FILTERS": "true",
@@ -6768,7 +7378,7 @@ async def ui_api_config(request):
                     TAG_GROUPS = []
                     applied_immediately.append(key)
                 elif key == "LATEST_GROUPS":
-                    LATEST_GROUPS = ["Scenes"]
+                    LATEST_GROUPS = []
                     applied_immediately.append(key)
                 elif key == "SERVER_NAME":
                     SERVER_NAME = "Stash Media Server"
