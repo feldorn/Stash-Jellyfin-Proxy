@@ -3018,10 +3018,11 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"backdrop": "000000"}},
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
-            "PlaybackPositionTicks": 0,
-            "PlayCount": 0,
-            "IsFavorite": False,
-            "Played": False,
+            "PlaybackPositionTicks": int(scene.get("resume_time", 0) * 10000000),
+            "PlayCount": scene.get("play_count") or 0,
+            "IsFavorite": scene.get("organized", False),
+            "Played": (scene.get("play_count") or 0) > 0,
+            "LastPlayedDate": scene.get("last_played_at", ""),
             "Key": item_id
         }
     }
@@ -3602,7 +3603,7 @@ async def endpoint_shows_nextup(request):
     """Return suggested/random scenes as 'Next Up' to populate Swiftfin home page."""
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
 
-    scene_fields = "id title code date details files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time organized last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     q = f"""query FindScenes($page: Int!, $per_page: Int!) {{
         findScenes(filter: {{page: $page, per_page: $per_page, sort: "random", direction: DESC}}) {{
@@ -3628,7 +3629,7 @@ async def endpoint_latest_items(request):
     logger.debug(f"Latest items request - ParentId: {parent_id}, Limit: {limit}")
 
     # Full scene fields for queries
-    scene_fields = "id title code date details files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time organized last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     items = []
 
@@ -4120,7 +4121,7 @@ async def endpoint_items(request):
     total_count = 0
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time organized last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     if ids:
         # Specific items requested
@@ -5039,7 +5040,7 @@ async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time organized last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     # Handle special folder IDs - return the folder ITSELF (not children)
 
@@ -5451,25 +5452,54 @@ async def endpoint_sessions(request):
     """Handle session management endpoints (Playing, Progress, Stopped)."""
     path = request.url.path
 
-    # Log when video stops at INFO level
-    if "/Stopped" in path:
+    try:
+        body = await request.json()
+    except:
+        body = {}
+
+    item_id = body.get("ItemId", "")
+    position_ticks = body.get("PositionTicks", 0)
+    position_seconds = position_ticks / 10000000.0 if position_ticks else 0
+
+    if "/Progress" in path and item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
         try:
-            body = await request.json()
-            item_id = body.get("ItemId", "unknown")
-            # Get title from active streams cache, or fetch it
-            if item_id in _active_streams:
-                title = _active_streams[item_id]["title"]
-                mark_stream_stopped(item_id, from_stop_notification=True)
-                logger.info(f"⏹ Stream stopped: {title} ({item_id})")
-            elif item_id.startswith("scene-"):
-                # Stream wasn't tracked (e.g., after server restart) - still mark as recently stopped
-                title = get_scene_title(item_id)
-                mark_stream_stopped(item_id, from_stop_notification=True)
-                logger.info(f"⏹ Stream stopped: {title} ({item_id})")
-            else:
-                logger.info(f"⏹ Stream stopped: {item_id}")
-        except:
-            logger.info("⏹ Stream stopped")
+            q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id resume_time } }"""
+            stash_query(q, {"input": {"id": numeric_id, "resume_time": position_seconds}})
+        except Exception as e:
+            logger.debug(f"Error saving resume position for {item_id}: {e}")
+
+    elif "/Stopped" in path:
+        if item_id.startswith("scene-"):
+            numeric_id = item_id.replace("scene-", "")
+            try:
+                duration_ticks = body.get("RunTimeTicks") or body.get("NowPlayingItem", {}).get("RunTimeTicks", 0)
+                duration_seconds = duration_ticks / 10000000.0 if duration_ticks else 0
+                played_percentage = (position_seconds / duration_seconds * 100) if duration_seconds > 0 else 0
+
+                if played_percentage > 90:
+                    q = """mutation SceneIncrementPlayCount($id: ID!) { sceneIncrementPlayCount(id: $id) }"""
+                    stash_query(q, {"id": numeric_id})
+                    uq = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id } }"""
+                    stash_query(uq, {"input": {"id": numeric_id, "resume_time": 0}})
+                    logger.info(f"▶ Auto-marked played: {item_id} ({played_percentage:.0f}% watched)")
+                else:
+                    q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id resume_time } }"""
+                    stash_query(q, {"input": {"id": numeric_id, "resume_time": position_seconds}})
+                    logger.info(f"⏸ Saved resume position: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%)")
+            except Exception as e:
+                logger.error(f"Error updating play status for {item_id}: {e}")
+
+        if item_id in _active_streams:
+            title = _active_streams[item_id]["title"]
+            mark_stream_stopped(item_id, from_stop_notification=True)
+            logger.info(f"⏹ Stream stopped: {title} ({item_id})")
+        elif item_id.startswith("scene-"):
+            title = get_scene_title(item_id)
+            mark_stream_stopped(item_id, from_stop_notification=True)
+            logger.info(f"⏹ Stream stopped: {title} ({item_id})")
+        else:
+            logger.info(f"⏹ Stream stopped: {item_id}")
 
     return JSONResponse({})
 
@@ -6443,9 +6473,26 @@ async def endpoint_image(request):
         return Response(content=PLACEHOLDER_PNG, media_type='image/png', headers=cache_headers)
 
 async def endpoint_user_items_resume(request):
-    """Return resume/in-progress items - currently returns empty."""
-    # TODO: Could integrate with Stash's continue_watching or playback history
-    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
+    """Return in-progress items - scenes with resume_time > 0 in Stash."""
+    scene_fields = "id title code date details play_count resume_time organized last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    try:
+        q = f"""query FindScenes {{
+            findScenes(
+                scene_filter: {{resume_time: {{value: 0, modifier: GREATER_THAN}}}},
+                filter: {{per_page: 20, sort: "last_played_at", direction: DESC}}
+            ) {{
+                count
+                scenes {{ {scene_fields} }}
+            }}
+        }}"""
+        res = stash_query(q)
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        count = res.get("data", {}).get("findScenes", {}).get("count", 0)
+        items = [format_jellyfin_item(s) for s in scenes]
+        return JSONResponse({"Items": items, "TotalRecordCount": count, "StartIndex": 0})
+    except Exception as e:
+        logger.error(f"Error fetching resume items: {e}")
+        return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
 async def endpoint_ping(request):
     """Simple ping endpoint for connectivity checks."""
@@ -6486,20 +6533,54 @@ async def endpoint_items_counts(request):
         return JSONResponse({"ItemCount": 0})
 
 async def endpoint_user_favorites(request):
-    """Handle favorite items - returns empty since Stash doesn't sync favorites."""
-    # Stash has an 'organized' field but not a favorites system
-    # Could potentially use tags to implement favorites in the future
-    user_id = request.path_params.get("user_id")
-    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
+    """Return favorite items - scenes marked as organized in Stash."""
+    scene_fields = "id title code date details play_count resume_time organized last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    try:
+        q = f"""query FindScenes {{
+            findScenes(scene_filter: {{organized: true}}, filter: {{per_page: 100, sort: "updated_at", direction: DESC}}) {{
+                count
+                scenes {{ {scene_fields} }}
+            }}
+        }}"""
+        res = stash_query(q)
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+        count = res.get("data", {}).get("findScenes", {}).get("count", 0)
+        items = [format_jellyfin_item(s) for s in scenes]
+        return JSONResponse({"Items": items, "TotalRecordCount": count, "StartIndex": 0})
+    except Exception as e:
+        logger.error(f"Error fetching favorites: {e}")
+        return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
 async def endpoint_user_item_favorite(request):
-    """Toggle favorite status on an item - stub that accepts but doesn't persist."""
-    # Accept the request but don't actually do anything since Stash doesn't have favorites
-    # Could potentially add/remove a "Favorites" tag in Stash in the future
+    """Mark item as favorite by setting organized=true in Stash."""
+    item_id = request.path_params.get("item_id", "")
+    if item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
+        try:
+            q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id organized } }"""
+            result = stash_query(q, {"input": {"id": numeric_id, "organized": True}})
+            if result and result.get("data", {}).get("sceneUpdate"):
+                logger.info(f"★ Favorited: {item_id}")
+            else:
+                logger.warning(f"Failed to favorite {item_id}: {result}")
+        except Exception as e:
+            logger.error(f"Error favoriting {item_id}: {e}")
     return JSONResponse({"IsFavorite": True})
 
 async def endpoint_user_item_unfavorite(request):
-    """Remove favorite status - stub."""
+    """Remove favorite by setting organized=false in Stash."""
+    item_id = request.path_params.get("item_id", "")
+    if item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
+        try:
+            q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id organized } }"""
+            result = stash_query(q, {"input": {"id": numeric_id, "organized": False}})
+            if result and result.get("data", {}).get("sceneUpdate"):
+                logger.info(f"☆ Unfavorited: {item_id}")
+            else:
+                logger.warning(f"Failed to unfavorite {item_id}: {result}")
+        except Exception as e:
+            logger.error(f"Error unfavoriting {item_id}: {e}")
     return JSONResponse({"IsFavorite": False})
 
 async def endpoint_items_filters(request):
@@ -6548,12 +6629,37 @@ async def endpoint_user_item_rating(request):
     return JSONResponse({})
 
 async def endpoint_user_played_items(request):
-    """Mark item as played - stub."""
-    return JSONResponse({})
+    """Mark item as played by incrementing play count in Stash."""
+    item_id = request.path_params.get("item_id", "")
+    if item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
+        try:
+            q = """mutation SceneIncrementPlayCount($id: ID!) { sceneIncrementPlayCount(id: $id) }"""
+            result = stash_query(q, {"id": numeric_id})
+            new_count = result.get("data", {}).get("sceneIncrementPlayCount") if result else None
+            if new_count is not None:
+                logger.info(f"▶ Marked played: {item_id} (play count: {new_count})")
+            else:
+                logger.warning(f"Failed to mark played {item_id}: {result}")
+        except Exception as e:
+            logger.error(f"Error marking played {item_id}: {e}")
+    return JSONResponse({"PlayCount": 1, "Played": True, "IsFavorite": False, "PlaybackPositionTicks": 0})
 
 async def endpoint_user_unplayed_items(request):
-    """Mark item as unplayed - stub."""
-    return JSONResponse({})
+    """Mark item as unplayed by resetting play count in Stash."""
+    item_id = request.path_params.get("item_id", "")
+    if item_id.startswith("scene-"):
+        numeric_id = item_id.replace("scene-", "")
+        try:
+            q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id play_count } }"""
+            result = stash_query(q, {"input": {"id": numeric_id, "play_count": 0, "resume_time": 0}})
+            if result and result.get("data", {}).get("sceneUpdate"):
+                logger.info(f"⏮ Marked unplayed: {item_id}")
+            else:
+                logger.warning(f"Failed to mark unplayed {item_id}: {result}")
+        except Exception as e:
+            logger.error(f"Error marking unplayed {item_id}: {e}")
+    return JSONResponse({"PlayCount": 0, "Played": False, "IsFavorite": False, "PlaybackPositionTicks": 0})
 
 async def endpoint_collections(request):
     """Return collections - maps to Stash groups/movies."""
@@ -6967,6 +7073,7 @@ routes = [
     Route("/Users/{user_id}/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
     Route("/Users/{user_id}/Items/{item_id}/Rating", endpoint_user_item_rating, methods=["POST", "DELETE"]),
     Route("/Users/{user_id}/FavoriteItems/{item_id}", endpoint_user_item_favorite, methods=["POST"]),
+    Route("/Users/{user_id}/FavoriteItems/{item_id}", endpoint_user_item_unfavorite, methods=["DELETE"]),
     Route("/Users/{user_id}/FavoriteItems/{item_id}/Delete", endpoint_user_item_unfavorite, methods=["POST", "DELETE"]),
     Route("/Users/{user_id}/PlayedItems/{item_id}", endpoint_user_played_items, methods=["POST"]),
     Route("/Users/{user_id}/PlayingItems/{item_id}", endpoint_user_played_items, methods=["POST", "DELETE"]),
