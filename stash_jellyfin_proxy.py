@@ -2923,6 +2923,8 @@ def format_filters_folder(parent_id: str) -> Dict[str, Any]:
         "RecursiveItemCount": filter_count,
         "ParentId": parent_id,
         "ImageTags": {"Primary": "img"},
+        "PrimaryImageAspectRatio": 0.6667,
+        "BackdropImageTags": [],
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -2950,6 +2952,8 @@ def format_saved_filter_item(saved_filter: Dict[str, Any], parent_id: str) -> Di
         "CollectionType": "movies",
         "ParentId": parent_id,
         "ImageTags": {"Primary": "img"},
+        "PrimaryImageAspectRatio": 0.6667,
+        "BackdropImageTags": [],
         "UserData": {
             "PlaybackPositionTicks": 0,
             "PlayCount": 0,
@@ -3707,6 +3711,8 @@ async def endpoint_latest_items(request):
                 "IsFolder": True,
                 "CollectionType": "movies",
                 "ChildCount": p.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"}
             }
             item["ImageTags"] = {"Primary": "img"} if p.get("image_path") else {}
@@ -3728,6 +3734,8 @@ async def endpoint_latest_items(request):
                 "IsFolder": True,
                 "CollectionType": "movies",
                 "ChildCount": s.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"}
             }
             item["ImageTags"] = {"Primary": "img"} if s.get("image_path") else {}
@@ -3750,6 +3758,8 @@ async def endpoint_latest_items(request):
                 "CollectionType": "movies",
                 "ChildCount": m.get("scene_count", 0),
                 "ImageTags": {"Primary": "img"},
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"}
             }
             items.append(item)
@@ -4318,7 +4328,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": p.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(performer_item)
 
@@ -4354,7 +4366,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": s.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(studio_item)
 
@@ -4390,7 +4404,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": g.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{g['id']}"},
-                            "ImageTags": {"Primary": "img"}
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(group_item)
 
@@ -4448,7 +4464,9 @@ async def endpoint_items(request):
                             "RecursiveItemCount": t.get("scene_count", 0),
                             "ParentId": parent_id,
                             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"},
-                            "ImageTags": {"Primary": "img"}  # Always set - we serve text icon if no Stash image
+                            "ImageTags": {"Primary": "img"},
+                            "PrimaryImageAspectRatio": 0.6667,
+                            "BackdropImageTags": []
                         }
                         items.append(tag_item)
 
@@ -4539,9 +4557,10 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ChildCount": s.get("scene_count", 0),
                 "RecursiveItemCount": s.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"}
             }
-            # Add image if available
             if s.get("image_path"):
                 studio_item["ImageTags"] = {"Primary": "img"}
             else:
@@ -4618,6 +4637,8 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ChildCount": p.get("scene_count", 0),
                 "RecursiveItemCount": p.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"}
             }
             if p.get("image_path"):
@@ -4722,8 +4743,9 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ChildCount": m.get("scene_count", 0),
                 "RecursiveItemCount": m.get("scene_count", 0),
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"},
-                # Always advertise image - endpoint will try to fetch and fall back to placeholder if needed
                 "ImageTags": {"Primary": "img"}
             }
             items.append(group_item)
@@ -4770,6 +4792,8 @@ async def endpoint_items(request):
             "CollectionType": "movies",
             "ParentId": parent_id,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
+            "BackdropImageTags": [],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-favorites"}
         })
         items_count += 1
@@ -4786,6 +4810,8 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ParentId": parent_id,
                 "ImageTags": {"Primary": "img"},
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "tags-all"}
             })
             items_count += 1
@@ -4806,6 +4832,8 @@ async def endpoint_items(request):
                 "CollectionType": "movies",
                 "ParentId": parent_id,
                 "ImageTags": {"Primary": "img"},
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
             })
             items_count += 1
@@ -4835,6 +4863,8 @@ async def endpoint_items(request):
                 "ChildCount": t.get("scene_count", 0),
                 "RecursiveItemCount": t.get("scene_count", 0),
                 "ParentId": parent_id,
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": True, "Played": False, "Key": f"tagitem-{t['id']}"}
             }
             tag_item["ImageTags"] = {"Primary": "img"}
@@ -4863,9 +4893,10 @@ async def endpoint_items(request):
                 "ChildCount": t.get("scene_count", 0),
                 "RecursiveItemCount": t.get("scene_count", 0),
                 "ParentId": parent_id,
+                "PrimaryImageAspectRatio": 0.6667,
+                "BackdropImageTags": [],
                 "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": t.get("favorite", False), "Played": False, "Key": f"tagitem-{t['id']}"}
             }
-            # Always set ImageTags so Infuse requests an image - we serve text icon if no Stash image
             tag_item["ImageTags"] = {"Primary": "img"}
             items.append(tag_item)
 
@@ -5012,6 +5043,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": filter_count,
             "RecursiveItemCount": filter_count,
@@ -5045,6 +5077,7 @@ async def endpoint_item_details(request):
                     "CollectionType": "movies",
                     "IsFolder": True,
                     "ImageTags": {"Primary": "img"},
+                    "PrimaryImageAspectRatio": 0.6667,
                     "BackdropImageTags": [],
                     "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
                 })
@@ -5111,6 +5144,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -5168,6 +5202,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -5215,6 +5250,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
@@ -5260,6 +5296,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": total_count,
             "RecursiveItemCount": total_count,
@@ -5281,6 +5318,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": total_count,
             "RecursiveItemCount": total_count,
@@ -5311,6 +5349,7 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
+            "PrimaryImageAspectRatio": 0.6667,
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
