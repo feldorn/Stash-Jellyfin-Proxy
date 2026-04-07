@@ -3233,6 +3233,11 @@ def parse_emby_auth_header(request):
     return info
 
 async def endpoint_authenticate_by_name(request):
+    # GET requests (e.g. from Infuse-Direct checking the endpoint) should get 405
+    # so the client knows only POST is supported, matching real Jellyfin behavior.
+    if request.method == "GET":
+        return Response(status_code=405, headers={"Allow": "POST"})
+
     try:
         data = await request.json()
     except:
@@ -6831,7 +6836,7 @@ async def endpoint_websocket(websocket: WebSocket):
     Without this, newer Infuse versions hang for ~3s after login then retry indefinitely.
     """
     await websocket.accept()
-    logger.debug(f"WebSocket connected from {websocket.client}")
+    logger.debug(f"WebSocket connected: path={websocket.url.path} from {websocket.client}")
     try:
         # Send initial ForceKeepAlive so the client knows the interval (30s)
         await websocket.send_json({"MessageType": "ForceKeepAlive", "Data": 30})
@@ -6859,7 +6864,7 @@ routes = [
     Route("/QuickConnect/Enabled", endpoint_quickconnect_enabled),
     Route("/QuickConnect/Initiate", endpoint_quickconnect_stub, methods=["POST", "GET"]),
     Route("/QuickConnect/Connect", endpoint_quickconnect_stub, methods=["POST", "GET"]),
-    Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST"]),
+    Route("/Users/AuthenticateByName", endpoint_authenticate_by_name, methods=["POST", "GET"]),
     Route("/Users/Public", endpoint_users_public),
     Route("/UserImage", endpoint_user_image),
     Route("/Users/Me", endpoint_user_me),
@@ -6936,6 +6941,7 @@ routes = [
     Route("/MediaSegments/{item_id}", endpoint_media_segments),
     Route("/api/danmu/{item_id}/raw", endpoint_danmu),
     WebSocketRoute("/socket", endpoint_websocket),
+    WebSocketRoute("/{path:path}", endpoint_websocket),
     Route("/{path:path}", catch_all),
 ]
 
