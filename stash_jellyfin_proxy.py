@@ -3111,12 +3111,18 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
             "Index": audio_stream_idx,
             "Type": "Audio",
             "Codec": effective_audio_codec,
+            "Language": "und",
+            "DisplayLanguage": "Unknown",
             "IsDefault": True,
             "IsForced": False,
             "IsExternal": False,
-            "DisplayTitle": effective_audio_codec.upper(),
+            "IsInterlaced": False,
+            "IsTextSubtitleStream": False,
+            "SupportsExternalStream": False,
+            "DisplayTitle": f"{effective_audio_codec.upper()} - Stereo",
             "Channels": 2,
             "ChannelLayout": "stereo",
+            "SampleRate": 48000,
         }
         media_streams.append(audio_stream)
         audio_stream_idx += 1
@@ -3170,6 +3176,8 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
             "SupportsDirectStream": True,
             "SupportsTranscoding": False,
             "MediaStreams": media_streams,
+            "DefaultAudioStreamIndex": 1,
+            "DefaultSubtitleStreamIndex": -1,
         }
         if bit_rate:
             media_source["Bitrate"] = bit_rate
@@ -5491,12 +5499,18 @@ async def endpoint_playback_info(request):
         "Index": audio_stream_idx,
         "Type": "Audio",
         "Codec": effective_audio_codec,
+        "Language": "und",
+        "DisplayLanguage": "Unknown",
         "IsDefault": True,
         "IsForced": False,
         "IsExternal": False,
-        "DisplayTitle": effective_audio_codec.upper(),
+        "IsInterlaced": False,
+        "IsTextSubtitleStream": False,
+        "SupportsExternalStream": False,
+        "DisplayTitle": f"{effective_audio_codec.upper()} - Stereo",
         "Channels": 2,
         "ChannelLayout": "stereo",
+        "SampleRate": 48000,
     })
     audio_stream_idx += 1
 
@@ -5546,6 +5560,8 @@ async def endpoint_playback_info(request):
         "SupportsDirectStream": True,
         "SupportsTranscoding": False,
         "MediaStreams": media_streams,
+        "DefaultAudioStreamIndex": 1,
+        "DefaultSubtitleStreamIndex": -1,
     }
     if bit_rate:
         media_source["Bitrate"] = bit_rate
