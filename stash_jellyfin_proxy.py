@@ -3102,22 +3102,23 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
 
         media_streams = [video_stream]
 
-        # Add audio stream if codec is available
+        # Always add audio stream - use reported codec or default to aac
+        # The actual stream contains audio regardless; this metadata tells the player to expect it
         audio_stream_idx = 1
-        if audio_codec:
-            audio_stream = {
-                "Index": audio_stream_idx,
-                "Type": "Audio",
-                "Codec": audio_codec,
-                "IsDefault": True,
-                "IsForced": False,
-                "IsExternal": False,
-                "DisplayTitle": audio_codec.upper(),
-                "Channels": 2,
-                "ChannelLayout": "stereo",
-            }
-            media_streams.append(audio_stream)
-            audio_stream_idx += 1
+        effective_audio_codec = audio_codec if audio_codec else "aac"
+        audio_stream = {
+            "Index": audio_stream_idx,
+            "Type": "Audio",
+            "Codec": effective_audio_codec,
+            "IsDefault": True,
+            "IsForced": False,
+            "IsExternal": False,
+            "DisplayTitle": effective_audio_codec.upper(),
+            "Channels": 2,
+            "ChannelLayout": "stereo",
+        }
+        media_streams.append(audio_stream)
+        audio_stream_idx += 1
 
         # Add subtitle streams from captions
         captions = scene.get("captions") or []
@@ -5420,19 +5421,19 @@ async def endpoint_playback_info(request):
     media_streams = [video_stream]
 
     audio_stream_idx = 1
-    if audio_codec:
-        media_streams.append({
-            "Index": audio_stream_idx,
-            "Type": "Audio",
-            "Codec": audio_codec,
-            "IsDefault": True,
-            "IsForced": False,
-            "IsExternal": False,
-            "DisplayTitle": audio_codec.upper(),
-            "Channels": 2,
-            "ChannelLayout": "stereo",
-        })
-        audio_stream_idx += 1
+    effective_audio_codec = audio_codec if audio_codec else "aac"
+    media_streams.append({
+        "Index": audio_stream_idx,
+        "Type": "Audio",
+        "Codec": effective_audio_codec,
+        "IsDefault": True,
+        "IsForced": False,
+        "IsExternal": False,
+        "DisplayTitle": effective_audio_codec.upper(),
+        "Channels": 2,
+        "ChannelLayout": "stereo",
+    })
+    audio_stream_idx += 1
 
     for idx, caption in enumerate(captions):
         lang_code = caption.get("language_code", "und")
