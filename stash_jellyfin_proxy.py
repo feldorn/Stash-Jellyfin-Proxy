@@ -100,9 +100,9 @@ SJS_PASSWORD = ""
 # Tag groups - comma-separated list of tag names to show as top-level folders
 TAG_GROUPS = []  # e.g., ["Favorites", "VR", "4K"]
 
-# Latest groups - controls which libraries show on Infuse home page
-# "Scenes" = all scenes, other entries must match TAG_GROUPS entries
-LATEST_GROUPS = ["Scenes"]  # e.g., ["Scenes", "VR", "Favorites"]
+# Latest groups - controls which libraries show "Latest" on home page
+# Empty = show all libraries, or list specific ones: "Scenes, VR, Favorites"
+LATEST_GROUPS = []
 
 # Server identity
 SERVER_NAME = "Stash Media Server"
@@ -6957,7 +6957,7 @@ async def ui_api_config(request):
                 "SERVER_ID": "",
                 "SERVER_NAME": "Stash Media Server",
                 "TAG_GROUPS": "",
-                "LATEST_GROUPS": "Scenes",
+                "LATEST_GROUPS": "",
                 "STASH_TIMEOUT": "30",
                 "STASH_RETRIES": "3",
                 "ENABLE_FILTERS": "true",
@@ -7164,7 +7164,7 @@ async def ui_api_config(request):
                     TAG_GROUPS = []
                     applied_immediately.append(key)
                 elif key == "LATEST_GROUPS":
-                    LATEST_GROUPS = ["Scenes"]
+                    LATEST_GROUPS = []
                     applied_immediately.append(key)
                 elif key == "SERVER_NAME":
                     SERVER_NAME = "Stash Media Server"
