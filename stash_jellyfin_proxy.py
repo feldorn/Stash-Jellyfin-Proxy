@@ -3679,16 +3679,72 @@ async def endpoint_latest_items(request):
                 for s in scenes:
                     items.append(format_jellyfin_item(s, parent_id=parent_id))
 
-    elif parent_id in ("root-performers", "root-studios", "root-groups", "root-tags"):
-        q = f"""query FindScenes($page: Int!, $per_page: Int!) {{
-            findScenes(filter: {{page: $page, per_page: $per_page, sort: "created_at", direction: DESC}}) {{
-                scenes {{ {scene_fields} }}
-            }}
-        }}"""
+    elif parent_id == "root-performers":
+        q = """query FindPerformers($page: Int!, $per_page: Int!) {
+            findPerformers(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
+                performers { id name image_path scene_count }
+            }
+        }"""
         res = stash_query(q, {"page": 1, "per_page": limit})
-        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-        for s in scenes:
-            items.append(format_jellyfin_item(s, parent_id=parent_id))
+        for p in res.get("data", {}).get("findPerformers", {}).get("performers", []):
+            item = {
+                "Name": p["name"],
+                "Id": f"performer-{p['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "BoxSet",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": p.get("scene_count", 0),
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"performer-{p['id']}"}
+            }
+            item["ImageTags"] = {"Primary": "img"} if p.get("image_path") else {}
+            items.append(item)
+
+    elif parent_id == "root-studios":
+        q = """query FindStudios($page: Int!, $per_page: Int!) {
+            findStudios(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
+                studios { id name image_path scene_count }
+            }
+        }"""
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        for s in res.get("data", {}).get("findStudios", {}).get("studios", []):
+            item = {
+                "Name": s["name"],
+                "Id": f"studio-{s['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "BoxSet",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": s.get("scene_count", 0),
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"studio-{s['id']}"}
+            }
+            item["ImageTags"] = {"Primary": "img"} if s.get("image_path") else {}
+            items.append(item)
+
+    elif parent_id == "root-groups":
+        q = """query FindMovies($page: Int!, $per_page: Int!) {
+            findMovies(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
+                movies { id name scene_count }
+            }
+        }"""
+        res = stash_query(q, {"page": 1, "per_page": limit})
+        for m in res.get("data", {}).get("findMovies", {}).get("movies", []):
+            item = {
+                "Name": m["name"],
+                "Id": f"group-{m['id']}",
+                "ServerId": SERVER_ID,
+                "Type": "BoxSet",
+                "IsFolder": True,
+                "CollectionType": "movies",
+                "ChildCount": m.get("scene_count", 0),
+                "ImageTags": {"Primary": "img"},
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"}
+            }
+            items.append(item)
+
+    elif parent_id == "root-tags":
+        # Tags don't have a meaningful "latest" concept
+        pass
 
     logger.debug(f"Returning {len(items)} latest items for {parent_id}")
     return JSONResponse(items)
@@ -3708,9 +3764,9 @@ async def endpoint_display_preferences(request):
         "PrimaryImageWidth": 250,
         "CustomPrefs": {
             "homesection0": "smalllibrarytiles",
-            "homesection1": "resume",
+            "homesection1": "latestmedia",
             "homesection2": "nextup",
-            "homesection3": "latestmedia",
+            "homesection3": "none",
             "homesection4": "none",
             "homesection5": "none",
             "homesection6": "none",
@@ -6607,6 +6663,88 @@ async def endpoint_years(request):
     # Could query Stash for distinct years from scenes
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
+async def endpoint_search_hints(request):
+    """Swiftfin search - returns SearchHints format used by /Search/Hints."""
+    search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm") or ""
+    limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
+    limit = max(1, min(limit, 50))
+
+    include_item_types_raw = [v for k, v in request.query_params.multi_items() if k.lower() == "includeitemtypes"]
+    include_item_types = []
+    for val in include_item_types_raw:
+        include_item_types.extend([t.strip().lower() for t in val.split(",") if t.strip()])
+
+    hints = []
+    total_count = 0
+
+    if not search_term.strip():
+        return JSONResponse({"SearchHints": [], "TotalRecordCount": 0})
+
+    clean_search = search_term.strip('"\'')
+
+    search_scenes = not include_item_types or "movie" in include_item_types or "video" in include_item_types
+    search_persons = not include_item_types or "person" in include_item_types
+
+    try:
+        if search_scenes:
+            q = """query FindScenes($q: String!, $per_page: Int!) {
+                findScenes(filter: {q: $q, per_page: $per_page, sort: "date", direction: DESC}) {
+                    count
+                    scenes { id title date files { duration } }
+                }
+            }"""
+            res = stash_query(q, {"q": clean_search, "per_page": limit})
+            data = res.get("data", {}).get("findScenes", {})
+            total_count += data.get("count", 0)
+            for s in data.get("scenes", []):
+                scene_id = f"scene-{s['id']}"
+                duration = 0
+                if s.get("files"):
+                    duration = s["files"][0].get("duration") or 0
+                title = s.get("title") or f"Scene {s['id']}"
+                hint = {
+                    "Name": title,
+                    "Id": scene_id,
+                    "ServerId": SERVER_ID,
+                    "Type": "Movie",
+                    "MediaType": "Video",
+                    "RunTimeTicks": int(duration * 10000000),
+                    "PrimaryImageTag": "img",
+                    "ImageTag": "img",
+                }
+                date = s.get("date")
+                if date:
+                    hint["ProductionYear"] = int(date[:4])
+                hints.append(hint)
+
+        if search_persons:
+            perf_limit = max(5, limit // 2)
+            q = """query FindPerformers($q: String!, $per_page: Int!) {
+                findPerformers(filter: {q: $q, per_page: $per_page}) {
+                    count
+                    performers { id name image_path }
+                }
+            }"""
+            res = stash_query(q, {"q": clean_search, "per_page": perf_limit})
+            data = res.get("data", {}).get("findPerformers", {})
+            total_count += data.get("count", 0)
+            for p in data.get("performers", []):
+                hint = {
+                    "Name": p["name"],
+                    "Id": f"performer-{p['id']}",
+                    "ServerId": SERVER_ID,
+                    "Type": "Person",
+                    "MediaType": "",
+                }
+                if p.get("image_path"):
+                    hint["PrimaryImageTag"] = "img"
+                hints.append(hint)
+    except Exception as e:
+        logger.error(f"Search hints error: {e}")
+
+    logger.debug(f"SearchHints '{clean_search}' -> {len(hints)} hints (total={total_count})")
+    return JSONResponse({"SearchHints": hints, "TotalRecordCount": total_count})
+
 async def endpoint_similar(request):
     """Return similar items - stub."""
     item_id = request.path_params.get("item_id")
@@ -6767,6 +6905,7 @@ routes = [
     Route("/Studios", endpoint_studios),
     Route("/Artists", endpoint_artists),
     Route("/Years", endpoint_years),
+    Route("/Search/Hints", endpoint_search_hints),
     Route("/Movies/Recommendations", endpoint_recommendations),
     Route("/Items/{item_id}/InstantMix", endpoint_instant_mix),
     Route("/MediaSegments/{item_id}", endpoint_media_segments),
