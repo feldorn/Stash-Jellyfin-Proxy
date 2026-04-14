@@ -3505,8 +3505,6 @@ async def endpoint_user_by_id(request):
 async def endpoint_user_me(request):
     """Return current user info - same as user_by_id but for /Users/Me endpoint."""
     return JSONResponse(_build_user_dto())
-        }
-    })
 
 async def endpoint_user_views(request):
     def make_library(name, lib_id):
