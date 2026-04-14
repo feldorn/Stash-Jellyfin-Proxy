@@ -3276,16 +3276,25 @@ async def endpoint_system_info(request):
     logger.debug("Providing System Info")
     return JSONResponse({
         "ServerName": SERVER_NAME,
-        "Version": "10.8.13",
+        "Version": "10.10.6",
         "Id": SERVER_ID,
         "ProductName": "Jellyfin Server",
         "OperatingSystem": "Linux",
         "StartupWizardCompleted": True,
         "SupportsLibraryMonitor": False,
         "WebSocketPortNumber": PROXY_PORT,
-        "CompletedInstallations": [{"Guid": SERVER_ID, "Name": SERVER_NAME}],
+        "CompletedInstallations": [],
         "CanSelfRestart": False,
         "CanLaunchWebBrowser": False,
+        "HasPendingRestart": False,
+        "HasUpdateAvailable": False,
+        "IsShuttingDown": False,
+        "TranscodingTempPath": "/tmp",
+        "LogPath": "/tmp",
+        "InternalMetadataPath": "/tmp",
+        "CachePath": "/tmp",
+        "ProgramDataPath": "/tmp",
+        "ItemsByNamePath": "/tmp",
         "LocalAddress": f"http://{PROXY_BIND}:{PROXY_PORT}"
     })
 
@@ -3293,7 +3302,7 @@ async def endpoint_public_info(request):
     return JSONResponse({
         "LocalAddress": f"http://{PROXY_BIND}:{PROXY_PORT}",
         "ServerName": SERVER_NAME,
-        "Version": "10.8.13",
+        "Version": "10.10.6",
         "Id": SERVER_ID,
         "ProductName": "Jellyfin Server",
         "OperatingSystem": "Linux",
@@ -3345,52 +3354,7 @@ async def endpoint_authenticate_by_name(request):
         client_ip = get_client_ip(request.scope)
         session_id = str(uuid.uuid4())
         auth_response = {
-            "User": {
-                "Name": username,
-                "ServerId": SERVER_ID,
-                "Id": USER_ID,
-                "HasPassword": True,
-                "HasConfiguredPassword": True,
-                "HasConfiguredEasyPassword": False,
-                "EnableAutoLogin": False,
-                "LastLoginDate": "2024-01-01T00:00:00.0000000Z",
-                "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
-                "Policy": {
-                    "IsAdministrator": True,
-                    "IsHidden": False,
-                    "IsDisabled": False,
-                    "EnableUserPreferenceAccess": True,
-                    "EnableRemoteAccess": True,
-                    "EnableContentDeletion": False,
-                    "EnableContentDownloading": True,
-                    "EnablePlaybackRemuxing": True,
-                    "ForceRemoteSourceTranscoding": False,
-                    "EnableMediaPlayback": True,
-                    "EnableAudioPlaybackTranscoding": True,
-                    "EnableVideoPlaybackTranscoding": True,
-                    "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
-                    "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
-                    "EnableCollectionManagement": False,
-                    "EnableSubtitleManagement": False,
-                    "EnableLyricManagement": False
-                },
-                "Configuration": {
-                    "PlayDefaultAudioTrack": True,
-                    "SubtitleLanguagePreference": "",
-                    "DisplayMissingEpisodes": False,
-                    "GroupedFolders": [],
-                    "SubtitleMode": "Default",
-                    "DisplayCollectionsView": False,
-                    "EnableLocalPassword": False,
-                    "OrderedViews": [],
-                    "LatestItemsExcludes": [],
-                    "MyMediaExcludes": [],
-                    "HidePlayedInLatest": True,
-                    "RememberAudioSelections": True,
-                    "RememberSubtitleSelections": True,
-                    "EnableNextEpisodeAutoPlay": True
-                }
-            },
+            "User": _build_user_dto(username),
             "SessionInfo": {
                 "Id": session_id,
                 "UserId": USER_ID,
@@ -3405,22 +3369,25 @@ async def endpoint_authenticate_by_name(request):
                 "SupportsRemoteControl": False,
                 "HasCustomDeviceName": False,
                 "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
+                "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
                 "PlayState": {
                     "CanSeek": False,
                     "IsPaused": False,
                     "IsMuted": False,
                     "RepeatMode": "RepeatNone",
-                    "PositionTicks": 0
+                    "PlaybackOrder": "Default",
+                    "PositionTicks": 0,
+                    "VolumeLevel": 100
                 },
                 "Capabilities": {
-                    "PlayableMediaTypes": [],
+                    "PlayableMediaTypes": ["Audio", "Video"],
                     "SupportedCommands": [],
                     "SupportsMediaControl": False,
                     "SupportsContentUploading": False,
                     "SupportsPersistentIdentifier": True,
                     "SupportsSync": False
                 },
-                "PlayableMediaTypes": [],
+                "PlayableMediaTypes": ["Audio", "Video"],
                 "AdditionalUsers": [],
                 "NowPlayingQueue": [],
                 "NowPlayingQueueFullItems": [],
@@ -3457,30 +3424,58 @@ async def endpoint_users(request):
         "Policy": {"IsAdministrator": True, "EnableContentDeletion": False, "EnableContentDownloading": True, "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider", "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"}
     }])
 
-async def endpoint_user_by_id(request):
-    return JSONResponse({
-        "Name": SJS_USER or "Stash User",
+def _build_user_dto(username=None):
+    """Build a complete Jellyfin UserDto matching the 10.10.x schema."""
+    return {
+        "Name": username or SJS_USER or "Stash User",
         "ServerId": SERVER_ID,
         "Id": USER_ID,
         "HasPassword": True,
         "HasConfiguredPassword": True,
         "HasConfiguredEasyPassword": False,
         "EnableAutoLogin": False,
+        "LastLoginDate": "2024-01-01T00:00:00.0000000Z",
+        "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
+        "PrimaryImageTag": "",
         "Policy": {
             "IsAdministrator": True,
             "IsHidden": False,
             "IsDisabled": False,
+            "MaxParentalRating": None,
+            "BlockedTags": [],
+            "AllowedTags": [],
             "EnableUserPreferenceAccess": True,
+            "AccessSchedules": [],
+            "BlockUnratedItems": [],
+            "EnableRemoteControlOfOtherUsers": False,
+            "EnableSharedDeviceControl": True,
             "EnableRemoteAccess": True,
+            "EnableLiveTvManagement": False,
+            "EnableLiveTvAccess": False,
             "EnableContentDeletion": False,
+            "EnableContentDeletionFromFolders": [],
             "EnableContentDownloading": True,
+            "EnableSyncTranscoding": True,
+            "EnableMediaConversion": False,
+            "EnabledDevices": [],
+            "EnableAllDevices": True,
+            "EnabledChannels": [],
+            "EnableAllChannels": True,
+            "EnabledFolders": [],
+            "EnableAllFolders": True,
+            "InvalidLoginAttemptCount": 0,
+            "LoginAttemptsBeforeLockout": -1,
+            "MaxActiveSessions": 0,
             "EnablePlaybackRemuxing": True,
             "ForceRemoteSourceTranscoding": False,
             "EnableMediaPlayback": True,
             "EnableAudioPlaybackTranscoding": True,
             "EnableVideoPlaybackTranscoding": True,
+            "EnablePublicSharing": True,
+            "RemoteClientBitrateLimit": 0,
             "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
             "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+            "SyncPlayAccess": "CreateAndJoinGroups",
             "EnableCollectionManagement": False,
             "EnableSubtitleManagement": False,
             "EnableLyricManagement": False
@@ -3499,54 +3494,17 @@ async def endpoint_user_by_id(request):
             "HidePlayedInLatest": True,
             "RememberAudioSelections": True,
             "RememberSubtitleSelections": True,
-            "EnableNextEpisodeAutoPlay": True
+            "EnableNextEpisodeAutoPlay": True,
+            "CastReceiverId": ""
         }
-    })
+    }
+
+async def endpoint_user_by_id(request):
+    return JSONResponse(_build_user_dto())
 
 async def endpoint_user_me(request):
     """Return current user info - same as user_by_id but for /Users/Me endpoint."""
-    return JSONResponse({
-        "Name": SJS_USER or "Stash User",
-        "ServerId": SERVER_ID,
-        "Id": USER_ID,
-        "HasPassword": True,
-        "HasConfiguredPassword": True,
-        "HasConfiguredEasyPassword": False,
-        "EnableAutoLogin": False,
-        "Policy": {
-            "IsAdministrator": True,
-            "IsHidden": False,
-            "IsDisabled": False,
-            "EnableUserPreferenceAccess": True,
-            "EnableRemoteAccess": True,
-            "EnableContentDeletion": False,
-            "EnableContentDownloading": True,
-            "EnablePlaybackRemuxing": True,
-            "ForceRemoteSourceTranscoding": False,
-            "EnableMediaPlayback": True,
-            "EnableAudioPlaybackTranscoding": True,
-            "EnableVideoPlaybackTranscoding": True,
-            "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
-            "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
-            "EnableCollectionManagement": False,
-            "EnableSubtitleManagement": False,
-            "EnableLyricManagement": False
-        },
-        "Configuration": {
-            "PlayDefaultAudioTrack": True,
-            "SubtitleLanguagePreference": "",
-            "DisplayMissingEpisodes": False,
-            "GroupedFolders": [],
-            "SubtitleMode": "Default",
-            "DisplayCollectionsView": False,
-            "EnableLocalPassword": False,
-            "OrderedViews": [],
-            "LatestItemsExcludes": [],
-            "MyMediaExcludes": [],
-            "HidePlayedInLatest": True,
-            "RememberAudioSelections": True,
-            "RememberSubtitleSelections": True,
-            "EnableNextEpisodeAutoPlay": True
+    return JSONResponse(_build_user_dto())
         }
     })
 
