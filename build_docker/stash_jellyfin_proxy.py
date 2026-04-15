@@ -6698,7 +6698,7 @@ async def endpoint_user_item_favorite(request):
     if item_id.startswith("scene-"):
         if not FAVORITE_TAG:
             logger.debug(f"Favorite toggled but FAVORITE_TAG not configured - ignoring")
-            return JSONResponse({"IsFavorite": True})
+            return JSONResponse({"IsFavorite": True, "PlaybackPositionTicks": 0, "PlayCount": 0, "Played": False, "Key": item_id, "ItemId": item_id})
         numeric_id = item_id.replace("scene-", "")
         try:
             tag_id = _get_or_create_tag(FAVORITE_TAG)
@@ -6717,7 +6717,7 @@ async def endpoint_user_item_favorite(request):
     elif item_id.startswith("group-"):
         if not FAVORITE_TAG:
             logger.debug(f"Favorite toggled on group but FAVORITE_TAG not configured - ignoring")
-            return JSONResponse({"IsFavorite": True})
+            return JSONResponse({"IsFavorite": True, "PlaybackPositionTicks": 0, "PlayCount": 0, "Played": False, "Key": item_id, "ItemId": item_id})
         group_id = item_id.replace("group-", "")
         try:
             tag_id = _get_or_create_tag(FAVORITE_TAG)
@@ -6754,14 +6754,14 @@ async def endpoint_user_item_favorite(request):
             logger.info(f"★ Favorited studio: {item_id}")
         except Exception as e:
             logger.error(f"Error favoriting studio {item_id}: {e}")
-    return JSONResponse({"IsFavorite": True})
+    return JSONResponse({"IsFavorite": True, "PlaybackPositionTicks": 0, "PlayCount": 0, "Played": False, "Key": item_id, "ItemId": item_id})
 
 async def endpoint_user_item_unfavorite(request):
     """Remove favorite in Stash. Scenes/groups use FAVORITE_TAG, performers use native favorite field."""
     item_id = request.path_params.get("item_id", "")
     if item_id.startswith("scene-"):
         if not FAVORITE_TAG:
-            return JSONResponse({"IsFavorite": False})
+            return JSONResponse({"IsFavorite": False, "PlaybackPositionTicks": 0, "PlayCount": 0, "Played": False, "Key": item_id, "ItemId": item_id})
         numeric_id = item_id.replace("scene-", "")
         try:
             tag_id = _get_or_create_tag(FAVORITE_TAG)
@@ -6777,7 +6777,7 @@ async def endpoint_user_item_unfavorite(request):
             logger.error(f"Error unfavoriting {item_id}: {e}")
     elif item_id.startswith("group-"):
         if not FAVORITE_TAG:
-            return JSONResponse({"IsFavorite": False})
+            return JSONResponse({"IsFavorite": False, "PlaybackPositionTicks": 0, "PlayCount": 0, "Played": False, "Key": item_id, "ItemId": item_id})
         group_id = item_id.replace("group-", "")
         try:
             tag_id = _get_or_create_tag(FAVORITE_TAG)
@@ -6812,7 +6812,7 @@ async def endpoint_user_item_unfavorite(request):
             logger.info(f"☆ Unfavorited studio: {item_id}")
         except Exception as e:
             logger.error(f"Error unfavoriting studio {item_id}: {e}")
-    return JSONResponse({"IsFavorite": False})
+    return JSONResponse({"IsFavorite": False, "PlaybackPositionTicks": 0, "PlayCount": 0, "Played": False, "Key": item_id, "ItemId": item_id})
 
 async def endpoint_items_filters(request):
     """Return filter options populated from Stash data."""
