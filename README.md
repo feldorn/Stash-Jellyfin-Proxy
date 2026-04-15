@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 6.00**
+**Version 6.01**
 
 A single-file Python proxy server that enables Jellyfin-compatible media players to connect to [Stash](https://stashapp.cc/) by emulating the Jellyfin API.
 
@@ -21,7 +21,7 @@ A single-file Python proxy server that enables Jellyfin-compatible media players
 - **Multi-Client Support**: Tested with Infuse, Swiftfin, and SenPlayer
 - **Full Stash Integration**: Scenes, Performers, Studios, Groups, and Tags
 - **Play Tracking**: Automatic watched/resume sync with Stash (>90% watched marks played, otherwise saves resume position)
-- **Favorites**: Tag-based scene favorites, native performer favorites, studio favorites — all synced back to Stash
+- **Favorites**: Tag-based scene and group favorites, native performer favorites, studio favorites — all synced back to Stash
 - **Tag-Based Libraries**: Create custom library folders based on Stash tags
 - **Saved Filters Support**: Browse your Stash saved filters as folders
 - **Subtitle Support**: SRT and VTT subtitle delivery from Stash captions
@@ -75,7 +75,7 @@ Edit `stash_jellyfin_proxy.conf`:
 | `SJS_USER` | Username for client login | Required |
 | `SJS_PASSWORD` | Password for client login | Required |
 | `TAG_GROUPS` | Comma-separated tags to show as library folders | Empty |
-| `FAVORITE_TAG` | Tag name used for scene favorites (e.g., `Favorite`) | Empty (disabled) |
+| `FAVORITE_TAG` | Tag name used for scene and group favorites (e.g., `Favorite`) | Empty (disabled) |
 | `ENABLE_ALL_TAGS` | Show "All Tags" subfolder in Tags library | `false` |
 | `PROXY_PORT` | Jellyfin API port | `8096` |
 | `UI_PORT` | Web UI port (0 to disable) | `8097` |
@@ -108,6 +108,7 @@ See the config file for all available options. Settings can also be changed via 
 Favorites work differently depending on the item type:
 
 - **Scenes**: Requires `FAVORITE_TAG` to be set in config (e.g., `Favorite`). Toggling a scene's favorite adds/removes this tag. The tag is auto-created in Stash if it doesn't exist.
+- **Groups**: Uses the same `FAVORITE_TAG` approach as scenes. Toggling a group's favorite adds/removes the tag via `movieUpdate`. Requires `FAVORITE_TAG` to be configured.
 - **Performers**: Uses Stash's native `favorite` boolean field. No configuration needed.
 - **Studios**: Uses the `studioUpdate` mutation. No configuration needed.
 
@@ -144,9 +145,12 @@ Access the configuration dashboard at `http://your-server:8097`:
 
 - Single-user authentication (one set of credentials)
 - Clients cache images aggressively; clear metadata cache if artwork doesn't update
-- Scene favorites require `FAVORITE_TAG` to be configured
+- Scene and group favorites require `FAVORITE_TAG` to be configured
 
 ## Changelog
+
+### v6.01
+- **Group favorites**: Groups now use the same `FAVORITE_TAG` technique as scenes. Toggling a group's favorite in any client adds/removes the configured tag via `movieUpdate`. All group queries fetch `tags { name }` so `IsFavorite` is accurate in browse listings, latest items, and item detail responses. The global `Movie+IsFavorite` filter query uses `movie_filter: {tags: {value: $tid, modifier: INCLUDES}}` instead of returning an empty result.
 
 ### v6.00
 - **Multi-client support**: Full compatibility with Infuse, SenPlayer; partial support for Swiftfin, Jellyfin Android, and Findroid
