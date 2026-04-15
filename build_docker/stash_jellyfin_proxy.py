@@ -3052,6 +3052,13 @@ def _is_scene_favorite(scene: Dict[str, Any]) -> bool:
     tag_names = [t.get("name", "") for t in scene.get("tags", [])]
     return FAVORITE_TAG in tag_names
 
+def _is_group_favorite(group: Dict[str, Any]) -> bool:
+    """Check if a group has the configured favorite tag."""
+    if not FAVORITE_TAG:
+        return False
+    tag_names = [t.get("name", "") for t in group.get("tags", [])]
+    return FAVORITE_TAG in tag_names
+
 def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") -> Dict[str, Any]:
     raw_id = str(scene.get("id"))
     item_id = f"scene-{raw_id}"  # Simple ID format like studios use
@@ -3774,7 +3781,7 @@ async def endpoint_latest_items(request):
     elif parent_id == "root-groups":
         q = """query FindMovies($page: Int!, $per_page: Int!) {
             findMovies(filter: {page: $page, per_page: $per_page, sort: "created_at", direction: DESC}) {
-                movies { id name scene_count }
+                movies { id name scene_count tags { name } }
             }
         }"""
         res = stash_query(q, {"page": 1, "per_page": limit})
@@ -3791,7 +3798,7 @@ async def endpoint_latest_items(request):
                 "ImageBlurHashes": {"Primary": {"img": "000000"}},
                 "PrimaryImageAspectRatio": 0.6667,
                 "BackdropImageTags": [],
-                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"}
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": _is_group_favorite(m), "Played": False, "Key": f"group-{m['id']}"}
             }
             items.append(item)
 
@@ -4748,7 +4755,7 @@ async def endpoint_items(request):
 
         q = """query FindMovies($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {
             findMovies(filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}) {
-                movies { id name scene_count }
+                movies { id name scene_count tags { name } }
             }
         }"""
 
@@ -4786,7 +4793,7 @@ async def endpoint_items(request):
                 "RecursiveItemCount": m.get("scene_count", 0),
                 "PrimaryImageAspectRatio": 0.6667,
                 "BackdropImageTags": [],
-                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"},
+                "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": _is_group_favorite(m), "Played": False, "Key": f"group-{m['id']}"},
                 "ImageTags": {"Primary": "img"},
                 "ImageBlurHashes": {"Primary": {"img": "000000"}},
             }
@@ -5044,39 +5051,63 @@ async def endpoint_items(request):
             logger.debug(f"Global query skipped - requested types {include_type_list} don't include Movie/Video")
         elif movie_only:
             # Movie type only → return Groups (BoxSets), not scenes
-            if filter_favorites:
-                # Stash groups have no native favorite field; return empty to avoid duplicating Video results
-                logger.debug("Movie+IsFavorite: groups don't support favorites in Stash - returning empty")
+            folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
+            if filter_favorites and FAVORITE_TAG:
+                # Return only groups tagged with FAVORITE_TAG (same technique as scenes)
+                fav_tag_id = _get_or_create_tag(FAVORITE_TAG)
+                if fav_tag_id:
+                    count_q = """query CountFavGroups($tid: [ID!]) {
+                        findMovies(movie_filter: {tags: {value: $tid, modifier: INCLUDES}}) { count }
+                    }"""
+                    count_res = stash_query(count_q, {"tid": [fav_tag_id]})
+                    total_count = count_res.get("data", {}).get("findMovies", {}).get("count", 0)
+                    page = (start_index // limit) + 1
+                    q = """query FindFavGroups($tid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {
+                        findMovies(
+                            movie_filter: {tags: {value: $tid, modifier: INCLUDES}},
+                            filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}
+                        ) {
+                            movies { id name scene_count tags { name } }
+                        }
+                    }"""
+                    res = stash_query(q, {"tid": [fav_tag_id], "page": page, "per_page": limit, "sort": folder_sort, "direction": folder_dir})
+                    movies = res.get("data", {}).get("findMovies", {}).get("movies", [])
+                    logger.debug(f"Favorite groups query returned {len(movies)} groups (page {page}, total {total_count})")
+                else:
+                    logger.warning(f"IsFavorite filter requested but could not resolve FAVORITE_TAG '{FAVORITE_TAG}'")
+                    movies = []
+            elif filter_favorites and not FAVORITE_TAG:
+                logger.debug("Movie+IsFavorite: FAVORITE_TAG not configured - returning empty")
+                movies = []
                 total_count = 0
             else:
-                folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
                 count_q = "query { findMovies { count } }"
                 count_res = stash_query(count_q)
                 total_count = count_res.get("data", {}).get("findMovies", {}).get("count", 0)
                 page = (start_index // limit) + 1
                 q = """query FindMovies($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {
                     findMovies(filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}) {
-                        movies { id name scene_count }
+                        movies { id name scene_count tags { name } }
                     }
                 }"""
                 res = stash_query(q, {"page": page, "per_page": limit, "sort": folder_sort, "direction": folder_dir})
                 movies = res.get("data", {}).get("findMovies", {}).get("movies", [])
                 logger.debug(f"Global Movie query returned {len(movies)} groups (page {page}, total {total_count})")
-                for m in movies:
-                    items.append({
-                        "Name": m["name"],
-                        "Id": f"group-{m['id']}",
-                        "ServerId": SERVER_ID,
-                        "Type": "BoxSet",
-                        "IsFolder": True,
-                        "CollectionType": "movies",
-                        "ChildCount": m.get("scene_count", 0),
-                        "PrimaryImageAspectRatio": 0.6667,
-                        "BackdropImageTags": [],
-                        "ImageTags": {"Primary": "img"},
-                        "ImageBlurHashes": {"Primary": {"img": "000000"}},
-                        "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": f"group-{m['id']}"}
-                    })
+            for m in movies:
+                items.append({
+                    "Name": m["name"],
+                    "Id": f"group-{m['id']}",
+                    "ServerId": SERVER_ID,
+                    "Type": "BoxSet",
+                    "IsFolder": True,
+                    "CollectionType": "movies",
+                    "ChildCount": m.get("scene_count", 0),
+                    "PrimaryImageAspectRatio": 0.6667,
+                    "BackdropImageTags": [],
+                    "ImageTags": {"Primary": "img"},
+                    "ImageBlurHashes": {"Primary": {"img": "000000"}},
+                    "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": _is_group_favorite(m), "Played": False, "Key": f"group-{m['id']}"}
+                })
         elif video_requested:
             # Video type (or no type filter) → return Scenes
             if filter_favorites and FAVORITE_TAG:
@@ -5350,7 +5381,7 @@ async def endpoint_item_details(request):
     elif item_id.startswith("group-"):
         # Fetch actual group/movie info from Stash
         group_id = item_id.replace("group-", "")
-        q = """query FindMovie($id: ID!) { findMovie(id: $id) { id name front_image_path scene_count } }"""
+        q = """query FindMovie($id: ID!) { findMovie(id: $id) { id name front_image_path scene_count tags { name } } }"""
         res = stash_query(q, {"id": group_id})
         group = res.get("data", {}).get("findMovie", {})
 
@@ -5372,7 +5403,7 @@ async def endpoint_item_details(request):
             "BackdropImageTags": [],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": _is_group_favorite(group), "Played": False, "Key": item_id}
         })
 
     elif item_id == "root-tags":
@@ -6662,7 +6693,7 @@ async def endpoint_user_favorites(request):
         return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
 async def endpoint_user_item_favorite(request):
-    """Mark item as favorite in Stash. Scenes use FAVORITE_TAG, performers use native favorite field."""
+    """Mark item as favorite in Stash. Scenes/groups use FAVORITE_TAG, performers use native favorite field."""
     item_id = request.path_params.get("item_id", "")
     if item_id.startswith("scene-"):
         if not FAVORITE_TAG:
@@ -6681,6 +6712,25 @@ async def endpoint_user_item_favorite(request):
                     q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id } }"""
                     stash_query(q, {"input": {"id": numeric_id, "tag_ids": existing_tag_ids}})
                     logger.info(f"★ Favorited scene: {item_id} (added tag '{FAVORITE_TAG}')")
+        except Exception as e:
+            logger.error(f"Error favoriting {item_id}: {e}")
+    elif item_id.startswith("group-"):
+        if not FAVORITE_TAG:
+            logger.debug(f"Favorite toggled on group but FAVORITE_TAG not configured - ignoring")
+            return JSONResponse({"IsFavorite": True})
+        group_id = item_id.replace("group-", "")
+        try:
+            tag_id = _get_or_create_tag(FAVORITE_TAG)
+            if tag_id:
+                group_res = stash_query("""query FindMovie($id: ID!) { findMovie(id: $id) { id tags { id } } }""", {"id": group_id})
+                group = group_res.get("data", {}).get("findMovie") if group_res else None
+                if group:
+                    existing_tag_ids = [t["id"] for t in group.get("tags", [])]
+                    if tag_id not in existing_tag_ids:
+                        existing_tag_ids.append(tag_id)
+                    q = """mutation MovieUpdate($input: MovieUpdateInput!) { movieUpdate(input: $input) { id } }"""
+                    stash_query(q, {"input": {"id": group_id, "tag_ids": existing_tag_ids}})
+                    logger.info(f"★ Favorited group: {item_id} (added tag '{FAVORITE_TAG}')")
         except Exception as e:
             logger.error(f"Error favoriting {item_id}: {e}")
     elif item_id.startswith("performer-") or item_id.startswith("person-"):
@@ -6707,7 +6757,7 @@ async def endpoint_user_item_favorite(request):
     return JSONResponse({"IsFavorite": True})
 
 async def endpoint_user_item_unfavorite(request):
-    """Remove favorite in Stash. Scenes use FAVORITE_TAG, performers use native favorite field."""
+    """Remove favorite in Stash. Scenes/groups use FAVORITE_TAG, performers use native favorite field."""
     item_id = request.path_params.get("item_id", "")
     if item_id.startswith("scene-"):
         if not FAVORITE_TAG:
@@ -6723,6 +6773,22 @@ async def endpoint_user_item_unfavorite(request):
                     q = """mutation SceneUpdate($input: SceneUpdateInput!) { sceneUpdate(input: $input) { id } }"""
                     stash_query(q, {"input": {"id": numeric_id, "tag_ids": existing_tag_ids}})
                     logger.info(f"☆ Unfavorited scene: {item_id} (removed tag '{FAVORITE_TAG}')")
+        except Exception as e:
+            logger.error(f"Error unfavoriting {item_id}: {e}")
+    elif item_id.startswith("group-"):
+        if not FAVORITE_TAG:
+            return JSONResponse({"IsFavorite": False})
+        group_id = item_id.replace("group-", "")
+        try:
+            tag_id = _get_or_create_tag(FAVORITE_TAG)
+            if tag_id:
+                group_res = stash_query("""query FindMovie($id: ID!) { findMovie(id: $id) { id tags { id } } }""", {"id": group_id})
+                group = group_res.get("data", {}).get("findMovie") if group_res else None
+                if group:
+                    existing_tag_ids = [t["id"] for t in group.get("tags", []) if t["id"] != tag_id]
+                    q = """mutation MovieUpdate($input: MovieUpdateInput!) { movieUpdate(input: $input) { id } }"""
+                    stash_query(q, {"input": {"id": group_id, "tag_ids": existing_tag_ids}})
+                    logger.info(f"☆ Unfavorited group: {item_id} (removed tag '{FAVORITE_TAG}')")
         except Exception as e:
             logger.error(f"Error unfavoriting {item_id}: {e}")
     elif item_id.startswith("performer-") or item_id.startswith("person-"):
