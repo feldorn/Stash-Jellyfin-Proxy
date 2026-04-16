@@ -3746,12 +3746,32 @@ async def endpoint_shows_nextup(request):
     return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
 
 
-# NextUp-related Series metadata. We expose root-scenes as a synthetic "Recent
-# Scenes" Series so Infuse can finish rendering its Next Up row — without these
-# endpoints the home-page tiles never load images because Infuse waits for the
-# series hierarchy (Seasons -> Episodes) to resolve before painting episode art.
-_NEXTUP_SERIES_ID = "root-scenes"
+# NextUp Series metadata. We expose a fully synthetic Series so Infuse can finish
+# rendering its Next Up row. Using an existing library folder ID as SeriesId does
+# not work: /Items/{library_folder} returns Type "CollectionFolder" which Infuse
+# refuses to treat as a Series, so it silently stops resolving episode artwork.
+_NEXTUP_SERIES_ID = "series-recent-scenes"
 _NEXTUP_SEASON_ID = "season-recent-scenes"
+_NEXTUP_SERIES_NAME = "Recent Scenes"
+
+def _build_nextup_series_dto() -> Dict[str, Any]:
+    return {
+        "Name": _NEXTUP_SERIES_NAME,
+        "SortName": _NEXTUP_SERIES_NAME,
+        "Id": _NEXTUP_SERIES_ID,
+        "ServerId": SERVER_ID,
+        "Type": "Series",
+        "IsFolder": True,
+        "ParentId": "root-scenes",
+        "CollectionType": "tvshows",
+        "ImageTags": {"Primary": "icon"},
+        "BackdropImageTags": [],
+        "ImageBlurHashes": {"Primary": {"icon": "000000"}},
+        "ChildCount": 1,
+        "RecursiveItemCount": 20,
+        "Status": "Continuing",
+        "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": _NEXTUP_SERIES_ID},
+    }
 
 def _build_nextup_season_dto() -> Dict[str, Any]:
     return {
@@ -3762,12 +3782,14 @@ def _build_nextup_season_dto() -> Dict[str, Any]:
         "Type": "Season",
         "IsFolder": True,
         "SeriesId": _NEXTUP_SERIES_ID,
-        "SeriesName": "Recent Scenes",
+        "SeriesName": _NEXTUP_SERIES_NAME,
+        "SeriesPrimaryImageTag": "icon",
         "ParentId": _NEXTUP_SERIES_ID,
         "IndexNumber": 1,
         "ImageTags": {"Primary": "icon"},
         "BackdropImageTags": [],
-        "ImageBlurHashes": {},
+        "ImageBlurHashes": {"Primary": {"icon": "000000"}},
+        "ChildCount": 20,
         "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": _NEXTUP_SEASON_ID},
     }
 
@@ -5388,6 +5410,12 @@ async def endpoint_item_details(request):
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
     scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
+    # Handle synthetic Series/Season used by /Shows/NextUp
+    if item_id == _NEXTUP_SERIES_ID:
+        return JSONResponse(_build_nextup_series_dto())
+    if item_id == _NEXTUP_SEASON_ID:
+        return JSONResponse(_build_nextup_season_dto())
+
     # Handle special folder IDs - return the folder ITSELF (not children)
 
     # Handle FILTERS folder details
@@ -6513,6 +6541,13 @@ async def endpoint_image(request):
         # Generate PNG icon using Pillow drawing
         img_data, content_type = generate_menu_icon(item_id)
         logger.debug(f"Serving menu icon for {item_id}")
+        from starlette.responses import Response
+        return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
+
+    # Synthetic "Recent Scenes" Series/Season used by /Shows/NextUp — serve a simple text icon
+    if item_id in (_NEXTUP_SERIES_ID, _NEXTUP_SEASON_ID):
+        img_data, content_type = generate_text_icon("Recent")
+        logger.debug(f"Serving text icon for NextUp synthetic item: {item_id}")
         from starlette.responses import Response
         return Response(content=img_data, media_type=content_type, headers=icon_cache_headers)
 
