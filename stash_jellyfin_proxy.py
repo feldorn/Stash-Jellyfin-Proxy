@@ -34,6 +34,7 @@ import uuid
 import hashlib
 import argparse
 import time
+import random
 import re
 from urllib.parse import parse_qs
 from typing import Optional, List, Dict, Any, Tuple
@@ -108,6 +109,15 @@ FAVORITE_TAG = ""  # e.g., "Favorite"
 # Latest groups - controls which libraries show "Latest" on home page
 # Empty = show all libraries, or list specific ones: "Scenes, VR, Favorites"
 LATEST_GROUPS = []
+
+# Banner (home-screen hero) — some clients (SenPlayer) request Movie-only items
+# with SortBy=...Random... for the rotating banner on the server's home screen.
+# When that signature is detected, return Scenes (with screenshots) instead of Groups.
+# BANNER_MODE: "recent" = random sample from newest BANNER_POOL_SIZE scenes
+#              "tag"    = random sample from scenes matching any BANNER_TAGS
+BANNER_MODE = "recent"
+BANNER_POOL_SIZE = 200
+BANNER_TAGS = []  # e.g., ["Featured", "Showcase"]
 
 # Server identity
 SERVER_NAME = "Stash Media Server"
@@ -266,6 +276,18 @@ if _config:
     latest_groups_str = _config.get("LATEST_GROUPS", "")
     if latest_groups_str:
         LATEST_GROUPS = [t.strip() for t in latest_groups_str.split(",") if t.strip()]
+    # Banner settings
+    if "BANNER_MODE" in _config:
+        mode = _config.get("BANNER_MODE", BANNER_MODE).strip().lower()
+        BANNER_MODE = mode if mode in ("recent", "tag") else "recent"
+    if "BANNER_POOL_SIZE" in _config:
+        try:
+            BANNER_POOL_SIZE = max(1, int(_config.get("BANNER_POOL_SIZE", BANNER_POOL_SIZE)))
+        except ValueError:
+            pass
+    banner_tags_str = _config.get("BANNER_TAGS", "")
+    if banner_tags_str:
+        BANNER_TAGS = [t.strip() for t in banner_tags_str.split(",") if t.strip()]
 
     # Server identity
     SERVER_NAME = _config.get("SERVER_NAME", SERVER_NAME)
@@ -415,6 +437,7 @@ if FAVORITE_TAG:
     print(f"  Favorite tag: {FAVORITE_TAG}")
 if LATEST_GROUPS:
     print(f"  Latest groups: {', '.join(LATEST_GROUPS)}")
+print(f"  Banner: mode={BANNER_MODE}, pool={BANNER_POOL_SIZE}" + (f", tags=[{', '.join(BANNER_TAGS)}]" if BANNER_TAGS else ""))
 
 # Auto-generate SERVER_ID if not set, or normalize old dashless format
 if not SERVER_ID:
@@ -1080,6 +1103,30 @@ WEB_UI_HTML = '''<!DOCTYPE html>
                         </div>
                     </div>
                     <div class="card">
+                        <h3 class="card-title">Home-Screen Banner</h3>
+                        <div class="form-hint" style="margin-bottom: 1rem;">Some clients (e.g. SenPlayer) show a rotating banner at the top of the server home page. When the proxy detects that query (Movie-only + random sort), it returns randomized <strong>scenes</strong> from the pool below instead of the default "newest groups".</div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Banner Mode</label>
+                                <select class="form-input" name="BANNER_MODE">
+                                    <option value="recent">Recent — random from newest N scenes</option>
+                                    <option value="tag">Tag — random from scenes with specific tags</option>
+                                </select>
+                                <div class="form-hint">Tag mode falls back to recent if no tags are resolved</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Recent Pool Size</label>
+                                <input type="number" class="form-input" name="BANNER_POOL_SIZE" placeholder="200">
+                                <div class="form-hint">How many newest scenes to pick from (recent mode)</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Banner Tags</label>
+                            <input type="text" class="form-input" name="BANNER_TAGS" placeholder="e.g. Featured, Showcase">
+                            <div class="form-hint">Comma-separated Stash tag names (tag mode only)</div>
+                        </div>
+                    </div>
+                    <div class="card">
                         <h3 class="card-title">Feature Toggles</h3>
                         <div class="form-row">
                             <div class="form-group">
@@ -1446,6 +1493,9 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             SERVER_NAME: 'Stash Media Server',
             TAG_GROUPS: [],
             LATEST_GROUPS: ['Scenes'],
+            BANNER_MODE: 'recent',
+            BANNER_POOL_SIZE: 200,
+            BANNER_TAGS: [],
             STASH_TIMEOUT: 30,
             STASH_RETRIES: 3,
             ENABLE_FILTERS: true,
@@ -1541,13 +1591,13 @@ WEB_UI_HTML = '''<!DOCTYPE html>
             e.preventDefault();
             const formData = new FormData(e.target);
             const config = {};
-            const intFields = ['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT', 'DEFAULT_PAGE_SIZE', 'MAX_PAGE_SIZE', 'IMAGE_CACHE_MAX_SIZE', 'BAN_THRESHOLD', 'BAN_WINDOW_MINUTES'];
+            const intFields = ['PROXY_PORT', 'UI_PORT', 'STASH_TIMEOUT', 'STASH_RETRIES', 'LOG_MAX_SIZE_MB', 'LOG_BACKUP_COUNT', 'DEFAULT_PAGE_SIZE', 'MAX_PAGE_SIZE', 'IMAGE_CACHE_MAX_SIZE', 'BAN_THRESHOLD', 'BAN_WINDOW_MINUTES', 'BANNER_POOL_SIZE'];
             const boolFields = ['ENABLE_FILTERS', 'ENABLE_IMAGE_RESIZE', 'ENABLE_TAG_FILTERS', 'ENABLE_ALL_TAGS', 'REQUIRE_AUTH_FOR_CONFIG', 'STASH_VERIFY_TLS'];
 
             formData.forEach((value, key) => {
                 // If field is empty, use the default value
                 const defaultVal = DEFAULTS[key];
-                if (key === 'TAG_GROUPS' || key === 'LATEST_GROUPS') {
+                if (key === 'TAG_GROUPS' || key === 'LATEST_GROUPS' || key === 'BANNER_TAGS') {
                     if (value.trim() === '' && Array.isArray(defaultVal)) {
                         config[key] = defaultVal;
                     } else {
@@ -5050,6 +5100,63 @@ async def endpoint_items(request):
         if not has_movie_type:
             logger.debug(f"Global query skipped - requested types {include_type_list} don't include Movie/Video")
         elif movie_only:
+            # Banner detection: some clients (SenPlayer) request the home-screen
+            # rotating banner with Movie-only + SortBy containing "Random". Return
+            # randomized Scenes (with screenshots) instead of Groups for better visuals.
+            sort_by_raw = request.query_params.get("SortBy") or request.query_params.get("sortBy") or ""
+            is_banner_request = "random" in sort_by_raw.lower() and not filter_favorites
+            if is_banner_request:
+                banner_scenes = []
+                tag_ids = []
+                if BANNER_MODE == "tag" and BANNER_TAGS:
+                    # Stash's name filter doesn't accept a list; look up each tag individually.
+                    for tname in BANNER_TAGS:
+                        try:
+                            res = stash_query(
+                                """query FindTag($n: String!) { findTags(tag_filter: {name: {value: $n, modifier: EQUALS}}) { tags { id name } } }""",
+                                {"n": tname},
+                            )
+                            for t in res.get("data", {}).get("findTags", {}).get("tags", []):
+                                if t["name"].lower() == tname.lower():
+                                    tag_ids.append(t["id"])
+                                    break
+                        except Exception as e:
+                            logger.warning(f"Banner tag lookup failed for '{tname}': {e}")
+                    if not tag_ids:
+                        logger.debug(f"Banner mode=tag but no BANNER_TAGS resolved ({BANNER_TAGS}); falling back to recent")
+
+                if BANNER_MODE == "tag" and tag_ids:
+                    q = f"""query BannerScenesByTags($tids: [ID!], $per_page: Int!) {{
+                        findScenes(
+                            scene_filter: {{tags: {{value: $tids, modifier: INCLUDES}}}},
+                            filter: {{page: 1, per_page: $per_page, sort: "created_at", direction: DESC}}
+                        ) {{ scenes {{ {scene_fields} }} }}
+                    }}"""
+                    res = stash_query(q, {"tids": tag_ids, "per_page": BANNER_POOL_SIZE})
+                    pool = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+                    logger.debug(f"Banner (tag): pool={len(pool)} from tags={BANNER_TAGS}, picking {limit}")
+                else:
+                    q = f"""query BannerScenesRecent($per_page: Int!) {{
+                        findScenes(filter: {{page: 1, per_page: $per_page, sort: "created_at", direction: DESC}}) {{
+                            scenes {{ {scene_fields} }}
+                        }}
+                    }}"""
+                    res = stash_query(q, {"per_page": BANNER_POOL_SIZE})
+                    pool = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+                    logger.debug(f"Banner (recent): pool={len(pool)} newest, picking {limit}")
+
+                if pool:
+                    banner_scenes = random.sample(pool, min(limit, len(pool)))
+                for s in banner_scenes:
+                    items.append(format_jellyfin_item(s))
+                total_count = len(items)
+                # Skip the Groups branch entirely for banner requests.
+                return JSONResponse({
+                    "Items": items,
+                    "TotalRecordCount": total_count,
+                    "StartIndex": start_index,
+                })
+
             # Movie type only → return Groups (BoxSets), not scenes
             folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
             if filter_favorites and FAVORITE_TAG:
@@ -7437,6 +7544,7 @@ async def ui_api_config(request):
     global ENABLE_TAG_FILTERS, ENABLE_ALL_TAGS
     global IMAGE_CACHE_MAX_SIZE, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, REQUIRE_AUTH_FOR_CONFIG
     global LOG_LEVEL, _config_defined_keys, BANNED_IPS, BAN_THRESHOLD, BAN_WINDOW_MINUTES
+    global BANNER_MODE, BANNER_POOL_SIZE, BANNER_TAGS
 
     if request.method == "GET":
         return JSONResponse({
@@ -7455,6 +7563,9 @@ async def ui_api_config(request):
                 "TAG_GROUPS": TAG_GROUPS,
                 "FAVORITE_TAG": FAVORITE_TAG,
                 "LATEST_GROUPS": LATEST_GROUPS,
+                "BANNER_MODE": BANNER_MODE,
+                "BANNER_POOL_SIZE": BANNER_POOL_SIZE,
+                "BANNER_TAGS": BANNER_TAGS,
                 "STASH_TIMEOUT": STASH_TIMEOUT,
                 "STASH_RETRIES": STASH_RETRIES,
                 "ENABLE_FILTERS": ENABLE_FILTERS,
@@ -7484,7 +7595,9 @@ async def ui_api_config(request):
                 "STASH_URL", "STASH_API_KEY", "STASH_GRAPHQL_PATH", "STASH_VERIFY_TLS",
                 "PROXY_BIND", "PROXY_PORT", "UI_PORT",
                 "SJS_USER", "SJS_PASSWORD", "SERVER_ID", "SERVER_NAME",
-                "TAG_GROUPS", "FAVORITE_TAG", "LATEST_GROUPS", "STASH_TIMEOUT", "STASH_RETRIES",
+                "TAG_GROUPS", "FAVORITE_TAG", "LATEST_GROUPS",
+                "BANNER_MODE", "BANNER_POOL_SIZE", "BANNER_TAGS",
+                "STASH_TIMEOUT", "STASH_RETRIES",
                 "ENABLE_FILTERS", "ENABLE_IMAGE_RESIZE", "ENABLE_TAG_FILTERS", "ENABLE_ALL_TAGS", "REQUIRE_AUTH_FOR_CONFIG", "IMAGE_CACHE_MAX_SIZE",
                 "DEFAULT_PAGE_SIZE", "MAX_PAGE_SIZE",
                 "LOG_LEVEL", "LOG_DIR", "LOG_FILE", "LOG_MAX_SIZE_MB", "LOG_BACKUP_COUNT",
@@ -7531,6 +7644,9 @@ async def ui_api_config(request):
                 "TAG_GROUPS": ", ".join(TAG_GROUPS) if TAG_GROUPS else "",
                 "FAVORITE_TAG": FAVORITE_TAG,
                 "LATEST_GROUPS": ", ".join(LATEST_GROUPS) if LATEST_GROUPS else "",
+                "BANNER_MODE": BANNER_MODE,
+                "BANNER_POOL_SIZE": str(BANNER_POOL_SIZE),
+                "BANNER_TAGS": ", ".join(BANNER_TAGS) if BANNER_TAGS else "",
                 "STASH_TIMEOUT": str(STASH_TIMEOUT),
                 "STASH_RETRIES": str(STASH_RETRIES),
                 "ENABLE_FILTERS": "true" if ENABLE_FILTERS else "false",
@@ -7567,6 +7683,9 @@ async def ui_api_config(request):
                 "TAG_GROUPS": "",
                 "FAVORITE_TAG": "",
                 "LATEST_GROUPS": "",
+                "BANNER_MODE": "recent",
+                "BANNER_POOL_SIZE": "200",
+                "BANNER_TAGS": "",
                 "STASH_TIMEOUT": "30",
                 "STASH_RETRIES": "3",
                 "ENABLE_FILTERS": "true",
@@ -7710,6 +7829,19 @@ async def ui_api_config(request):
                 elif key == "LATEST_GROUPS":
                     LATEST_GROUPS = [t.strip() for t in new_val.split(",") if t.strip()]
                     applied_immediately.append(key)
+                elif key == "BANNER_MODE":
+                    m = new_val.strip().lower()
+                    BANNER_MODE = m if m in ("recent", "tag") else "recent"
+                    applied_immediately.append(key)
+                elif key == "BANNER_POOL_SIZE":
+                    try:
+                        BANNER_POOL_SIZE = max(1, int(new_val))
+                    except ValueError:
+                        BANNER_POOL_SIZE = 200
+                    applied_immediately.append(key)
+                elif key == "BANNER_TAGS":
+                    BANNER_TAGS = [t.strip() for t in new_val.split(",") if t.strip()]
+                    applied_immediately.append(key)
                 elif key == "SERVER_NAME":
                     SERVER_NAME = new_val
                     applied_immediately.append(key)
@@ -7782,6 +7914,15 @@ async def ui_api_config(request):
                     applied_immediately.append(key)
                 elif key == "LATEST_GROUPS":
                     LATEST_GROUPS = []
+                    applied_immediately.append(key)
+                elif key == "BANNER_MODE":
+                    BANNER_MODE = "recent"
+                    applied_immediately.append(key)
+                elif key == "BANNER_POOL_SIZE":
+                    BANNER_POOL_SIZE = 200
+                    applied_immediately.append(key)
+                elif key == "BANNER_TAGS":
+                    BANNER_TAGS = []
                     applied_immediately.append(key)
                 elif key == "SERVER_NAME":
                     SERVER_NAME = "Stash Media Server"
