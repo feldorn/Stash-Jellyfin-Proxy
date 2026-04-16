@@ -3729,21 +3729,91 @@ async def endpoint_shows_nextup(request):
     items = [format_jellyfin_item(s) for s in scenes]
 
     if is_jellyfin_client:
-        series_id = "root-scenes"
-        series_name = "Recent Scenes"
         for idx, item in enumerate(items, start=1):
             item["Type"] = "Episode"
-            item["SeriesId"] = series_id
-            item["SeriesName"] = series_name
+            item["SeriesId"] = _NEXTUP_SERIES_ID
+            item["SeriesName"] = "Recent Scenes"
             item["SeriesPrimaryImageTag"] = "icon"
-            item["ParentId"] = series_id
+            item["SeasonId"] = _NEXTUP_SEASON_ID
+            item["SeasonName"] = "Season 1"
+            item["ParentId"] = _NEXTUP_SEASON_ID
             item["ParentIndexNumber"] = 1
             item["IndexNumber"] = idx
-        logger.debug(f"NextUp (Jellyfin): {len(items)} episodes of '{series_name}'")
+        logger.debug(f"NextUp (Jellyfin): {len(items)} episodes of 'Recent Scenes'")
     else:
         logger.debug(f"NextUp (Emby): {len(items)} random suggestions")
 
     return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+
+
+# NextUp-related Series metadata. We expose root-scenes as a synthetic "Recent
+# Scenes" Series so Infuse can finish rendering its Next Up row — without these
+# endpoints the home-page tiles never load images because Infuse waits for the
+# series hierarchy (Seasons -> Episodes) to resolve before painting episode art.
+_NEXTUP_SERIES_ID = "root-scenes"
+_NEXTUP_SEASON_ID = "season-recent-scenes"
+
+def _build_nextup_season_dto() -> Dict[str, Any]:
+    return {
+        "Name": "Season 1",
+        "SortName": "Season 1",
+        "Id": _NEXTUP_SEASON_ID,
+        "ServerId": SERVER_ID,
+        "Type": "Season",
+        "IsFolder": True,
+        "SeriesId": _NEXTUP_SERIES_ID,
+        "SeriesName": "Recent Scenes",
+        "ParentId": _NEXTUP_SERIES_ID,
+        "IndexNumber": 1,
+        "ImageTags": {"Primary": "icon"},
+        "BackdropImageTags": [],
+        "ImageBlurHashes": {},
+        "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": _NEXTUP_SEASON_ID},
+    }
+
+async def endpoint_shows_seasons(request):
+    """Return the list of Seasons for a synthetic Series. Only root-scenes is backed."""
+    series_id = request.path_params.get("series_id") or ""
+    if series_id != _NEXTUP_SERIES_ID:
+        return JSONResponse({"Items": [], "TotalRecordCount": 0})
+    return JSONResponse({"Items": [_build_nextup_season_dto()], "TotalRecordCount": 1})
+
+async def endpoint_shows_episodes(request):
+    """Return the list of Episodes for a synthetic Series - same recent scenes as NextUp."""
+    series_id = request.path_params.get("series_id") or ""
+    if series_id != _NEXTUP_SERIES_ID:
+        return JSONResponse({"Items": [], "TotalRecordCount": 0})
+
+    limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    q = f"""query FindScenes($per_page: Int!) {{
+        findScenes(filter: {{page: 1, per_page: $per_page, sort: "created_at", direction: DESC}}) {{
+            findScenes: scenes {{ {scene_fields} }}
+        }}
+    }}"""
+    try:
+        res = stash_query(q, {"per_page": limit})
+        scenes = res.get("data", {}).get("findScenes", {}).get("findScenes", [])
+    except Exception as e:
+        logger.warning(f"Shows/{series_id}/Episodes query failed: {e}")
+        return JSONResponse({"Items": [], "TotalRecordCount": 0})
+
+    items = []
+    for idx, s in enumerate(scenes, start=1):
+        item = format_jellyfin_item(s)
+        item["Type"] = "Episode"
+        item["SeriesId"] = _NEXTUP_SERIES_ID
+        item["SeriesName"] = "Recent Scenes"
+        item["SeriesPrimaryImageTag"] = "icon"
+        item["SeasonId"] = _NEXTUP_SEASON_ID
+        item["SeasonName"] = "Season 1"
+        item["ParentId"] = _NEXTUP_SEASON_ID
+        item["ParentIndexNumber"] = 1
+        item["IndexNumber"] = idx
+        items.append(item)
+    logger.debug(f"Shows/{series_id}/Episodes: {len(items)} episodes")
+    return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+
 
 async def endpoint_latest_items(request):
     """Return recently added items for the Infuse home page, personalized by library."""
@@ -7487,6 +7557,8 @@ routes = [
     Route("/Library/VirtualFolders", endpoint_virtual_folders),
     Route("/DisplayPreferences/{prefs_id}", endpoint_display_preferences, methods=["GET", "POST"]),
     Route("/Shows/NextUp", endpoint_shows_nextup),
+    Route("/Shows/{series_id}/Seasons", endpoint_shows_seasons),
+    Route("/Shows/{series_id}/Episodes", endpoint_shows_episodes),
     Route("/Users/{user_id}/Items", endpoint_items),
     Route("/Users/{user_id}/Items/{item_id}", endpoint_item_details),
     Route("/Items", endpoint_items),
