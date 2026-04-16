@@ -3130,20 +3130,28 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
     tags = scene.get("tags", [])
     performers = scene.get("performers", [])
 
+    # Per-item unique image tags (Infuse caches image data by (ItemId, ImageTag);
+    # shared tags across many items in a refreshing list confuse its resolver and
+    # images end up never loading in rows like Next Up).
+    primary_tag = f"p{raw_id}"
+    backdrop_tag = f"b{raw_id}"
+    etag = hashlib.md5(f"{item_id}|{scene.get('play_count') or 0}|{scene.get('resume_time') or 0}|{scene.get('last_played_at') or ''}".encode()).hexdigest()[:16]
+
     # Simplified item format - minimal fields for compatibility
     item = {
         "Name": title,
         "SortName": title,
         "Id": item_id,
+        "Etag": etag,
         "ServerId": SERVER_ID,
         "Type": "Movie",
         "IsFolder": False,
         "MediaType": "Video",
         "CanDownload": True,
         "ParentId": parent_id,
-        "ImageTags": {"Primary": "img"},
-        "BackdropImageTags": ["backdrop"],
-        "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"backdrop": "000000"}},
+        "ImageTags": {"Primary": primary_tag},
+        "BackdropImageTags": [backdrop_tag],
+        "ImageBlurHashes": {"Primary": {primary_tag: "000000"}, "Backdrop": {backdrop_tag: "000000"}},
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": {
             "PlaybackPositionTicks": int(scene.get("resume_time", 0) * 10000000),
@@ -3191,9 +3199,10 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
                     "Id": f"person-{p.get('id')}",
                 }
                 if p.get("image_path"):
-                    person["PrimaryImageTag"] = "img"
-                    person["ImageTags"] = {"Primary": "img"}
-                    person["ImageBlurHashes"] = {"Primary": {"img": "000000"}}
+                    person_tag = f"p{p.get('id')}"
+                    person["PrimaryImageTag"] = person_tag
+                    person["ImageTags"] = {"Primary": person_tag}
+                    person["ImageBlurHashes"] = {"Primary": {person_tag: "000000"}}
                 people_list.append(person)
         item["People"] = people_list
 
