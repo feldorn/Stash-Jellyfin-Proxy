@@ -2350,12 +2350,17 @@ class AuthenticationMiddleware:
 
         # Strip /emby/ prefix for Emby-compatible clients (e.g., SenPlayer)
         path_lower = path.lower()
-        if path_lower.startswith("/emby/"):
+        is_emby_path = path_lower.startswith("/emby/")
+        if is_emby_path:
             stripped_path = path[5:]  # Remove "/emby" prefix, keep leading "/"
             scope = dict(scope)
             scope["path"] = stripped_path
             path = stripped_path
             path_lower = stripped_path.lower()
+        # Expose original-path-was-/emby flag to handlers (used to distinguish
+        # Emby-style clients from pure Jellyfin clients like Infuse).
+        scope = dict(scope) if not is_emby_path else scope
+        scope["emby_client"] = is_emby_path
 
         # Check if this is a public endpoint (case-insensitive)
         is_public = path_lower in PUBLIC_ENDPOINTS
@@ -3690,7 +3695,17 @@ async def endpoint_virtual_folders(request):
     return JSONResponse(folders)
 
 async def endpoint_shows_nextup(request):
-    """Return suggested/random scenes as 'Next Up' to populate Swiftfin home page."""
+    """Return suggested/random scenes as 'Next Up' to populate Swiftfin/SenPlayer home page.
+
+    Returns empty for pure Jellyfin clients (Infuse) because they poll this endpoint
+    every 20-80s and the randomized list thrashes their image loader, leaving the home
+    page spinner unable to clear. Emby-style clients (SenPlayer, Swiftfin) hit
+    /emby/Shows/NextUp and still get 20 random scenes.
+    """
+    if not request.scope.get("emby_client"):
+        logger.debug("NextUp: Jellyfin-style client, returning empty to avoid Infuse image thrash")
+        return JSONResponse({"Items": [], "TotalRecordCount": 0})
+
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
 
     scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
