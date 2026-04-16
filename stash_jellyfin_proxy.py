@@ -3908,6 +3908,7 @@ def get_stash_sort_params(request, context="scenes") -> Tuple[str, str]:
         sort_mapping = {
             "sortname": "name", "name": "name",
             "datecreated": "created_at", "premieredate": "created_at",
+            "datelastcontentadded": "created_at",
             "random": "random", "communityrating": "rating",
         }
         default_sort = "name"
@@ -3916,6 +3917,7 @@ def get_stash_sort_params(request, context="scenes") -> Tuple[str, str]:
             "sortname": "title", "name": "title",
             "premieredate": "date",
             "datecreated": "created_at",
+            "datelastcontentadded": "created_at",
             "dateplayed": "last_played_at",
             "productionyear": "date",
             "random": "random", "runtime": "duration",
