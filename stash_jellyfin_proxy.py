@@ -7592,10 +7592,16 @@ routes = [
 CaseInsensitivePathMiddleware.build_path_map(routes)
 
 middleware = [
+    # CORS MUST be outermost. Browsers send OPTIONS preflights without an
+    # Authorization header; if AuthenticationMiddleware runs first it rejects
+    # the preflight with 401 and no CORS headers, which the browser reports
+    # as "TypeError: Failed to fetch" with no way to diagnose. Keeping CORS
+    # on the outside also ensures 401/403 responses carry CORS headers so
+    # web clients can read the status.
+    Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]),
     Middleware(RequestLoggingMiddleware),
     Middleware(CaseInsensitivePathMiddleware),
     Middleware(AuthenticationMiddleware),
-    Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 ]
 
 app = Starlette(debug=True, routes=routes, middleware=middleware)
