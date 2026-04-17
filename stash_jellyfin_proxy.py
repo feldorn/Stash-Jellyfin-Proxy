@@ -40,6 +40,33 @@ from urllib.parse import parse_qs
 from typing import Optional, List, Dict, Any, Tuple
 from logging.handlers import SysLogHandler, RotatingFileHandler
 
+# Force UTF-8 on Windows consoles (cp1252 would crash on emoji log messages).
+# Must run before any print() or logger output.
+if sys.platform == "win32":
+    for _stream_name in ("stdout", "stderr"):
+        _stream = getattr(sys, _stream_name, None)
+        if _stream is not None and hasattr(_stream, "reconfigure"):
+            try:
+                _stream.reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError, ValueError):
+                pass
+
+# Early CLI pre-scan: --config and --local-config need to land in env vars
+# before the module-level config load runs. The full argparse (with --help,
+# --debug, etc.) still happens later in main().
+def _prescan_config_args(argv):
+    """Consume --config and --local-config from argv and promote to env vars."""
+    for flag, env_var in (("--config", "CONFIG_FILE"), ("--local-config", "LOCAL_CONFIG_FILE")):
+        for i, arg in enumerate(argv):
+            if arg == flag and i + 1 < len(argv):
+                os.environ[env_var] = argv[i + 1]
+                break
+            if arg.startswith(flag + "="):
+                os.environ[env_var] = arg.split("=", 1)[1]
+                break
+
+_prescan_config_args(sys.argv[1:])
+
 # Third-party dependencies
 try:
     from hypercorn.config import Config
@@ -84,6 +111,10 @@ def _init_placeholder_png():
         PLACEHOLDER_PNG = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
 
 _init_placeholder_png()
+
+# Jellyfin server version we advertise. Newer Android/Findroid/Afinity clients
+# reject older values. Bump this when a client gates behavior on a minimum.
+JELLYFIN_VERSION = "10.11.0"
 
 # --- Configuration Loading ---
 # Config file location: same directory as script, or specified path
@@ -256,7 +287,24 @@ def save_server_id_to_config(config_file, server_id):
     """Save SERVER_ID to config file."""
     return save_config_value(config_file, "SERVER_ID", server_id, "Server identification (auto-generated)")
 
+def _default_local_config_path(base_path):
+    """Derive a sibling `.local` override path from the base config path.
+    e.g. stash_jellyfin_proxy.conf -> stash_jellyfin_proxy.local.conf"""
+    root, ext = os.path.splitext(base_path)
+    return f"{root}.local{ext}" if ext else f"{base_path}.local"
+
+LOCAL_CONFIG_FILE = os.getenv("LOCAL_CONFIG_FILE", _default_local_config_path(CONFIG_FILE))
+
 _config, _config_defined_keys = load_config(CONFIG_FILE)
+
+# Merge local override on top (per-user edits stay out of the shipped conf).
+if os.path.isfile(LOCAL_CONFIG_FILE) and os.path.abspath(LOCAL_CONFIG_FILE) != os.path.abspath(CONFIG_FILE):
+    _local_config, _local_defined_keys = load_config(LOCAL_CONFIG_FILE)
+    if _local_config:
+        _config.update(_local_config)
+        _config_defined_keys.update(_local_defined_keys)
+        print(f"Loaded local override from {LOCAL_CONFIG_FILE}")
+
 if _config:
     STASH_URL = _config.get("STASH_URL", STASH_URL)
     STASH_API_KEY = _config.get("STASH_API_KEY", STASH_API_KEY)
@@ -1800,13 +1848,9 @@ def setup_logging():
     # Clear any existing handlers
     log.handlers = []
 
-    # Console handler (always enabled)
-    if sys.platform == "win32":
-        import io
-        console_stream = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-        console_handler = logging.StreamHandler(console_stream)
-    else:
-        console_handler = logging.StreamHandler(sys.stdout)
+    # Console handler (always enabled). sys.stdout is reconfigured to UTF-8
+    # at import time on Windows, so StreamHandler(sys.stdout) is safe for emoji.
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(logging.Formatter(log_format))
     console_handler.setLevel(log_level)
     log.addHandler(console_handler)
@@ -1822,16 +1866,18 @@ def setup_logging():
             if log_dir and not os.path.exists(log_dir):
                 os.makedirs(log_dir, exist_ok=True)
 
-            # Set up rotating file handler
+            # Set up rotating file handler (UTF-8 so emoji and non-ASCII scene
+            # titles don't crash the logger on Windows locales).
             if LOG_MAX_SIZE_MB > 0:
                 max_bytes = LOG_MAX_SIZE_MB * 1024 * 1024
                 file_handler = RotatingFileHandler(
                     log_path,
                     maxBytes=max_bytes,
-                    backupCount=LOG_BACKUP_COUNT
+                    backupCount=LOG_BACKUP_COUNT,
+                    encoding="utf-8",
                 )
             else:
-                file_handler = logging.FileHandler(log_path)
+                file_handler = logging.FileHandler(log_path, encoding="utf-8")
 
             file_handler.setFormatter(logging.Formatter(log_format))
             file_handler.setLevel(log_level)
@@ -3342,7 +3388,7 @@ async def endpoint_system_info(request):
     logger.debug("Providing System Info")
     return JSONResponse({
         "ServerName": SERVER_NAME,
-        "Version": "10.10.6",
+        "Version": JELLYFIN_VERSION,
         "Id": SERVER_ID,
         "ProductName": "Jellyfin Server",
         "OperatingSystem": "Linux",
@@ -3368,7 +3414,7 @@ async def endpoint_public_info(request):
     return JSONResponse({
         "LocalAddress": f"http://{PROXY_BIND}:{PROXY_PORT}",
         "ServerName": SERVER_NAME,
-        "Version": "10.10.6",
+        "Version": JELLYFIN_VERSION,
         "Id": SERVER_ID,
         "ProductName": "Jellyfin Server",
         "OperatingSystem": "Linux",
@@ -7432,6 +7478,7 @@ routes = [
     Route("/UserImage", endpoint_user_image),
     Route("/Users/Me", endpoint_user_me),
     Route("/UserViews", endpoint_user_views),
+    Route("/UserViews/GroupingOptions", endpoint_grouping_options),
     Route("/UserItems/Resume", endpoint_user_items_resume),
     Route("/UserItems/Latest", endpoint_latest_items),
     Route("/Users/{user_id}", endpoint_user_by_id),
@@ -8212,11 +8259,30 @@ class SuppressDisconnectFilter(logging.Filter):
 
 # --- Main Execution ---
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Stash-Jellyfin Proxy Server")
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging (overrides config)")
+    parser = argparse.ArgumentParser(
+        prog="stash-jellyfin-proxy",
+        description="Stash-Jellyfin Proxy Server — serve Stash over the Jellyfin API.",
+    )
+    parser.add_argument("--config", metavar="PATH", help="Path to base config file (default: stash_jellyfin_proxy.conf beside the script, or $CONFIG_FILE)")
+    parser.add_argument("--local-config", metavar="PATH", help="Path to local override config merged on top of --config (default: <base>.local.conf, or $LOCAL_CONFIG_FILE)")
+    parser.add_argument("--host", metavar="HOST", help="Override PROXY_BIND from config (e.g. 127.0.0.1)")
+    parser.add_argument("--port", type=int, metavar="PORT", help="Override PROXY_PORT from config")
+    parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="Override LOG_LEVEL from config")
+    parser.add_argument("--debug", action="store_true", help="Shortcut for --log-level DEBUG")
     parser.add_argument("--no-log-file", action="store_true", help="Disable file logging")
     parser.add_argument("--no-ui", action="store_true", help="Disable Web UI server")
     args = parser.parse_args()
+
+    # Apply CLI overrides that take effect after config load.
+    if args.host:
+        PROXY_BIND = args.host
+    if args.port:
+        PROXY_PORT = args.port
+    if args.log_level:
+        level = getattr(logging, args.log_level)
+        logger.setLevel(level)
+        for handler in logger.handlers:
+            handler.setLevel(level)
 
     # Override logging if --debug flag is set
     if args.debug:

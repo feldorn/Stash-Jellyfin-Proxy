@@ -42,5 +42,8 @@ __pycache__/
 *.pyc
 *.log
 
+# Local per-user config overrides (merged on top of the shipped conf)
+*.local.conf
+
 # Claude Code
 CLAUDE.md
