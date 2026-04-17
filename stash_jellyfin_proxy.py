@@ -3543,16 +3543,7 @@ async def endpoint_authenticate_by_name(request):
         return JSONResponse({"error": "Invalid Token"}, status_code=401)
 
 async def endpoint_users(request):
-    return JSONResponse([{
-        "Name": SJS_USER or "Stash User",
-        "ServerId": SERVER_ID,
-        "Id": USER_ID,
-        "HasPassword": True,
-        "HasConfiguredPassword": True,
-        "HasConfiguredEasyPassword": False,
-        "EnableAutoLogin": False,
-        "Policy": {"IsAdministrator": True, "EnableContentDeletion": False, "EnableContentDownloading": True, "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider", "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider"}
-    }])
+    return JSONResponse([_build_user_dto()])
 
 def _build_user_dto(username=None):
     """Build a complete Jellyfin UserDto matching the 10.10.x schema."""
@@ -7447,16 +7438,11 @@ async def endpoint_quickconnect_stub(request):
     return JSONResponse({"ErrCode": "QuickConnect not enabled"}, status_code=400)
 
 async def endpoint_users_public(request):
-    """Return the list of public (non-hidden) users for the login screen."""
-    return JSONResponse([{
-        "Name": SJS_USER,
-        "Id": USER_ID,
-        "ServerId": SERVER_ID,
-        "HasPassword": bool(SJS_PASSWORD),
-        "HasConfiguredPassword": bool(SJS_PASSWORD),
-        "HasConfiguredEasyPassword": False,
-        "EnableAutoLogin": False,
-    }])
+    """Return the list of public (non-hidden) users for the login screen.
+    Must return the full UserDto schema — Fladder and other strongly-typed
+    clients (Dart/OpenAPI-generated) reject responses missing Policy or
+    Configuration fields with a generic "unable to connect to host" error."""
+    return JSONResponse([_build_user_dto()])
 
 async def endpoint_media_segments(request):
     """
