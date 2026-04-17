@@ -3386,8 +3386,24 @@ async def endpoint_root(request):
     """Infuse might check root for life."""
     return RedirectResponse(url="/System/Info/Public")
 
+def _derive_local_address(request):
+    """Return the externally-visible base URL the client used to reach us.
+    Web clients (Fladder, Jellyfin web) parse LocalAddress and will reject
+    the server outright if it advertises something unreachable like
+    http://0.0.0.0:8096 (the Docker bind). Respect reverse-proxy headers
+    so SWAG/nginx setups advertise the public https origin."""
+    fwd_proto = request.headers.get("x-forwarded-proto")
+    fwd_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
+    if fwd_proto and fwd_host:
+        return f"{fwd_proto}://{fwd_host}"
+    if fwd_host:
+        scheme = request.url.scheme or "http"
+        return f"{scheme}://{fwd_host}"
+    return f"http://{PROXY_BIND}:{PROXY_PORT}"
+
 async def endpoint_system_info(request):
     logger.debug("Providing System Info")
+    local_addr = _derive_local_address(request)
     return JSONResponse({
         "ServerName": SERVER_NAME,
         "Version": JELLYFIN_VERSION,
@@ -3409,12 +3425,12 @@ async def endpoint_system_info(request):
         "CachePath": "/tmp",
         "ProgramDataPath": "/tmp",
         "ItemsByNamePath": "/tmp",
-        "LocalAddress": f"http://{PROXY_BIND}:{PROXY_PORT}"
+        "LocalAddress": local_addr
     })
 
 async def endpoint_public_info(request):
     return JSONResponse({
-        "LocalAddress": f"http://{PROXY_BIND}:{PROXY_PORT}",
+        "LocalAddress": _derive_local_address(request),
         "ServerName": SERVER_NAME,
         "Version": JELLYFIN_VERSION,
         "Id": SERVER_ID,
