@@ -84,12 +84,19 @@ class RequestLoggingMiddleware:
         is_stream = "/stream" in path.lower() or "/Videos/" in path
         is_slow = ms > 1000
 
-        if is_error and status > 0:
+        # Stream tracking runs FIRST for video paths — even when the
+        # response status is 4xx/5xx. Stash frequently 416s on byte
+        # ranges past EOF; if we skip tracking on those, the dashboard
+        # stays empty even though playback is actually ongoing (clients
+        # buffer through the error).
+        if is_stream:
+            if is_error and status > 0:
+                logger.warning(f"{path} -> {status} ({ms}ms)")
+            self._track_stream_event(path, headers, client_host, ms)
+        elif is_error and status > 0:
             logger.warning(f"{path} -> {status} ({ms}ms)")
         elif is_auth:
             logger.debug(f"Login request completed -> {status} ({ms}ms)")
-        elif is_stream:
-            self._track_stream_event(path, headers, client_host, ms)
         elif is_slow:
             logger.info(f"Slow request: {path} ({ms}ms)")
         elif status > 0:
