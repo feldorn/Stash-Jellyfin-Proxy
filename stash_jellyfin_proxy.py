@@ -200,44 +200,9 @@ from proxy.config.helpers import (  # noqa: F401
     normalize_path,
     normalize_server_id,
     generate_server_id,
+    save_config_value,
+    save_server_id_to_config,
 )
-
-def save_config_value(config_file, key, value, comment=None):
-    """Save a key=value to config file, updating existing entry or adding new one."""
-    if not os.path.isfile(config_file):
-        with open(config_file, 'w') as f:
-            if comment:
-                f.write(f'# {comment}\n')
-            f.write(f'{key} = {value}\n')
-        return True
-
-    with open(config_file, 'r') as f:
-        lines = f.readlines()
-
-    updated = False
-    new_lines = []
-    for line in lines:
-        stripped = line.strip()
-        if stripped.startswith('#') and key in stripped and '=' in stripped:
-            new_lines.append(f'{key} = {value}\n')
-            updated = True
-        elif stripped.startswith(key) and '=' in stripped:
-            new_lines.append(f'{key} = {value}\n')
-            updated = True
-        else:
-            new_lines.append(line)
-
-    if not updated:
-        prefix = f'\n# {comment}\n' if comment else '\n'
-        new_lines.append(f'{prefix}{key} = {value}\n')
-
-    with open(config_file, 'w') as f:
-        f.writelines(new_lines)
-    return True
-
-def save_server_id_to_config(config_file, server_id):
-    """Save SERVER_ID to config file."""
-    return save_config_value(config_file, "SERVER_ID", server_id, "Server identification (auto-generated)")
 
 def _default_local_config_path(base_path):
     """Derive a sibling `.local` override path from the base config path.
@@ -287,23 +252,6 @@ if os.path.isfile(LOCAL_CONFIG_FILE) and os.path.abspath(LOCAL_CONFIG_FILE) != o
             _config_sections.setdefault(section_name, {}).update(section_body)
         print(f"Loaded local override from {LOCAL_CONFIG_FILE}")
 
-
-def get_config_section(section_name):
-    """Return a dict of {key: value} for the named section, or {} if the
-    section is not present. Module-level accessor so mappers/endpoints can
-    read per-profile settings without touching the global dict."""
-    return dict(_config_sections.get(section_name, {}))
-
-
-def get_config_sections_by_prefix(prefix):
-    """Return {section_name: body} for every section starting with `prefix`.
-    e.g. get_config_sections_by_prefix("player.") yields every player
-    profile block."""
-    return {
-        name: dict(body)
-        for name, body in _config_sections.items()
-        if name.startswith(prefix)
-    }
 
 if _config:
     STASH_URL = _config.get("STASH_URL", STASH_URL)
@@ -619,71 +567,14 @@ _WEB_UI_TEMPLATE = _HtmlPath(__file__).parent / 'proxy' / 'ui' / 'templates' / '
 WEB_UI_HTML = _WEB_UI_TEMPLATE.read_text()
 
 # --- Logging Setup ---
-def setup_logging():
-    """Configure logging with both console and file handlers."""
-    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-
-    # Determine log level
-    level_map = {
-        'DEBUG': logging.DEBUG,
-        'INFO': logging.INFO,
-        'WARNING': logging.WARNING,
-        'ERROR': logging.ERROR,
-    }
-    log_level = level_map.get(LOG_LEVEL.upper(), logging.INFO)
-    print(f"  Log level: {LOG_LEVEL.upper()} ({log_level})")
-
-    # Create logger
-    log = logging.getLogger("stash-jellyfin-proxy")
-    log.setLevel(log_level)
-    log.propagate = False  # Prevent propagation to root logger
-
-    # Clear any existing handlers
-    log.handlers = []
-
-    # Console handler (always enabled). sys.stdout is reconfigured to UTF-8
-    # at import time on Windows, so StreamHandler(sys.stdout) is safe for emoji.
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(logging.Formatter(log_format))
-    console_handler.setLevel(log_level)
-    log.addHandler(console_handler)
-
-    # File handler (if LOG_FILE is set)
-    if LOG_FILE:
-        try:
-            # Build full log path
-            log_path = os.path.join(LOG_DIR, LOG_FILE) if LOG_DIR else LOG_FILE
-
-            # Ensure log directory exists
-            log_dir = os.path.dirname(log_path)
-            if log_dir and not os.path.exists(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
-
-            # Set up rotating file handler (UTF-8 so emoji and non-ASCII scene
-            # titles don't crash the logger on Windows locales).
-            if LOG_MAX_SIZE_MB > 0:
-                max_bytes = LOG_MAX_SIZE_MB * 1024 * 1024
-                file_handler = RotatingFileHandler(
-                    log_path,
-                    maxBytes=max_bytes,
-                    backupCount=LOG_BACKUP_COUNT,
-                    encoding="utf-8",
-                )
-            else:
-                file_handler = logging.FileHandler(log_path, encoding="utf-8")
-
-            file_handler.setFormatter(logging.Formatter(log_format))
-            file_handler.setLevel(log_level)
-            log.addHandler(file_handler)
-
-            print(f"  Log file: {os.path.abspath(log_path)}")
-        except Exception as e:
-            print(f"Warning: Could not set up file logging: {e}")
-
-    return log
-
-# Initialize logger (will be reconfigured in main if needed)
-logger = setup_logging()
+from proxy.logging_setup import setup_logging
+logger = setup_logging(
+    log_level=LOG_LEVEL,
+    log_file=LOG_FILE,
+    log_dir=LOG_DIR,
+    log_max_size_mb=LOG_MAX_SIZE_MB,
+    log_backup_count=LOG_BACKUP_COUNT,
+)
 
 # --- Middleware for Request Logging ---
 # Stream-tracking state lives in proxy/state/streams.py. Monolith imports
