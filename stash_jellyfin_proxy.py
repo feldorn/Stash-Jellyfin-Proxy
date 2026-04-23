@@ -3398,6 +3398,14 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         }
 
         item["MediaSources"] = [media_source]
+        # Web client's playbackManager reads MediaStreams / VideoType / Container
+        # off the top-level item (not just the MediaSource) when constructing
+        # the stream URL and selecting audio/sub tracks.
+        item["MediaStreams"] = media_streams
+        item["Container"] = container
+        item["VideoType"] = "VideoFile"
+        item["SourceType"] = "Default"
+        item["PartCount"] = 1
 
     return item
 
@@ -7062,8 +7070,10 @@ async def endpoint_items_filters(request):
         })
 
 async def endpoint_bitrate_test(request):
-    """Return random bytes for bitrate testing - Swiftfin uses this before playback."""
-    size = int(request.query_params.get("size", 1000000))
+    """Return random bytes for bitrate testing - Swiftfin/Web use this before playback.
+    Jellyfin web sends `?Size=` (capital S); query param lookup is case-sensitive."""
+    qp = request.query_params
+    size = int(qp.get("Size") or qp.get("size") or 1000000)
     size = min(size, 10000000)
     import os
     return Response(content=os.urandom(size), media_type="application/octet-stream")
