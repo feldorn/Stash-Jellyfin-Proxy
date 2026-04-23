@@ -97,6 +97,13 @@ SHAPE_ONLY = {
     "items_filters_scenes",       # random cover-image picked per request
     "items_filters_studios",
     "sessions_list",              # includes current session
+    # Library root listings — TotalRecordCount drifts as Stash data
+    # changes over time; care about structure, not count.
+    "items_root-scenes",
+    "items_root-studios",
+    "items_root-performers",
+    "items_root-groups",
+    "items_root-tags",
 }
 
 

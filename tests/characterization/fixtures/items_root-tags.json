@@ -1,5 +1,5 @@
 {
-  "compare_mode": "full",
+  "compare_mode": "shape",
   "name": "items_root-tags",
   "request": {
     "body": null,
