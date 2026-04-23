@@ -201,39 +201,13 @@ BAN_WINDOW_MINUTES = 15  # Rolling window for counting failures
 # Config loader lives in proxy/config/loader.py (Phase 0.6 leaf).
 from proxy.config.loader import load_config
 
-def parse_bool(value, default=True):
-    """Parse a boolean value from config string."""
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.lower() in ('true', 'yes', '1', 'on')
-    return default
-
-def normalize_path(path, default="/graphql"):
-    """Normalize a path: ensure leading /, remove trailing /."""
-    if not path or not path.strip():
-        return default
-    p = path.strip()
-    if not p.startswith('/'):
-        p = '/' + p
-    if len(p) > 1 and p.endswith('/'):
-        p = p.rstrip('/')
-    return p
-
-def normalize_server_id(server_id):
-    """Ensure SERVER_ID is in standard UUID format (8-4-4-4-12 with dashes).
-    Converts old dashless 32-char hex IDs to proper UUID format."""
-    clean = server_id.strip().replace("-", "")
-    if len(clean) == 32:
-        try:
-            return str(uuid.UUID(clean))
-        except ValueError:
-            pass
-    return server_id
-
-def generate_server_id():
-    """Generate a server ID in standard UUID format (8-4-4-4-12)."""
-    return str(uuid.uuid4())
+# Pure config helpers live in proxy/config/helpers.py (Phase 0.6 leaf).
+from proxy.config.helpers import (  # noqa: F401
+    parse_bool,
+    normalize_path,
+    normalize_server_id,
+    generate_server_id,
+)
 
 def save_config_value(config_file, key, value, comment=None):
     """Save a key=value to config file, updating existing entry or adding new one."""
