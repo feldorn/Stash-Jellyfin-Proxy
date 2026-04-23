@@ -36,6 +36,7 @@ import argparse
 import time
 import random
 import re
+import datetime
 from urllib.parse import parse_qs
 from typing import Optional, List, Dict, Any, Tuple
 from logging.handlers import SysLogHandler, RotatingFileHandler
@@ -336,6 +337,239 @@ def _default_local_config_path(base_path):
 LOCAL_CONFIG_FILE = os.getenv("LOCAL_CONFIG_FILE", _default_local_config_path(CONFIG_FILE))
 
 _config, _config_defined_keys, _config_sections = load_config(CONFIG_FILE)
+
+# --- v1 → v2 config migration -------------------------------------------
+# CONFIG_VERSION bumps happen whenever we add keys that need defaults
+# written to the on-disk config (so the Web UI has real values to edit on
+# first load). Migration is automatic, non-destructive, and idempotent —
+# missing-config case is a no-op; already-at-current-version is a no-op;
+# v1 → v2 adds the full v2 default set and [player.*] profiles, keeping
+# every existing flat key exactly as it was. Originals are backed up to
+# `<config>.v1.bak` before write. Failure restores the backup and
+# continues in degraded mode so the proxy never fails to start.
+CURRENT_CONFIG_VERSION = 2
+MIGRATION_PERFORMED = False
+MIGRATION_LOG = []  # populated by run_config_migration, surfaced in Web UI
+
+# Canonical defaults for keys introduced after v1. Tuple (value, comment).
+# Comment lines are written above the key for operator readability —
+# the Web UI is the supported interface so most users never see this file.
+_V2_DEFAULT_FLAT = [
+    ("CONFIG_VERSION", "2", "Schema version. Incremented when new keys need defaults written."),
+    # Genre configuration
+    ("genre_mode", "parent_tag", "Genre source: all_tags | parent_tag | top_n"),
+    ("genre_parent_tag", "GENRE", "Parent tag whose direct children become genres (parent_tag mode)"),
+    ("genre_top_n", "25", "Top-N tag count when genre_mode=top_n"),
+    # Series detection
+    ("series_tag", "SERIES", "Stash tag marking a studio as a TV Series"),
+    ("series_episode_patterns",
+     "S(\\d+)[:\\.]?E(\\d+), S(\\d+)\\s+E(\\d+), Season\\s*(\\d+).*?Episode\\s*(\\d+)",
+     "Regex list (comma-separated) for parsing S/E from scene titles; first match wins"),
+    # Sort configuration
+    ("sort_strip_articles", "The, A, An", "Leading articles stripped for SortName"),
+    ("scenes_default_sort", "DateCreated", "Default sort for Scenes library"),
+    ("studios_default_sort", "SortName", "Default sort for Studios library"),
+    ("performers_default_sort", "SortName", "Default sort for Performers library"),
+    ("groups_default_sort", "SortName", "Default sort for Groups library"),
+    ("tag_groups_default_sort", "PlayCount", "Default sort for TAG_GROUPS folders"),
+    ("saved_filters_default_sort", "PlayCount", "Default sort for Saved Filter folders"),
+    # Poster / image
+    ("poster_crop_anchor", "center", "Anchor when cropping landscape to 2:3 portrait: center | left | right"),
+    # Home hero
+    ("hero_source", "recent", "Hero pool: recent | random | favorites | top_rated | recently_watched"),
+    ("hero_min_rating", "75", "Minimum rating100 for hero when hero_source=top_rated"),
+    # Search scope
+    ("search_include_scenes", "true", "Include scenes in search results"),
+    ("search_include_performers", "true", "Include performers in search results"),
+    ("search_include_studios", "true", "Include studios in search results"),
+    ("search_include_groups", "true", "Include groups in search results"),
+    # Filter panel
+    ("filter_tags_max", "50", "Max tags shown in filter panel per dimension"),
+    ("genre_filter_logic", "AND", "Multi-select genre logic: AND | OR (standard Jellyfin = OR)"),
+    ("filter_tags_walk_hierarchy", "true", "Expand selected tag to include Stash descendants"),
+]
+
+# Default player profile blocks. Swiftfin gets Person + portrait per design
+# §3.2; Infuse gets BoxSet + landscape to preserve its current rendering;
+# SenPlayer and default follow the safe-fallback BoxSet + portrait line.
+_V2_DEFAULT_PLAYERS = [
+    ("player.swiftfin", [
+        ("user_agent_match", "Swiftfin"),
+        ("performer_type", "Person"),
+        ("poster_format", "portrait"),
+    ]),
+    ("player.infuse", [
+        ("user_agent_match", "Infuse"),
+        ("performer_type", "BoxSet"),
+        ("poster_format", "landscape"),
+    ]),
+    ("player.senplayer", [
+        ("user_agent_match", "SenPlayer"),
+        ("performer_type", "BoxSet"),
+        ("poster_format", "portrait"),
+    ]),
+    ("player.default", [
+        ("performer_type", "BoxSet"),
+        ("poster_format", "portrait"),
+    ]),
+]
+
+_V2_FILE_HEADER = """\
+# Stash-Jellyfin Proxy configuration — managed by the Web UI.
+# To change settings, open http://<host>:<UI_PORT> and use the
+# configuration tabs. Manual edits will be preserved but are not
+# the supported interface.
+#
+# Schema version and migration timestamp recorded below.
+"""
+
+
+def _write_v2_config(path, existing_flat, existing_sections, preexisting_keys):
+    """Serialize a full v2 config file: header + CONFIG_VERSION +
+    preserved flat keys + v2 defaults for any missing keys +
+    player profile blocks. Returns a list of changes made (for logging).
+
+    Ordering matters: the CONFIG_VERSION and all flat keys come BEFORE
+    any [section.name] blocks so the parser scopes them into global, not
+    into whichever section was last opened.
+    """
+    changes = []
+    lines = [_V2_FILE_HEADER]
+    lines.append(f"# Migrated: {datetime.datetime.now().isoformat(timespec='seconds')}\n")
+    lines.append("")
+
+    # Version marker first — identifies schema before any other keys.
+    lines.append(f"CONFIG_VERSION = {CURRENT_CONFIG_VERSION}")
+    lines.append("")
+
+    # Preserve every existing flat key in sorted order. We don't track
+    # source line order through load_config; alphabetical is stable and
+    # diff-friendly.
+    lines.append("# ==== Preserved from previous config ====")
+    for k in sorted(preexisting_keys):
+        if k == "CONFIG_VERSION":
+            continue  # already written above
+        v = existing_flat.get(k, "")
+        if " " in str(v) or "#" in str(v):
+            lines.append(f'{k} = "{v}"')
+        else:
+            lines.append(f"{k} = {v}")
+    lines.append("")
+
+    # Add v2 defaults for any key not already present.
+    lines.append("# ==== v2 defaults ====")
+    for key, value, comment in _V2_DEFAULT_FLAT:
+        if key == "CONFIG_VERSION":
+            continue
+        if key in preexisting_keys:
+            continue
+        lines.append(f"# {comment}")
+        lines.append(f"{key} = {value}")
+        lines.append("")
+        changes.append(f"added default: {key} = {value}")
+
+    # Player profile blocks come last (all flat keys must already be
+    # written above, else they'd scope into the last section).
+    lines.append("# ==== Player profiles ====")
+    existing_player_names = set(existing_sections.keys())
+    for section_name, body in existing_sections.items():
+        if not section_name.startswith("player."):
+            continue
+        lines.append(f"[{section_name}]")
+        for k, v in body.items():
+            lines.append(f"{k} = {v}")
+        lines.append("")
+    for section_name, body in _V2_DEFAULT_PLAYERS:
+        if section_name in existing_player_names:
+            continue
+        lines.append(f"[{section_name}]")
+        for k, v in body:
+            lines.append(f"{k} = {v}")
+        lines.append("")
+        changes.append(f"added default profile: [{section_name}]")
+
+    # Preserve any non-player sections the user has (forward compat).
+    for section_name, body in existing_sections.items():
+        if section_name.startswith("player."):
+            continue
+        lines.append(f"[{section_name}]")
+        for k, v in body.items():
+            lines.append(f"{k} = {v}")
+        lines.append("")
+
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    return changes
+
+
+def run_config_migration(path, flat, defined, sections):
+    """If the config at `path` is older than CURRENT_CONFIG_VERSION, back it
+    up and rewrite with v2 defaults added. Returns (flat, sections,
+    performed: bool, log: list[str]) — updated dicts reflect the on-disk
+    state after migration so callers don't need to reload.
+    """
+    global MIGRATION_PERFORMED, MIGRATION_LOG
+    log = []
+    try:
+        current = int(flat.get("CONFIG_VERSION", "1"))
+    except (TypeError, ValueError):
+        current = 1
+
+    if current >= CURRENT_CONFIG_VERSION:
+        return flat, sections, False, log
+
+    if not os.path.isfile(path):
+        # Cold start with no file — nothing to migrate, caller handles
+        # first-run config creation elsewhere.
+        return flat, sections, False, log
+
+    try:
+        backup_path = path + ".v1.bak"
+        if not os.path.isfile(backup_path):
+            import shutil
+            shutil.copy2(path, backup_path)
+            log.append(f"backed up to {backup_path}")
+
+        changes = _write_v2_config(path, flat, sections, defined)
+        log.extend(changes)
+        log.append(f"CONFIG_VERSION = {CURRENT_CONFIG_VERSION}")
+
+        # Reflect the write back into the in-memory dicts so subsequent
+        # reads don't have to hit disk.
+        new_flat, new_defined, new_sections = load_config(path)
+        MIGRATION_PERFORMED = True
+        MIGRATION_LOG = log
+        return new_flat, new_sections, True, log
+    except Exception as e:
+        # Attempt rollback — restore backup if write failed mid-stream.
+        try:
+            if os.path.isfile(path + ".v1.bak"):
+                import shutil
+                shutil.copy2(path + ".v1.bak", path)
+                log.append("migration failed; restored from backup")
+        except Exception:
+            log.append("migration failed and backup restore also failed")
+        log.append(f"error: {e}")
+        print(f"Config migration failed: {e}", file=sys.stderr)
+        for line in log:
+            print(f"  [migrate] {line}", file=sys.stderr)
+        MIGRATION_LOG = log
+        return flat, sections, False, log
+
+
+# Run migration against the primary config. Local-override file is left
+# untouched (it's per-user, merged later, and may intentionally hold
+# sparse overrides).
+_config, _config_sections, _migration_run, _migration_log = run_config_migration(
+    CONFIG_FILE, _config, _config_defined_keys, _config_sections
+)
+if _migration_run:
+    print(f"Config migrated to v{CURRENT_CONFIG_VERSION}:")
+    for line in _migration_log:
+        print(f"  [migrate] {line}")
+# Rebuild defined_keys from the post-migration state so later accessors
+# still see the right key set.
+_config_defined_keys = set(_config.keys())
 
 # Merge local override on top (per-user edits stay out of the shipped conf).
 if os.path.isfile(LOCAL_CONFIG_FILE) and os.path.abspath(LOCAL_CONFIG_FILE) != os.path.abspath(CONFIG_FILE):
