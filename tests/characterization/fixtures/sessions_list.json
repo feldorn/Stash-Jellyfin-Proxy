@@ -7,11 +7,7 @@
     "path": "/Sessions"
   },
   "response": {
-    "body": {
-      "Items": [],
-      "StartIndex": 0,
-      "TotalRecordCount": 0
-    },
+    "body": [],
     "content_type": "application/json",
     "status": 200
   }

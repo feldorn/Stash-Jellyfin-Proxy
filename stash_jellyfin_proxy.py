@@ -5354,6 +5354,94 @@ async def endpoint_system_endpoint(request):
     crash. Shape: EndpointInfo."""
     return JSONResponse({"IsLocal": True, "IsInNetwork": True})
 
+
+# --- Stubs for endpoints real clients hit that we don't back with data ---
+# Inventoried from live Infuse/Swiftfin/SenPlayer sessions. Each one was
+# previously falling through to catch_all which returned an empty paginated
+# result and a WARNING. Now each has a typed, shape-correct response so
+# logs stay quiet and strict-schema clients don't see an unexpected shape.
+
+async def endpoint_users_list(request):
+    """GET /Users — return the list of configured users. We're single-user,
+    so this mirrors /Users/Public."""
+    return JSONResponse([_build_user_dto()])
+
+
+async def endpoint_sessions_list(request):
+    """GET /Sessions — Jellyfin's active-sessions list. Clients (SenPlayer
+    in particular) poll this. Return an empty list, which renders cleanly
+    as 'no other clients playing'."""
+    return JSONResponse([])
+
+
+async def endpoint_system_info_storage(request):
+    """GET /System/Info/Storage — disk usage report. Stub with zeroed
+    entries; the proxy doesn't own the Stash storage."""
+    return JSONResponse({
+        "ProgramDataFolder": {"Name": "Program Data", "Path": "/config", "FreeSpace": 0, "UsedSpace": 0, "StorageType": "Unknown"},
+        "LogFolder": {"Name": "Logs", "Path": LOG_DIR, "FreeSpace": 0, "UsedSpace": 0, "StorageType": "Unknown"},
+        "CacheFolder": {"Name": "Cache", "Path": "/tmp", "FreeSpace": 0, "UsedSpace": 0, "StorageType": "Unknown"},
+        "InternalMetadataFolders": [],
+        "ExternalMetadataFolders": [],
+        "LibraryFolders": [],
+    })
+
+
+async def endpoint_scheduled_tasks(request):
+    """GET /ScheduledTasks — Jellyfin's task scheduler list. We have none."""
+    return JSONResponse([])
+
+
+async def endpoint_web_configuration_pages(request):
+    """GET /web/ConfigurationPages — Jellyfin Web admin tab hooks. None."""
+    return JSONResponse([])
+
+
+async def endpoint_activity_log(request):
+    """GET /System/ActivityLog/Entries — paginated activity feed. Empty."""
+    start = int(request.query_params.get("startIndex", "0"))
+    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": start})
+
+
+async def endpoint_server_domains(request):
+    """GET /System/Ext/ServerDomains — SenPlayer-specific domain list."""
+    return JSONResponse([])
+
+
+_favicon_cache = None
+
+
+async def endpoint_favicon(request):
+    """Serve Stash's favicon, proxied once and cached in-memory for the
+    lifetime of the process. Falls back to a minimal SVG if Stash is
+    unreachable — clients never see a 5xx for this."""
+    global _favicon_cache
+    if _favicon_cache is None:
+        try:
+            session = get_stash_session()
+            resp = session.get(f"{STASH_URL.rstrip('/')}/favicon.ico", timeout=5)
+            resp.raise_for_status()
+            _favicon_cache = (resp.content, resp.headers.get("Content-Type", "image/vnd.microsoft.icon"))
+        except Exception as e:
+            logger.warning(f"favicon fetch from Stash failed: {e}; serving SVG fallback")
+            # Minimal "S" logo SVG in Stash's signature blue. Works in every
+            # browser that ever cared about favicons.
+            svg = (
+                b'<?xml version="1.0"?>'
+                b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+                b'<rect width="32" height="32" fill="#1a1a2e"/>'
+                b'<text x="16" y="23" font-family="Arial,sans-serif" font-size="22" '
+                b'font-weight="bold" fill="#4a90d9" text-anchor="middle">S</text>'
+                b'</svg>'
+            )
+            _favicon_cache = (svg, "image/svg+xml")
+    data, ct = _favicon_cache
+    return Response(
+        content=data,
+        media_type=ct,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
 async def endpoint_branding(request):
     """Return branding configuration."""
     return JSONResponse({
@@ -5482,6 +5570,7 @@ routes = [
     Route("/Items/{item_id}/PlaybackInfo", endpoint_playback_info, methods=["GET", "POST"]),
     Route("/Items/{item_id}/Similar", endpoint_similar),
     Route("/Items/{item_id}/Intros", endpoint_intros),
+    Route("/Users/{user_id}/Items/{item_id}/Intros", endpoint_intros),
     Route("/Items/{item_id}/SpecialFeatures", endpoint_special_features),
     Route("/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
     Route("/Users/{user_id}/Items/{item_id}/SpecialFeatures", endpoint_special_features),
@@ -5496,6 +5585,19 @@ routes = [
     Route("/Items/{item_id}/Ancestors", endpoint_ancestors),
     Route("/Users/{user_id}/Items/{item_id}/Ancestors", endpoint_ancestors),
     Route("/System/Endpoint", endpoint_system_endpoint),
+    # Stubs for endpoints real iPad clients (Infuse/Swiftfin/SenPlayer)
+    # poll that used to fall through to catch_all with a WARNING.
+    Route("/Users", endpoint_users_list),
+    Route("/Sessions", endpoint_sessions_list),
+    Route("/System/Info/Storage", endpoint_system_info_storage),
+    Route("/ScheduledTasks", endpoint_scheduled_tasks),
+    Route("/web/ConfigurationPages", endpoint_web_configuration_pages),
+    Route("/System/ActivityLog/Entries", endpoint_activity_log),
+    Route("/System/Ext/ServerDomains", endpoint_server_domains),
+    Route("/favicon.ico", endpoint_favicon),
+    # User avatar alias — same handler as /UserImage for clients that
+    # address it via the per-user URL.
+    Route("/Users/{user_id}/Images/Primary", endpoint_user_image),
     Route("/Playback/BitrateTest", endpoint_bitrate_test),
     Route("/Videos/{item_id}/stream", endpoint_stream),
     Route("/Videos/{item_id}/Stream", endpoint_stream),
