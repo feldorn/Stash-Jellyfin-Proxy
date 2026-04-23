@@ -1,27 +1,7 @@
 """Unit tests for the TTL cache helper."""
-import ast
 import time
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PROXY_SRC = REPO_ROOT / "stash_jellyfin_proxy.py"
-
-
-def _extract_ttl_cache():
-    """Pull just the TTLCache class out of the source so tests don't have
-    to import the whole proxy module."""
-    tree = ast.parse(PROXY_SRC.read_text())
-    cls_node = next(
-        n for n in tree.body
-        if isinstance(n, ast.ClassDef) and n.name == "TTLCache"
-    )
-    src = ast.get_source_segment(PROXY_SRC.read_text(), cls_node)
-    module_globals = {"time": time, "threading": __import__("threading")}
-    exec(src, module_globals)
-    return module_globals["TTLCache"]
-
-
-TTLCache = _extract_ttl_cache()
+from proxy.cache.ttl import TTLCache
 
 
 def test_miss_then_hit():

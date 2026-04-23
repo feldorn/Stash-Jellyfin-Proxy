@@ -3072,47 +3072,9 @@ STASH_VERSION = ""  # Populated after successful connection
 STASH_CONNECTED = False  # Track connection status
 
 
-# --- TTL cache (used here for check_stash_connection; future phases will
-# use it for genre-tag lists, filter options, library artwork, etc). Simple
-# dict-backed map with per-entry expiry; thread-safe for mixed sync/async
-# callers. Kept inline for v6.02 — moves to cache/ttl.py in Phase 0.6.
-import threading
-
-
-class TTLCache:
-    """Compute-on-miss cache with per-entry TTL in seconds.
-
-    Usage:
-        cache = TTLCache(ttl_seconds=30)
-        value = cache.get("stash_up", producer=lambda: check_stash_connection())
-    """
-    def __init__(self, ttl_seconds: float):
-        self._ttl = float(ttl_seconds)
-        self._lock = threading.Lock()
-        self._data = {}  # key -> (expires_at_monotonic, value)
-
-    def get(self, key, producer):
-        """Return the cached value for `key`, invoking `producer()` on miss
-        or when the entry has expired."""
-        now = time.monotonic()
-        with self._lock:
-            hit = self._data.get(key)
-            if hit is not None and hit[0] > now:
-                return hit[1]
-        # Produce outside the lock so slow producers don't block readers
-        value = producer()
-        with self._lock:
-            self._data[key] = (time.monotonic() + self._ttl, value)
-        return value
-
-    def invalidate(self, key=None):
-        """Drop a single key or clear the entire cache."""
-        with self._lock:
-            if key is None:
-                self._data.clear()
-            else:
-                self._data.pop(key, None)
-
+# TTL cache — lives in proxy/cache/ttl.py, imported back here so the
+# monolith's callers keep working unchanged. Phase 0.6 leaf extraction.
+from proxy.cache.ttl import TTLCache
 
 # One shared instance for quick-check flags (stash-up, server identity).
 # Stash-query-result caches (genre tags, filter panels) get their own
