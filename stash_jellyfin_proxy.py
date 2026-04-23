@@ -5012,32 +5012,20 @@ app = Starlette(debug=False, routes=routes, middleware=middleware,
 PROXY_RUNNING = False  # Track if proxy is running
 PROXY_START_TIME = None  # Track when proxy started
 
-async def ui_index(request):
-    """Serve the Web UI."""
-    html = WEB_UI_HTML.replace("{{SERVER_NAME}}", SERVER_NAME)
-    return Response(html, media_type="text/html")
+# ui_index + ui_api_* endpoints (except ui_api_config which still
+# mutates ~40 monolith config globals) live in proxy/ui/api.py.
+from proxy.ui.api import (  # noqa: F401
+    ui_index,
+    ui_api_status,
+    ui_api_logs,
+    ui_api_streams,
+    ui_api_stats,
+    ui_api_stats_reset,
+    ui_api_restart,
+    ui_api_auth_config,
+)
 
-async def ui_api_status(request):
-    """Return proxy status. Uses TTL-cached Stash health check so the
-    dashboard reflects live connection state without issuing a Stash
-    query per poll (previously relied on a bool set only at startup)."""
-    # Refresh the cached flag if the entry is stale (≤30s). Offload the
-    # sync call to a thread so the event loop keeps serving other clients
-    # even during a slow Stash response.
-    await asyncio.to_thread(check_stash_connection_cached)
-    uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
-    return JSONResponse({
-        "running": PROXY_RUNNING,
-        "version": "v6.02",
-        "proxyBind": PROXY_BIND,
-        "proxyPort": PROXY_PORT,
-        "uptime": uptime_seconds,
-        # STASH_CONNECTED/STASH_VERSION live on proxy.runtime now — the
-        # client module writes them from check_stash_connection_cached.
-        "stashConnected": _runtime.STASH_CONNECTED,
-        "stashVersion": _runtime.STASH_VERSION,
-        "stashUrl": STASH_URL,
-    })
+
 
 async def ui_api_config(request):
     """Get or set configuration."""
@@ -5501,155 +5489,15 @@ async def ui_api_config(request):
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
-async def ui_api_logs(request):
-    """Return log entries."""
-    limit = int(request.query_params.get("limit", 100))
-    entries = []
 
-    log_path = os.path.join(LOG_DIR, LOG_FILE) if LOG_DIR else LOG_FILE
-    if os.path.isfile(log_path):
-        try:
-            with open(log_path, 'r') as f:
-                lines = f.readlines()
-                for line in lines[-limit:]:
-                    line = line.strip()
-                    if not line:
-                        continue
-                    # Parse log format: 2025-12-03 12:08:28,115 - stash-jellyfin-proxy - INFO - message
-                    parts = line.split(" - ", 3)
-                    if len(parts) >= 4:
-                        entries.append({
-                            "timestamp": parts[0],
-                            "level": parts[2],
-                            "message": parts[3]
-                        })
-                    else:
-                        entries.append({
-                            "timestamp": "",
-                            "level": "INFO",
-                            "message": line
-                        })
-        except Exception as e:
-            pass
 
-    return JSONResponse({
-        "entries": entries,
-        "logPath": log_path
-    })
 
-async def ui_api_streams(request):
-    """Return active streams."""
-    streams = []
-    now = time.time()
-    for scene_id, info in _active_streams.items():
-        # Only include streams active in last 5 minutes
-        if now - info.get("last_seen", 0) < 300:
-            streams.append({
-                "id": scene_id,
-                "title": info.get("title", scene_id),
-                "performer": info.get("performer", ""),
-                "started": info.get("started", 0),
-                "lastSeen": info.get("last_seen", 0),
-                "user": info.get("user", SJS_USER),
-                "clientIp": info.get("client_ip", "unknown"),
-                "clientType": info.get("client_type", "unknown")
-            })
-    return JSONResponse({"streams": streams})
-
-async def ui_api_stats(request):
-    """Return Stash library stats and proxy usage stats."""
-    # Get Stash library stats
-    stash_stats = {"scenes": 0, "performers": 0, "studios": 0, "tags": 0, "groups": 0}
-    try:
-        query = """query {
-            stats {
-                scene_count
-                performer_count
-                studio_count
-                tag_count
-                movie_count
-            }
-        }"""
-        result = stash_query(query, {})
-        stats_data = result.get("data", {}).get("stats", {})
-        stash_stats = {
-            "scenes": stats_data.get("scene_count", 0),
-            "performers": stats_data.get("performer_count", 0),
-            "studios": stats_data.get("studio_count", 0),
-            "tags": stats_data.get("tag_count", 0),
-            "groups": stats_data.get("movie_count", 0)
-        }
-    except Exception as e:
-        logger.debug(f"Could not fetch Stash stats: {e}")
-
-    # Get proxy stats
-    proxy_stats = get_proxy_stats()
-
-    return JSONResponse({
-        "stash": stash_stats,
-        "proxy": proxy_stats
-    })
-
-async def ui_api_stats_reset(request):
-    """Reset all proxy statistics."""
-    if request.method != "POST":
-        return JSONResponse({"error": "Method not allowed"}, status_code=405)
-
-    logger.info("Statistics reset requested via Web UI")
-    _stats_mod.reset_stats()
-    _stats_mod.save_proxy_stats()
-
-    return JSONResponse({"success": True, "message": "Statistics reset"})
 
 # Global reference for restart functionality
 _shutdown_event = None
 _restart_requested = False
 
-async def ui_api_restart(request):
-    """Restart the proxy server."""
-    global _restart_requested
 
-    if request.method != "POST":
-        return JSONResponse({"error": "Method not allowed"}, status_code=405)
-
-    logger.info("Restart requested via Web UI")
-    _restart_requested = True
-
-    # Schedule the shutdown after responding (restart happens after main loop exits)
-    async def delayed_shutdown():
-        await asyncio.sleep(1)  # Allow response to be sent
-        logger.info("Shutting down for restart...")
-        if _shutdown_event:
-            _shutdown_event.set()
-
-    asyncio.create_task(delayed_shutdown())
-    return JSONResponse({"success": True, "message": "Restarting..."})
-
-async def ui_api_auth_config(request):
-    """Authenticate for config access."""
-    if request.method != "POST":
-        return JSONResponse({"error": "Method not allowed"}, status_code=405)
-
-    try:
-        data = await request.json()
-        password = data.get("password", "")
-
-        # Debug: log password lengths for troubleshooting
-        logger.debug(f"Auth attempt: input len={len(password)}, expected len={len(SJS_PASSWORD)}")
-
-        # Strip any whitespace from both passwords for comparison
-        input_pw = password.strip()
-        expected_pw = SJS_PASSWORD.strip()
-
-        if input_pw == expected_pw:
-            logger.info("Config authentication successful")
-            return JSONResponse({"success": True})
-        else:
-            logger.warning(f"Config authentication failed - password mismatch (input: {len(input_pw)} chars, expected: {len(expected_pw)} chars)")
-            return JSONResponse({"success": False, "error": "Invalid password"})
-    except Exception as e:
-        logger.error(f"Config authentication error: {e}")
-        return JSONResponse({"success": False, "error": str(e)})
 
 ui_routes = [
     Route("/", ui_index),
