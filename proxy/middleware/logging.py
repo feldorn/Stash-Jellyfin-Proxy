@@ -47,6 +47,16 @@ class RequestLoggingMiddleware:
         for key, value in scope.get("headers", []):
             headers[key.decode().lower()] = value.decode()
 
+        is_stream = "/stream" in path.lower() or "/Videos/" in path
+
+        # Track stream events at request ARRIVAL, not completion. A long-
+        # lived range request for a full scene can hold the connection
+        # open for the entire video duration — if we wait for it to close
+        # before populating _active_streams, the Dashboard stays empty
+        # the whole time the client is actually streaming.
+        if is_stream:
+            self._track_stream_event(path, headers, client_host, ms=0)
+
         # Capture status off the http.response.start message.
         response_status = [0]
 
@@ -62,10 +72,6 @@ class RequestLoggingMiddleware:
         try:
             await self.app(scope, receive, send_wrapper)
         except Exception as e:
-            # Client-disconnect exceptions carry "content-length",
-            # "disconnect", or "cancelled" in the message; treat those
-            # as normal and fall through to stream-tracking. Anything
-            # else is a real error — log and stop.
             error_str = str(e).lower()
             if "content-length" in error_str or "disconnect" in error_str or "cancelled" in error_str:
                 pass
@@ -81,18 +87,16 @@ class RequestLoggingMiddleware:
 
         is_error = status >= 400
         is_auth = "/Authenticate" in path
-        is_stream = "/stream" in path.lower() or "/Videos/" in path
         is_slow = ms > 1000
 
-        # Stream tracking runs FIRST for video paths — even when the
-        # response status is 4xx/5xx. Stash frequently 416s on byte
-        # ranges past EOF; if we skip tracking on those, the dashboard
-        # stays empty even though playback is actually ongoing (clients
-        # buffer through the error).
         if is_stream:
             if is_error and status > 0:
                 logger.warning(f"{path} -> {status} ({ms}ms)")
-            self._track_stream_event(path, headers, client_host, ms)
+            # Completion-side: keep the stream's last_seen fresh. The
+            # tracking record already exists (populated on arrival above).
+            entry = _streams._active_streams.get(self._scene_id(path))
+            if entry is not None:
+                entry["last_seen"] = time.time()
         elif is_error and status > 0:
             logger.warning(f"{path} -> {status} ({ms}ms)")
         elif is_auth:
@@ -101,6 +105,11 @@ class RequestLoggingMiddleware:
             logger.info(f"Slow request: {path} ({ms}ms)")
         elif status > 0:
             logger.debug(f"{path} -> {status} ({ms}ms)")
+
+    @staticmethod
+    def _scene_id(path: str) -> str:
+        match = re.search(r'/(scene-\d+)/', path)
+        return match.group(1) if match else "unknown"
 
     def _track_stream_event(self, path: str, headers: dict, client_host: str, ms: int) -> None:
         """Extract scene + client identity from a /Videos/... request and
