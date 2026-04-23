@@ -2837,6 +2837,54 @@ STASH_SESSION = None
 STASH_VERSION = ""  # Populated after successful connection
 STASH_CONNECTED = False  # Track connection status
 
+
+# --- TTL cache (used here for check_stash_connection; future phases will
+# use it for genre-tag lists, filter options, library artwork, etc). Simple
+# dict-backed map with per-entry expiry; thread-safe for mixed sync/async
+# callers. Kept inline for v6.02 — moves to cache/ttl.py in Phase 0.6.
+import threading
+
+
+class TTLCache:
+    """Compute-on-miss cache with per-entry TTL in seconds.
+
+    Usage:
+        cache = TTLCache(ttl_seconds=30)
+        value = cache.get("stash_up", producer=lambda: check_stash_connection())
+    """
+    def __init__(self, ttl_seconds: float):
+        self._ttl = float(ttl_seconds)
+        self._lock = threading.Lock()
+        self._data = {}  # key -> (expires_at_monotonic, value)
+
+    def get(self, key, producer):
+        """Return the cached value for `key`, invoking `producer()` on miss
+        or when the entry has expired."""
+        now = time.monotonic()
+        with self._lock:
+            hit = self._data.get(key)
+            if hit is not None and hit[0] > now:
+                return hit[1]
+        # Produce outside the lock so slow producers don't block readers
+        value = producer()
+        with self._lock:
+            self._data[key] = (time.monotonic() + self._ttl, value)
+        return value
+
+    def invalidate(self, key=None):
+        """Drop a single key or clear the entire cache."""
+        with self._lock:
+            if key is None:
+                self._data.clear()
+            else:
+                self._data.pop(key, None)
+
+
+# One shared instance for quick-check flags (stash-up, server identity).
+# Stash-query-result caches (genre tags, filter panels) get their own
+# instances in later phases so we can invalidate them independently.
+_status_cache = TTLCache(ttl_seconds=30.0)
+
 def get_stash_session():
     """Get or create a Stash session with ApiKey authentication."""
     global STASH_SESSION
@@ -2887,6 +2935,16 @@ def check_stash_connection():
         logger.error(f"❌ Failed to connect to Stash: {e}")
         logger.error("Please check STASH_URL and authentication in your config.")
         return False
+
+
+def check_stash_connection_cached():
+    """TTL-cached variant of check_stash_connection for request-path callers.
+    Dashboard polling used to freeze briefly during Infuse stream starts
+    because every poll issued a fresh Stash GraphQL query, which can block
+    behind busy sync work on the event loop. Cache the result for 30s so
+    the dashboard reflects live state without spamming Stash."""
+    return _status_cache.get("stash_up", producer=check_stash_connection)
+
 
 def pad_image_to_portrait(image_data: bytes, target_width: int = 400, target_height: int = 600) -> Tuple[bytes, str]:
     """
@@ -7763,7 +7821,13 @@ async def ui_index(request):
     return Response(html, media_type="text/html")
 
 async def ui_api_status(request):
-    """Return proxy status."""
+    """Return proxy status. Uses TTL-cached Stash health check so the
+    dashboard reflects live connection state without issuing a Stash
+    query per poll (previously relied on a bool set only at startup)."""
+    # Refresh the cached flag if the entry is stale (≤30s). Offload the
+    # sync call to a thread so the event loop keeps serving other clients
+    # even during a slow Stash response.
+    await asyncio.to_thread(check_stash_connection_cached)
     uptime_seconds = int(time.time() - PROXY_START_TIME) if PROXY_START_TIME else 0
     return JSONResponse({
         "running": PROXY_RUNNING,
