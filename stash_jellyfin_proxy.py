@@ -541,6 +541,71 @@ STASH_SESSION = None  # Will hold requests.Session with auth cookies
 # Image cache for resized studio/performer images (prevents repeated processing)
 IMAGE_CACHE = {}  # Key: (item_id, target_size), Value: (bytes, content_type)
 
+# Publish every config-derived value + key mutable state into proxy.runtime
+# so extracted modules have a single, authoritative source to read from.
+# Dual-writes during the Phase 0.6 refactor window — the monolith keeps its
+# own module-level copies too until every consumer is extracted. When that
+# lands we remove the duplicates and this becomes the sole owner.
+import proxy.runtime as _runtime
+_runtime.publish(
+    # Stash connection
+    STASH_URL=STASH_URL,
+    STASH_API_KEY=STASH_API_KEY,
+    STASH_GRAPHQL_PATH=STASH_GRAPHQL_PATH,
+    STASH_VERIFY_TLS=STASH_VERIFY_TLS,
+    STASH_TIMEOUT=STASH_TIMEOUT,
+    STASH_RETRIES=STASH_RETRIES,
+    STASH_SESSION=STASH_SESSION,
+    # Proxy bind + identity
+    PROXY_BIND=PROXY_BIND,
+    PROXY_PORT=PROXY_PORT,
+    UI_PORT=UI_PORT,
+    SERVER_NAME=SERVER_NAME,
+    SERVER_ID=SERVER_ID,
+    # Client auth
+    SJS_USER=SJS_USER,
+    SJS_PASSWORD=SJS_PASSWORD,
+    ACCESS_TOKEN=ACCESS_TOKEN,
+    # Libraries
+    TAG_GROUPS=TAG_GROUPS,
+    FAVORITE_TAG=FAVORITE_TAG,
+    LATEST_GROUPS=LATEST_GROUPS,
+    BANNER_MODE=BANNER_MODE,
+    BANNER_POOL_SIZE=BANNER_POOL_SIZE,
+    BANNER_TAGS=BANNER_TAGS,
+    # Feature toggles
+    ENABLE_FILTERS=ENABLE_FILTERS,
+    ENABLE_IMAGE_RESIZE=ENABLE_IMAGE_RESIZE,
+    ENABLE_TAG_FILTERS=ENABLE_TAG_FILTERS,
+    ENABLE_ALL_TAGS=ENABLE_ALL_TAGS,
+    REQUIRE_AUTH_FOR_CONFIG=REQUIRE_AUTH_FOR_CONFIG,
+    # Pagination / image cache
+    DEFAULT_PAGE_SIZE=DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE=MAX_PAGE_SIZE,
+    IMAGE_CACHE_MAX_SIZE=IMAGE_CACHE_MAX_SIZE,
+    IMAGE_CACHE=IMAGE_CACHE,
+    # Logging
+    LOG_DIR=LOG_DIR,
+    LOG_FILE=LOG_FILE,
+    LOG_LEVEL=LOG_LEVEL,
+    LOG_MAX_SIZE_MB=LOG_MAX_SIZE_MB,
+    LOG_BACKUP_COUNT=LOG_BACKUP_COUNT,
+    # IP ban state (BANNED_IPS is a live set; we publish the reference so
+    # writers in either place mutate the same object)
+    BANNED_IPS=BANNED_IPS,
+    BAN_THRESHOLD=BAN_THRESHOLD,
+    BAN_WINDOW_MINUTES=BAN_WINDOW_MINUTES,
+    # Config paths + loaded data
+    CONFIG_FILE=CONFIG_FILE,
+    LOCAL_CONFIG_FILE=LOCAL_CONFIG_FILE,
+    config=_config,
+    config_defined_keys=_config_defined_keys,
+    config_sections=_config_sections,
+    # Migration
+    MIGRATION_PERFORMED=MIGRATION_PERFORMED,
+    MIGRATION_LOG=MIGRATION_LOG,
+)
+
 # Menu icons as simple SVG graphics (styled similar to Stash's icons)
 # These are served for root-scenes, root-studios, root-performers, root-groups
 # Using portrait 2:3 aspect ratio (400x600) for Infuse's folder tiles
