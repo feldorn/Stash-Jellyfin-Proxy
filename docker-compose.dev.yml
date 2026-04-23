@@ -27,7 +27,10 @@ services:
       start_period: 10s
 
   jellyfin-web:
-    image: jellyfin/jellyfin-web:latest
+    build:
+      context: ./build_docker
+      dockerfile: Dockerfile.jfweb
+    image: stash-jellyfin-proxy-web:dev
     container_name: sjp-jellyfin-web-dev
     restart: unless-stopped
     ports:

@@ -1,0 +1,5 @@
+FROM jellyfin/jellyfin:latest AS source
+
+FROM nginx:alpine
+COPY --from=source /jellyfin/jellyfin-web /usr/share/nginx/html
+EXPOSE 80
