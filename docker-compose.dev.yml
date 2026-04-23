@@ -1,0 +1,31 @@
+services:
+  proxy-dev:
+    build:
+      context: ./build_docker
+      dockerfile: Dockerfile.dev
+    image: stash-jellyfin-proxy:dev
+    container_name: sjp-proxy-dev
+    restart: unless-stopped
+    ports:
+      - "18096:8096"
+      - "18097:8097"
+    volumes:
+      - ./stash_jellyfin_proxy.py:/app/stash_jellyfin_proxy.py:ro
+      - ./dev-data:/config
+    environment:
+      - CONFIG_FILE=/config/stash_jellyfin_proxy.conf
+      - LOG_DIR=/config
+      - TZ=America/New_York
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8096/System/Info/Public"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  jellyfin-web:
+    image: jellyfin/jellyfin-web:latest
+    container_name: sjp-jellyfin-web-dev
+    restart: unless-stopped
+    ports:
+      - "18098:80"

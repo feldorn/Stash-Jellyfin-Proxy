@@ -1,0 +1,19 @@
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir hypercorn starlette requests Pillow
+
+WORKDIR /app
+
+EXPOSE 8096 8097
+
+CMD ["python", "-u", "/app/stash_jellyfin_proxy.py"]

@@ -45,5 +45,8 @@ __pycache__/
 # Local per-user config overrides (merged on top of the shipped conf)
 *.local.conf
 
+# Local dev container data (conf file with secrets, logs, stats)
+/dev-data/
+
 # Claude Code
 CLAUDE.md

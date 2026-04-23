@@ -1,0 +1,47 @@
+# Stash-Jellyfin Proxy - DEV config template.
+# Copy to ./dev-data/stash_jellyfin_proxy.conf (or run `./dev.sh init`) and fill in.
+# Dev container targets PRODUCTION Stash with the same credentials as prod.
+
+# ---- Stash (point at prod Stash) ----
+STASH_URL =
+STASH_API_KEY =
+STASH_GRAPHQL_PATH = /graphql
+STASH_VERIFY_TLS = false
+STASH_TIMEOUT = 30
+STASH_RETRIES = 3
+
+# ---- Proxy bind (inside container) ----
+PROXY_BIND = 0.0.0.0
+PROXY_PORT = 8096
+UI_PORT = 8097
+
+# ---- Jellyfin client auth (same as prod) ----
+SJS_USER =
+SJS_PASSWORD =
+
+# ---- Server identity ----
+# Keep distinct from prod SERVER_ID so clients don't cache-conflate.
+# `./dev.sh init` fills this in with a fresh value.
+SERVER_ID =
+SERVER_NAME = Stash Dev
+
+# ---- Library ----
+TAG_GROUPS =
+LATEST_GROUPS = Scenes
+
+# ---- Features ----
+ENABLE_FILTERS = true
+ENABLE_IMAGE_RESIZE = true
+REQUIRE_AUTH_FOR_CONFIG = false
+
+# ---- Pagination / cache ----
+DEFAULT_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 500
+IMAGE_CACHE_MAX_SIZE = 100
+
+# ---- Logging ----
+LOG_DIR = /config
+LOG_FILE = stash_jellyfin_proxy.log
+LOG_LEVEL = DEBUG
+LOG_MAX_SIZE_MB = 10
+LOG_BACKUP_COUNT = 3
