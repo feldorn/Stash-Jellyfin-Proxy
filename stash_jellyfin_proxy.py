@@ -197,13 +197,31 @@ BANNED_IPS = set()  # Set of banned IP addresses
 BAN_THRESHOLD = 10  # Failed attempts before ban
 BAN_WINDOW_MINUTES = 15  # Rolling window for counting failures
 
-# Load Config - parses config file with KEY = "value" or KEY="value" format
+# Load Config - parses config file with KEY = "value" or KEY="value" format,
+# plus optional [section.name] INI blocks for per-scope settings (player
+# profiles and similar). Flat keys live in the top-level dict; section keys
+# live in a dict-of-dicts keyed by section name.
 def load_config(filepath):
-    """Load configuration from a shell-style config file.
-    Returns (config_dict, defined_keys_set) where defined_keys_set tracks
-    which keys were explicitly defined in the file."""
+    """Load configuration from a shell-style config file with optional
+    INI-style section blocks.
+
+    Grammar:
+        # comments and blank lines ignored
+        KEY = value                # flat key (always global scope)
+        KEY = "quoted value"
+        [section.name]             # opens a section scope
+        key = value                # scoped into the current section
+
+    Returns a 3-tuple:
+        config (dict): flat KEY → value for keys in the global scope
+        defined_keys (set): flat keys explicitly present in the file
+        sections (dict): {section_name: {key: value}} for every [section]
+                         block; empty dict if none.
+    """
     config = {}
     defined_keys = set()
+    sections = {}
+    current_section = None  # None = global scope
     if os.path.isfile(filepath):
         try:
             with open(filepath, 'r') as f:
@@ -212,16 +230,31 @@ def load_config(filepath):
                     # Skip comments and empty lines
                     if not line or line.startswith('#'):
                         continue
-                    # Parse KEY=value or KEY="value" format
+                    # Section header: [name] opens a new scope for subsequent
+                    # key/value lines. Empty or malformed headers reset to
+                    # global scope rather than raise — we log to stderr but
+                    # keep loading so a partial-bad file doesn't brick startup.
+                    if line.startswith('[') and line.endswith(']'):
+                        name = line[1:-1].strip()
+                        if name:
+                            current_section = name
+                            sections.setdefault(current_section, {})
+                        else:
+                            current_section = None
+                        continue
+                    # KEY=value or KEY="value" — into section or global.
                     if '=' in line:
                         key, _, value = line.partition('=')
                         key = key.strip()
                         value = value.strip().strip('"').strip("'")
-                        config[key] = value
-                        defined_keys.add(key)
+                        if current_section is None:
+                            config[key] = value
+                            defined_keys.add(key)
+                        else:
+                            sections[current_section][key] = value
         except Exception as e:
             print(f"Error loading config file {filepath}: {e}", file=sys.stderr)
-    return config, defined_keys
+    return config, defined_keys, sections
 
 def parse_bool(value, default=True):
     """Parse a boolean value from config string."""
@@ -302,15 +335,37 @@ def _default_local_config_path(base_path):
 
 LOCAL_CONFIG_FILE = os.getenv("LOCAL_CONFIG_FILE", _default_local_config_path(CONFIG_FILE))
 
-_config, _config_defined_keys = load_config(CONFIG_FILE)
+_config, _config_defined_keys, _config_sections = load_config(CONFIG_FILE)
 
 # Merge local override on top (per-user edits stay out of the shipped conf).
 if os.path.isfile(LOCAL_CONFIG_FILE) and os.path.abspath(LOCAL_CONFIG_FILE) != os.path.abspath(CONFIG_FILE):
-    _local_config, _local_defined_keys = load_config(LOCAL_CONFIG_FILE)
-    if _local_config:
+    _local_config, _local_defined_keys, _local_sections = load_config(LOCAL_CONFIG_FILE)
+    if _local_config or _local_sections:
         _config.update(_local_config)
         _config_defined_keys.update(_local_defined_keys)
+        # Section merge is key-level: local wins per-key inside each section,
+        # and a section only present locally is added whole.
+        for section_name, section_body in _local_sections.items():
+            _config_sections.setdefault(section_name, {}).update(section_body)
         print(f"Loaded local override from {LOCAL_CONFIG_FILE}")
+
+
+def get_config_section(section_name):
+    """Return a dict of {key: value} for the named section, or {} if the
+    section is not present. Module-level accessor so mappers/endpoints can
+    read per-profile settings without touching the global dict."""
+    return dict(_config_sections.get(section_name, {}))
+
+
+def get_config_sections_by_prefix(prefix):
+    """Return {section_name: body} for every section starting with `prefix`.
+    e.g. get_config_sections_by_prefix("player.") yields every player
+    profile block."""
+    return {
+        name: dict(body)
+        for name, body in _config_sections.items()
+        if name.startswith(prefix)
+    }
 
 if _config:
     STASH_URL = _config.get("STASH_URL", STASH_URL)
