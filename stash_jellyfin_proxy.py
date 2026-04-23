@@ -7437,6 +7437,52 @@ async def endpoint_special_features(request):
     """Return special features - stub. Jellyfin spec returns a plain array."""
     return JSONResponse([])
 
+async def endpoint_theme_songs(request):
+    """ThemeSongs stub. The response must include OwnerId; the web client's
+    ThemeMediaPlayer reads `result.OwnerId` unconditionally and crashes with
+    `Cannot read properties of undefined (reading 'OwnerId')` without it."""
+    return JSONResponse({
+        "Items": [],
+        "TotalRecordCount": 0,
+        "OwnerId": request.path_params.get("item_id", ""),
+    })
+
+async def endpoint_theme_videos(request):
+    """ThemeVideos stub — same OwnerId requirement as ThemeSongs."""
+    return JSONResponse({
+        "Items": [],
+        "TotalRecordCount": 0,
+        "OwnerId": request.path_params.get("item_id", ""),
+    })
+
+async def endpoint_theme_media(request):
+    """ThemeMedia combined response. Shape: AllThemeMediaResult."""
+    iid = request.path_params.get("item_id", "")
+    empty = {"Items": [], "TotalRecordCount": 0, "OwnerId": iid}
+    return JSONResponse({
+        "ThemeSongsResult": empty,
+        "ThemeVideosResult": empty,
+        "SoundtrackIds": [],
+    })
+
+async def endpoint_additional_parts(request):
+    """AdditionalParts stub. Same shape as ThemeSongs (needs OwnerId)."""
+    return JSONResponse({
+        "Items": [],
+        "TotalRecordCount": 0,
+        "OwnerId": request.path_params.get("item_id", ""),
+    })
+
+async def endpoint_ancestors(request):
+    """Ancestors stub. Jellyfin returns a plain BaseItemDto[] array."""
+    return JSONResponse([])
+
+async def endpoint_system_endpoint(request):
+    """System/Endpoint stub. Tells the client whether it's on the local
+    network; we don't know, but returning a plausible shape avoids a client
+    crash. Shape: EndpointInfo."""
+    return JSONResponse({"IsLocal": True, "IsInNetwork": True})
+
 async def endpoint_branding(request):
     """Return branding configuration."""
     return JSONResponse({
@@ -7569,6 +7615,16 @@ routes = [
     Route("/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
     Route("/Users/{user_id}/Items/{item_id}/SpecialFeatures", endpoint_special_features),
     Route("/Users/{user_id}/Items/{item_id}/LocalTrailers", endpoint_local_trailers),
+    Route("/Items/{item_id}/ThemeSongs", endpoint_theme_songs),
+    Route("/Items/{item_id}/ThemeVideos", endpoint_theme_videos),
+    Route("/Items/{item_id}/ThemeMedia", endpoint_theme_media),
+    Route("/Users/{user_id}/Items/{item_id}/ThemeSongs", endpoint_theme_songs),
+    Route("/Users/{user_id}/Items/{item_id}/ThemeVideos", endpoint_theme_videos),
+    Route("/Users/{user_id}/Items/{item_id}/ThemeMedia", endpoint_theme_media),
+    Route("/Videos/{item_id}/AdditionalParts", endpoint_additional_parts),
+    Route("/Items/{item_id}/Ancestors", endpoint_ancestors),
+    Route("/Users/{user_id}/Items/{item_id}/Ancestors", endpoint_ancestors),
+    Route("/System/Endpoint", endpoint_system_endpoint),
     Route("/Playback/BitrateTest", endpoint_bitrate_test),
     Route("/Videos/{item_id}/stream", endpoint_stream),
     Route("/Videos/{item_id}/Stream", endpoint_stream),
