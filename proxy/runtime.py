@@ -88,6 +88,15 @@ PROXY_START_TIME: Optional[float] = None
 CONFIG_FILE: str = ""
 LOCAL_CONFIG_FILE: str = ""
 
+# --- Fixed identity strings ---
+# The Jellyfin protocol version we pretend to be. Bump when clients
+# require newer API features.
+JELLYFIN_VERSION: str = "10.11.0"
+
+# Stable per-user UUID derived from SERVER_ID + SJS_USER; computed once
+# at bootstrap and published here.
+USER_ID: str = ""
+
 # --- Loaded config data ---
 # Flat KEY → value dict from the config file (after v2 migration + local
 # override merge). Sections dict holds INI-style [section.name] blocks.

@@ -598,6 +598,9 @@ _runtime.publish(
     # Migration
     MIGRATION_PERFORMED=MIGRATION_PERFORMED,
     MIGRATION_LOG=MIGRATION_LOG,
+    # Identity
+    JELLYFIN_VERSION=JELLYFIN_VERSION,
+    USER_ID=USER_ID,
 )
 
 # Menu icons as simple SVG graphics (styled similar to Stash's icons)
@@ -993,179 +996,36 @@ from proxy.mapping.scene import (  # noqa: F401
 
 # --- API Endpoints ---
 
-async def endpoint_root(request):
-    """Infuse might check root for life."""
-    return RedirectResponse(url="/System/Info/Public")
+# System-info / root / authentication / user-identity endpoints live in
+# proxy/endpoints/system.py and proxy/endpoints/users.py.
+from proxy.endpoints.system import (  # noqa: F401
+    endpoint_root,
+    endpoint_system_info,
+    endpoint_public_info,
+    derive_local_address as _derive_local_address,
+)
+from proxy.endpoints.users import (  # noqa: F401
+    endpoint_authenticate_by_name,
+    endpoint_users,
+    endpoint_user_by_id,
+    endpoint_user_me,
+    endpoint_user_image,
+    parse_emby_auth_header,
+)
 
-def _derive_local_address(request):
-    """Return the externally-visible base URL the client used to reach us.
-    Web clients (Fladder, Jellyfin web) parse LocalAddress and will reject
-    the server outright if it advertises something unreachable like
-    http://0.0.0.0:8096 (the Docker bind). Respect reverse-proxy headers
-    so SWAG/nginx setups advertise the public https origin."""
-    fwd_proto = request.headers.get("x-forwarded-proto")
-    fwd_host = request.headers.get("x-forwarded-host") or request.headers.get("host")
-    if fwd_proto and fwd_host:
-        return f"{fwd_proto}://{fwd_host}"
-    if fwd_host:
-        scheme = request.url.scheme or "http"
-        return f"{scheme}://{fwd_host}"
-    return f"http://{PROXY_BIND}:{PROXY_PORT}"
 
-async def endpoint_system_info(request):
-    logger.debug("Providing System Info")
-    local_addr = _derive_local_address(request)
-    return JSONResponse({
-        "ServerName": SERVER_NAME,
-        "Version": JELLYFIN_VERSION,
-        "Id": SERVER_ID,
-        "ProductName": "Jellyfin Server",
-        "OperatingSystem": "Linux",
-        "StartupWizardCompleted": True,
-        "SupportsLibraryMonitor": False,
-        "WebSocketPortNumber": PROXY_PORT,
-        "CompletedInstallations": [],
-        "CanSelfRestart": False,
-        "CanLaunchWebBrowser": False,
-        "HasPendingRestart": False,
-        "HasUpdateAvailable": False,
-        "IsShuttingDown": False,
-        "TranscodingTempPath": "/tmp",
-        "LogPath": "/tmp",
-        "InternalMetadataPath": "/tmp",
-        "CachePath": "/tmp",
-        "ProgramDataPath": "/tmp",
-        "ItemsByNamePath": "/tmp",
-        "LocalAddress": local_addr
-    })
 
-async def endpoint_public_info(request):
-    return JSONResponse({
-        "LocalAddress": _derive_local_address(request),
-        "ServerName": SERVER_NAME,
-        "Version": JELLYFIN_VERSION,
-        "Id": SERVER_ID,
-        "ProductName": "Jellyfin Server",
-        "OperatingSystem": "Linux",
-        "StartupWizardCompleted": True
-    })
 
-def parse_emby_auth_header(request):
-    """Extract Client, Device, DeviceId, Version from Jellyfin/Emby auth headers."""
-    info = {"Client": "Jellyfin", "DeviceName": "Unknown", "DeviceId": "", "ApplicationVersion": "0.0.0"}
-    auth_header = ""
-    for key, value in request.headers.items():
-        key_lower = key.lower()
-        if key_lower in ("authorization", "x-emby-authorization"):
-            auth_header = value
-            break
-    if auth_header:
-        for field, json_key in [("Client", "Client"), ("Device", "DeviceName"), ("DeviceId", "DeviceId"), ("Version", "ApplicationVersion")]:
-            match = re.search(rf'{field}="([^"]*)"', auth_header)
-            if match:
-                info[json_key] = match.group(1)
-    return info
 
-async def endpoint_authenticate_by_name(request):
-    if request.method == "GET":
-        return Response(status_code=405, headers={"Allow": "POST"})
 
-    try:
-        data = await request.json()
-    except:
-        data = {}
 
-    username = data.get("Username", "User")
-    pw = data.get("Pw", "")
-
-    logger.info(f"Auth attempt for user: {username}")
-    logger.debug(f"Auth password check: input len={len(pw)}, expected len={len(SJS_PASSWORD)}")
-
-    # Accept config password (strip whitespace from both for comparison)
-    if pw.strip() == SJS_PASSWORD.strip():
-        # Clear any failed auth attempts for this IP on successful login.
-        client_ip = get_client_ip(request.scope)
-        clear_ip_failures(client_ip)
-        logger.debug(f"Cleared auth failure tracking for {client_ip} after successful login")
-
-        record_auth_attempt(success=True)
-        logger.info(f"Auth SUCCESS for user {SJS_USER}")
-        client_info = parse_emby_auth_header(request)
-        client_ip = get_client_ip(request.scope)
-        session_id = str(uuid.uuid4())
-        auth_response = {
-            "User": _build_user_dto(username),
-            "SessionInfo": {
-                "Id": session_id,
-                "UserId": USER_ID,
-                "UserName": username,
-                "Client": client_info["Client"],
-                "DeviceName": client_info["DeviceName"],
-                "DeviceId": client_info["DeviceId"],
-                "ApplicationVersion": client_info["ApplicationVersion"],
-                "RemoteEndPoint": client_ip,
-                "IsActive": True,
-                "SupportsMediaControl": False,
-                "SupportsRemoteControl": False,
-                "HasCustomDeviceName": False,
-                "LastActivityDate": "2024-01-01T00:00:00.0000000Z",
-                "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
-                "PlayState": {
-                    "CanSeek": False,
-                    "IsPaused": False,
-                    "IsMuted": False,
-                    "RepeatMode": "RepeatNone",
-                    "PlaybackOrder": "Default",
-                    "PositionTicks": 0,
-                    "VolumeLevel": 100
-                },
-                "Capabilities": {
-                    "PlayableMediaTypes": ["Audio", "Video"],
-                    "SupportedCommands": [],
-                    "SupportsMediaControl": False,
-                    "SupportsContentUploading": False,
-                    "SupportsPersistentIdentifier": True,
-                    "SupportsSync": False
-                },
-                "PlayableMediaTypes": ["Audio", "Video"],
-                "AdditionalUsers": [],
-                "NowPlayingQueue": [],
-                "NowPlayingQueueFullItems": [],
-                "SupportedCommands": [],
-                "ServerId": SERVER_ID
-            },
-            "AccessToken": ACCESS_TOKEN,
-            "ServerId": SERVER_ID
-        }
-        auth_json = json.dumps(auth_response, indent=2)
-        logger.debug(f"Auth response ({len(auth_json)} bytes): {auth_json[:200]}...")
-        try:
-            debug_path = os.path.join(os.path.dirname(CONFIG_FILE) if CONFIG_FILE else "/config", "auth_debug.json")
-            with open(debug_path, "w") as f:
-                f.write(auth_json)
-            logger.debug(f"Full auth response written to {debug_path}")
-        except Exception as e:
-            logger.debug(f"Could not write auth debug file: {e}")
-        return JSONResponse(auth_response)
-    else:
-        record_auth_attempt(success=False)
-        logger.warning("Auth FAILED - Invalid Key")
-        return JSONResponse({"error": "Invalid Token"}, status_code=401)
-
-async def endpoint_users(request):
-    return JSONResponse([_build_user_dto()])
 
 # _build_user_dto lives in proxy/mapping/user.py now; keep a local alias
 # under its old name so every existing call site in the monolith works.
 from proxy.mapping.user import build_user_dto as _build_user_dto  # noqa: E402, F401
 
 
-async def endpoint_user_by_id(request):
-    return JSONResponse(_build_user_dto())
 
-async def endpoint_user_me(request):
-    """Return current user info - same as user_by_id but for /Users/Me endpoint."""
-    return JSONResponse(_build_user_dto())
 
 async def endpoint_user_views(request):
     def make_library(name, lib_id):
@@ -4759,10 +4619,6 @@ _favicon_cache = None
 
 
 
-async def endpoint_user_image(request):
-    """Return a generated avatar for the user (shown pre-login in Swiftfin)."""
-    img_data, content_type = generate_text_icon(SJS_USER or "?", width=200, height=200)
-    return Response(content=img_data, media_type=content_type)
 
 
 
