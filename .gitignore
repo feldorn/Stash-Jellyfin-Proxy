@@ -53,5 +53,11 @@ __pycache__/
 # committed copy always drifts; root is canonical.
 /build_docker/stash_jellyfin_proxy.py
 
+# Private design docs (author-owned, not for the public repo)
+/docs/
+
+# Personal Claude CLI convenience
+pickup.sh
+
 # Claude Code
 CLAUDE.md
