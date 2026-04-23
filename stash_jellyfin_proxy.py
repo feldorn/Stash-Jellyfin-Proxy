@@ -528,8 +528,9 @@ if not ACCESS_TOKEN:
 import uuid as _uuid_mod
 USER_ID = str(_uuid_mod.uuid5(_uuid_mod.UUID(SERVER_ID.replace("-", "").ljust(32, "0")[:32]), SJS_USER or "user"))
 
-# Session management for cookie-based auth
-STASH_SESSION = None  # Will hold requests.Session with auth cookies
+# Session management for cookie-based auth — lives on proxy.runtime now
+# but seed an initial None so the runtime.publish() call below has a value.
+STASH_SESSION = None
 
 # Image cache for resized studio/performer images (prevents repeated processing)
 IMAGE_CACHE = {}  # Key: (item_id, target_size), Value: (bytes, content_type)
@@ -2832,149 +2833,19 @@ class RequestLoggingMiddleware:
             logger.debug(f"{path} -> {status} ({ms}ms)")
 
 # --- Stash GraphQL Client ---
-# Construct GraphQL URL from base URL and path
-GRAPHQL_URL = f"{STASH_URL.rstrip('/')}{STASH_GRAPHQL_PATH}"
-
-# Create a persistent session with authentication
-STASH_SESSION = None
-STASH_VERSION = ""  # Populated after successful connection
-STASH_CONNECTED = False  # Track connection status
-
-
-# TTL cache — lives in proxy/cache/ttl.py, imported back here so the
-# monolith's callers keep working unchanged. Phase 0.6 leaf extraction.
-from proxy.cache.ttl import TTLCache
-
-# One shared instance for quick-check flags (stash-up, server identity).
-# Stash-query-result caches (genre tags, filter panels) get their own
-# instances in later phases so we can invalidate them independently.
-_status_cache = TTLCache(ttl_seconds=30.0)
-
-def get_stash_session():
-    """Get or create a Stash session with ApiKey authentication."""
-    global STASH_SESSION
-
-    if STASH_SESSION is not None:
-        return STASH_SESSION
-
-    STASH_SESSION = requests.Session()
-
-    # Set TLS verification (can be disabled for self-signed certs in Docker)
-    STASH_SESSION.verify = STASH_VERIFY_TLS
-    if not STASH_VERIFY_TLS:
-        # Suppress InsecureRequestWarning when TLS verification is disabled
-        import urllib3
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        logger.info("TLS verification disabled (STASH_VERIFY_TLS=false)")
-
-    # Use STASH_API_KEY for authentication (required for image endpoints)
-    if STASH_API_KEY:
-        STASH_SESSION.headers["ApiKey"] = STASH_API_KEY
-        logger.info(f"Session configured with ApiKey header (key length: {len(STASH_API_KEY)})")
-    else:
-        logger.warning("No STASH_API_KEY configured - images will fail to load!")
-        logger.warning("Add STASH_API_KEY to your config file (get from Stash -> Settings -> Security)")
-
-    return STASH_SESSION
-
-def check_stash_connection():
-    """Verify we can talk to Stash at startup."""
-    global STASH_VERSION, STASH_CONNECTED
-    try:
-        logger.info(f"Testing connection to Stash at {GRAPHQL_URL}...")
-        session = get_stash_session()
-
-        resp = session.post(
-            GRAPHQL_URL,
-            json={"query": "{ version { version } }"},
-            timeout=5
-        )
-        resp.raise_for_status()
-        v = resp.json().get("data", {}).get("version", {}).get("version", "unknown")
-        STASH_VERSION = v
-        STASH_CONNECTED = True
-        logger.info(f"✅ Connected to Stash! Version: {v}")
-        return True
-    except Exception as e:
-        STASH_CONNECTED = False
-        logger.error(f"❌ Failed to connect to Stash: {e}")
-        logger.error("Please check STASH_URL and authentication in your config.")
-        return False
-
-
-def check_stash_connection_cached():
-    """TTL-cached variant of check_stash_connection for request-path callers.
-    Dashboard polling used to freeze briefly during Infuse stream starts
-    because every poll issued a fresh Stash GraphQL query, which can block
-    behind busy sync work on the event loop. Cache the result for 30s so
-    the dashboard reflects live state without spamming Stash."""
-    return _status_cache.get("stash_up", producer=check_stash_connection)
-
-
-# pad_image_to_portrait now lives in proxy/util/images.py (imported at top).
-
-def stash_query(query: str, variables: Dict[str, Any] = None, retries: int = None) -> Dict[str, Any]:
-    """Execute a GraphQL query against Stash with retry logic.
-
-    Args:
-        query: The GraphQL query string
-        variables: Optional query variables
-        retries: Number of retries (defaults to STASH_RETRIES config)
-
-    Returns:
-        The JSON response from Stash, or an error dict on failure
-    """
-    if retries is None:
-        retries = STASH_RETRIES
-
-    last_error = None
-    for attempt in range(retries + 1):
-        try:
-            session = get_stash_session()
-            resp = session.post(
-                GRAPHQL_URL,
-                json={"query": query, "variables": variables or {}},
-                timeout=STASH_TIMEOUT
-            )
-            resp.raise_for_status()
-            result = resp.json()
-
-            # Check for GraphQL errors in response
-            if "errors" in result and result["errors"]:
-                error_msgs = [e.get("message", str(e)) for e in result["errors"]]
-                logger.warning(f"GraphQL errors in response: {error_msgs}")
-                # Still return the result as it may contain partial data
-
-            return result
-
-        except requests.exceptions.Timeout as e:
-            last_error = e
-            logger.warning(f"Stash API timeout (attempt {attempt + 1}/{retries + 1}): {e}")
-            if attempt < retries:
-                time.sleep(1 * (attempt + 1))  # Exponential backoff
-
-        except requests.exceptions.ConnectionError as e:
-            last_error = e
-            logger.warning(f"Stash API connection error (attempt {attempt + 1}/{retries + 1}): {e}")
-            if attempt < retries:
-                time.sleep(2 * (attempt + 1))  # Longer backoff for connection issues
-
-        except requests.exceptions.HTTPError as e:
-            last_error = e
-            logger.error(f"Stash API HTTP error: {e}")
-            # Don't retry client errors (4xx)
-            if hasattr(e, 'response') and e.response is not None and 400 <= e.response.status_code < 500:
-                break
-            if attempt < retries:
-                time.sleep(1 * (attempt + 1))
-
-        except Exception as e:
-            last_error = e
-            logger.error(f"Stash API Query Error: {e}")
-            break  # Don't retry unknown errors
-
-    logger.error(f"Stash API failed after {retries + 1} attempts: {last_error}")
-    return {"errors": [str(last_error)], "data": {}}
+# Moved to proxy/stash/client.py. State lives on proxy.runtime (no
+# monolith-local STASH_SESSION/STASH_VERSION/STASH_CONNECTED needed).
+# The TTLCache for Stash health probes is owned by the client module.
+from proxy.stash.client import (  # noqa: F401
+    stash_query,
+    get_stash_session,
+    check_stash_connection,
+    check_stash_connection_cached,
+)
+# Keep a GRAPHQL_URL module-level alias for any remaining monolith log
+# lines; client module writes runtime.GRAPHQL_URL on first query.
+GRAPHQL_URL = f"{_runtime.STASH_URL.rstrip('/')}{_runtime.STASH_GRAPHQL_PATH}"
+_runtime.GRAPHQL_URL = GRAPHQL_URL
 
 def is_sort_only_filter(saved_filter: Dict[str, Any]) -> bool:
     """
@@ -7600,9 +7471,11 @@ async def ui_api_status(request):
         "proxyBind": PROXY_BIND,
         "proxyPort": PROXY_PORT,
         "uptime": uptime_seconds,
-        "stashConnected": STASH_CONNECTED,
-        "stashVersion": STASH_VERSION,
-        "stashUrl": STASH_URL
+        # STASH_CONNECTED/STASH_VERSION live on proxy.runtime now — the
+        # client module writes them from check_stash_connection_cached.
+        "stashConnected": _runtime.STASH_CONNECTED,
+        "stashVersion": _runtime.STASH_VERSION,
+        "stashUrl": STASH_URL,
     })
 
 async def ui_api_config(request):
