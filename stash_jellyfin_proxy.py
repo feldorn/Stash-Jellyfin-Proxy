@@ -715,31 +715,22 @@ def setup_logging():
 logger = setup_logging()
 
 # --- Middleware for Request Logging ---
-# Track active streams to detect start/resume/stop
-# scene_id -> {"last_seen": timestamp, "started": timestamp, "title": str, "user": str, "client_ip": str, "client_type": str, "client_key": str}
-_active_streams = {}
-# Track which client is watching which scene (for single-stream-per-client enforcement)
-# client_key -> scene_id
-_client_streams = {}
-# Track recently stopped streams to prevent false "started" messages after stop
-# scene_id -> timestamp when stopped
-_recently_stopped = {}
-STREAM_RESUME_THRESHOLD = 90  # seconds of inactivity before considering it a "resume" (Infuse buffers ~60s)
-RECENTLY_STOPPED_GRACE = 5  # seconds to ignore new stream requests after a stop (prevents stop/start race)
-
-# Play count cooldown - prevents double-counting rapid start/stop cycles
-# Cooldown = video duration + buffer time
-PLAY_COOLDOWN_BUFFER = 1800  # 30 minutes buffer on top of video duration
-# In-memory tracking: (scene_id, client_ip) -> {"timestamp": float, "cooldown_seconds": float}
-_play_cooldowns = {}
-
-# Smart stream counting - track position to detect intentional new plays vs seeking
-# Constants for stream counting thresholds
-STREAM_COUNT_COOLDOWN = 1800  # 30 minutes - always count as new stream after this gap
-STREAM_START_GAP = 300  # 5 minutes - minimum gap needed for "seek to start" to count
-STREAM_START_THRESHOLD = 0.05  # 5% - seeking to first 5% of file considered "start"
-# In-memory tracking: (scene_id, client_ip) -> {"last_position": int, "last_time": float, "file_size": int}
-_stream_positions = {}
+# Stream-tracking state lives in proxy/state/streams.py. Monolith imports
+# the module (not bare names) and re-exports aliases so legacy call sites
+# keep working; new writes should go through `_streams_mod.X`.
+from proxy.state import streams as _streams_mod
+_active_streams = _streams_mod._active_streams
+_client_streams = _streams_mod._client_streams
+_recently_stopped = _streams_mod._recently_stopped
+_stream_positions = _streams_mod._stream_positions
+should_count_as_new_stream = _streams_mod.should_count_as_new_stream
+mark_stream_stopped = _streams_mod.mark_stream_stopped
+cancel_client_streams = _streams_mod.cancel_client_streams
+STREAM_RESUME_THRESHOLD = _streams_mod.STREAM_RESUME_THRESHOLD
+RECENTLY_STOPPED_GRACE = _streams_mod.RECENTLY_STOPPED_GRACE
+STREAM_COUNT_COOLDOWN = _streams_mod.STREAM_COUNT_COOLDOWN
+STREAM_START_GAP = _streams_mod.STREAM_START_GAP
+STREAM_START_THRESHOLD = _streams_mod.STREAM_START_THRESHOLD
 
 # --- Proxy Statistics Tracking ---
 # Stats live in proxy/state/stats.py. The monolith imports the module
@@ -759,77 +750,26 @@ get_top_played_scenes = _stats_mod.get_top_played_scenes
 get_proxy_stats = _stats_mod.get_proxy_stats
 STATS_FILE = _stats_mod._stats_file()
 
-def should_count_as_new_stream(scene_id: str, client_ip: str, byte_position: int, file_size: int) -> tuple:
-    """Determine if this stream request should count as a new stream.
+# should_count_as_new_stream / mark_stream_stopped / cancel_client_streams
+# now live in proxy/state/streams.py. Back-compat aliases above keep
+# existing monolith call sites working.
 
-    Uses smart detection based on playback position:
-    - 30+ min since last activity → always counts as new stream
-    - Seek to start (first 5%) with 5+ min gap → counts as new stream
-    - First request at start of file → counts as new stream
-    - First request mid-file → likely trailing request after restart, DON'T count
-    - Otherwise (seeking within video) → doesn't count
+# Auth middleware, IP ban tracking, and public-endpoint allowlist live in
+# proxy/middleware/auth.py. All state goes through proxy.runtime; the
+# _ip_failures dict stays local to the middleware module.
+from proxy.middleware.auth import (  # noqa: F401
+    AuthenticationMiddleware,
+    PUBLIC_ENDPOINTS,
+    PUBLIC_PREFIXES,
+    get_client_ip,
+    record_auth_failure,
+    save_banned_ips_to_config,
+    clear_ip_failures,
+)
 
-    Returns tuple of (should_count: bool, is_trailing_after_restart: bool).
-    is_trailing_after_restart indicates this appears to be a post-restart trailing request.
-    """
-    position_key = (scene_id, client_ip)
-    now = time.time()
+# CaseInsensitivePathMiddleware lives in proxy/middleware/paths.py.
+from proxy.middleware.paths import CaseInsensitivePathMiddleware
 
-    # First time seeing this scene from this client
-    if position_key not in _stream_positions:
-        _stream_positions[position_key] = {
-            "last_position": byte_position,
-            "last_time": now,
-            "file_size": file_size
-        }
-        # Only count if starting from beginning of file
-        # If position is mid-file (or unknown size but non-zero position), this is likely a trailing request after server restart
-        if file_size > 0:
-            position_ratio = byte_position / file_size
-            if position_ratio > STREAM_START_THRESHOLD:
-                logger.debug(f"Ignoring mid-file first request for {scene_id}: position {position_ratio:.1%} (likely post-restart trailing request)")
-                return (False, True)  # Don't count, IS trailing after restart
-        elif byte_position > 0:
-            # Unknown file size but non-zero position - likely trailing request
-            logger.debug(f"Ignoring non-zero first request for {scene_id}: position {byte_position} bytes, unknown size (likely post-restart)")
-            return (False, True)  # Don't count, IS trailing after restart
-        return (True, False)  # Count, NOT trailing after restart
-
-    last_info = _stream_positions[position_key]
-    elapsed = now - last_info["last_time"]
-
-    # Update position tracking
-    _stream_positions[position_key] = {
-        "last_position": byte_position,
-        "last_time": now,
-        "file_size": file_size or last_info["file_size"]
-    }
-
-    # Check 1: 30+ minute gap - definitely a new stream
-    if elapsed >= STREAM_COUNT_COOLDOWN:
-        logger.debug(f"New stream counted for {scene_id}: {int(elapsed/60)}min gap exceeds cooldown")
-        return (True, False)
-
-    # Check 2: Seek to start with sufficient gap
-    effective_file_size = file_size or last_info["file_size"]
-    if effective_file_size > 0:
-        position_ratio = byte_position / effective_file_size
-        is_at_start = position_ratio <= STREAM_START_THRESHOLD
-        has_sufficient_gap = elapsed >= STREAM_START_GAP
-
-        if is_at_start and has_sufficient_gap:
-            logger.debug(f"New stream counted for {scene_id}: seek to start ({position_ratio:.1%}) with {int(elapsed/60)}min gap")
-            return (True, False)
-        elif is_at_start:
-            logger.debug(f"Seek to start ignored for {scene_id}: only {int(elapsed)}s gap (need {STREAM_START_GAP}s)")
-
-    # Otherwise, this is just seeking/buffering within the same session
-    logger.debug(f"Same stream session for {scene_id}: position {byte_position}, {int(elapsed)}s since last")
-    return (False, False)
-
-# record_play_count / record_auth_attempt / get_top_played_scenes /
-# get_proxy_stats now live in proxy/state/stats.py. Back-compat aliases
-# installed at the import block above keep existing call sites working.
 
 def get_scene_title(scene_id: str) -> str:
     """Fetch scene title from Stash for logging."""
@@ -874,56 +814,6 @@ def get_scene_info(scene_id: str) -> dict:
     except:
         pass
     return {"title": scene_id, "performer": "", "duration": 0, "file_size": 0}
-
-def mark_stream_stopped(scene_id: str, from_stop_notification: bool = False):
-    """Mark a stream as stopped so next request shows as 'started'."""
-    if scene_id in _active_streams:
-        stream_info = _active_streams[scene_id]
-        client_key = stream_info.get("client_key")
-        # Remove from client tracking
-        if client_key and _client_streams.get(client_key) == scene_id:
-            del _client_streams[client_key]
-        del _active_streams[scene_id]
-
-    # If this came from a stop notification, add to recently stopped to prevent false re-start
-    if from_stop_notification:
-        _recently_stopped[scene_id] = time.time()
-        # Clean up old entries (older than grace period)
-        now = time.time()
-        expired = [k for k, v in _recently_stopped.items() if now - v > RECENTLY_STOPPED_GRACE * 2]
-        for k in expired:
-            del _recently_stopped[k]
-
-def cancel_client_streams(client_key: str, new_scene_id: str = None) -> list:
-    """Cancel any existing streams from this client (except new_scene_id). Returns list of cancelled scene_ids."""
-    cancelled = []
-    current_scene = _client_streams.get(client_key)
-    if current_scene and current_scene != new_scene_id:
-        # Client is starting a different video - cancel the old one
-        if current_scene in _active_streams:
-            old_info = _active_streams[current_scene]
-            logger.info(f"⏹ Stream cancelled: {old_info.get('title', current_scene)} ({current_scene}) - client started new video")
-            del _active_streams[current_scene]
-            cancelled.append(current_scene)
-        del _client_streams[client_key]
-    return cancelled
-
-# Auth middleware, IP ban tracking, and public-endpoint allowlist live in
-# proxy/middleware/auth.py. All state goes through proxy.runtime; the
-# _ip_failures dict stays local to the middleware module.
-from proxy.middleware.auth import (  # noqa: F401
-    AuthenticationMiddleware,
-    PUBLIC_ENDPOINTS,
-    PUBLIC_PREFIXES,
-    get_client_ip,
-    record_auth_failure,
-    save_banned_ips_to_config,
-    clear_ip_failures,
-)
-
-
-# CaseInsensitivePathMiddleware lives in proxy/middleware/paths.py.
-from proxy.middleware.paths import CaseInsensitivePathMiddleware
 
 class RequestLoggingMiddleware:
     """Pure ASGI middleware that doesn't wrap streaming responses (avoids BaseHTTPMiddleware issues)."""
