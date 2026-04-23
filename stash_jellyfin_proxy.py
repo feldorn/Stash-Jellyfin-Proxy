@@ -3383,7 +3383,7 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
             "Id": item_id,
             "Name": title,
             "Path": path,
-            "Protocol": "Http",
+            "Protocol": "File",
             "Type": "Default",
             "Container": container,
             "RunTimeTicks": int(duration * 10000000) if duration else 0,
@@ -5850,7 +5850,7 @@ async def endpoint_playback_info(request):
         return JSONResponse({
             "MediaSources": [{
                 "Id": "src1",
-                "Protocol": "Http",
+                "Protocol": "File",
                 "MediaStreams": [],
                 "SupportsDirectPlay": True,
                 "SupportsTranscoding": False
@@ -5877,7 +5877,7 @@ async def endpoint_playback_info(request):
         return JSONResponse({
             "MediaSources": [{
                 "Id": item_id,
-                "Protocol": "Http",
+                "Protocol": "File",
                 "MediaStreams": [],
                 "SupportsDirectPlay": True,
                 "SupportsTranscoding": False
@@ -5989,7 +5989,7 @@ async def endpoint_playback_info(request):
         "Id": item_id,
         "Name": scene.get("title") or os.path.basename(path),
         "Path": path,
-        "Protocol": "Http",
+        "Protocol": "File",
         "Type": "Default",
         "Container": container,
         "RunTimeTicks": runtime_ticks,
