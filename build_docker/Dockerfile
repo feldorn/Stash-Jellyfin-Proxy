@@ -27,6 +27,7 @@ RUN mkdir -p /app /config && \
     chmod 755 /app /config
 
 COPY stash_jellyfin_proxy.py /app/
+COPY proxy/ /app/proxy/
 RUN chmod +x /app/stash_jellyfin_proxy.py
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh

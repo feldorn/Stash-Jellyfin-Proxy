@@ -80,6 +80,7 @@ trap "rm -rf $BUILD_DIR" EXIT
 
 echo "Preparing build context..."
 cp "${PROJECT_DIR}/stash_jellyfin_proxy.py" "$BUILD_DIR/"
+cp -r "${PROJECT_DIR}/proxy" "$BUILD_DIR/"
 cp "${SCRIPT_DIR}/Dockerfile" "$BUILD_DIR/"
 cp "${SCRIPT_DIR}/docker-entrypoint.sh" "$BUILD_DIR/"
 
