@@ -101,25 +101,18 @@ try:
 except ImportError:
     pass
 
-# Fallback placeholder PNG (400x600 dark blue) - base64 decoded at runtime if needed
-# This is used when Pillow is not available or font generation fails
-PLACEHOLDER_PNG = None
-def _init_placeholder_png():
-    """Generate a 400x600 dark blue PNG placeholder image."""
-    global PLACEHOLDER_PNG
-    if PILLOW_AVAILABLE:
-        try:
-            img = Image.new('RGB', (400, 600), (26, 26, 46))
-            output = io.BytesIO()
-            img.save(output, format='PNG')
-            PLACEHOLDER_PNG = output.getvalue()
-        except Exception:
-            pass
-    if PLACEHOLDER_PNG is None:
-        # Minimal 1x1 dark PNG as last resort
-        PLACEHOLDER_PNG = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
-
-_init_placeholder_png()
+# Image helpers live in proxy/util/images.py. PLACEHOLDER_PNG is also
+# exposed for any remaining monolith code that still references it by
+# name (removed once all consumers are extracted).
+from proxy.util.images import (  # noqa: F401
+    pad_image_to_portrait,
+    generate_text_icon,
+    generate_menu_icon,
+    generate_filter_icon,
+    generate_placeholder_icon,
+    placeholder_png as _placeholder_png,
+)
+PLACEHOLDER_PNG = _placeholder_png()
 
 # --- Configuration Loading ---
 # Config file location: same directory as script, or specified path
@@ -2918,60 +2911,7 @@ def check_stash_connection_cached():
     return _status_cache.get("stash_up", producer=check_stash_connection)
 
 
-def pad_image_to_portrait(image_data: bytes, target_width: int = 400, target_height: int = 600) -> Tuple[bytes, str]:
-    """
-    Pad an image to a portrait 2:3 aspect ratio with a dark background.
-    Uses contain+pad strategy: scales to fit within target, then pads the rest.
-    Returns (image_bytes, content_type).
-    """
-    if not PILLOW_AVAILABLE:
-        return image_data, "image/jpeg"
-
-    try:
-        # Open the image
-        img = Image.open(io.BytesIO(image_data))
-
-        # Convert to RGB if necessary (handles PNG transparency, etc.)
-        if img.mode in ('RGBA', 'LA', 'P'):
-            # Create a dark background for transparent images
-            background = Image.new('RGB', img.size, (20, 20, 20))
-            if img.mode == 'P':
-                img = img.convert('RGBA')
-            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-            img = background
-        elif img.mode != 'RGB':
-            img = img.convert('RGB')
-
-        # Calculate scaling to fit within target while preserving aspect ratio
-        width, height = img.size
-
-        # Scale to fit within the target dimensions (contain strategy)
-        scale_w = target_width / width
-        scale_h = target_height / height
-        scale = min(scale_w, scale_h)  # Use smaller scale to ensure it fits
-
-        new_width = int(width * scale)
-        new_height = int(height * scale)
-
-        # Resize the image
-        img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-        # Create the target canvas with dark background
-        canvas = Image.new('RGB', (target_width, target_height), (20, 20, 20))
-
-        # Center the image on the canvas
-        x_offset = (target_width - new_width) // 2
-        y_offset = (target_height - new_height) // 2
-        canvas.paste(img, (x_offset, y_offset))
-
-        # Save to bytes
-        output = io.BytesIO()
-        canvas.save(output, format='JPEG', quality=85)
-        return output.getvalue(), "image/jpeg"
-
-    except Exception as e:
-        logger.warning(f"Image padding failed: {e}, returning original")
-        return image_data, "image/jpeg"
+# pad_image_to_portrait now lives in proxy/util/images.py (imported at top).
 
 def stash_query(query: str, variables: Dict[str, Any] = None, retries: int = None) -> Dict[str, Any]:
     """Execute a GraphQL query against Stash with retry logic.
@@ -6351,199 +6291,8 @@ async def endpoint_subtitle(request):
         logger.error(f"Subtitle proxy error: {e}")
         return JSONResponse({"error": str(e)}, status_code=500)
 
-def generate_text_icon(text: str, width: int = 400, height: int = 600,
-                       max_chars_per_line: int = 16, max_lines: int = 4) -> Tuple[bytes, str]:
-    """Generate a portrait 2:3 PNG icon with word-wrapped text label.
-
-    Args:
-        text: The text to display
-        width: Image width in pixels
-        height: Image height in pixels
-        max_chars_per_line: Maximum characters per line before wrapping
-        max_lines: Maximum number of lines (text truncated after this)
-    """
-    if not PILLOW_AVAILABLE:
-        logger.debug("Pillow not available, returning placeholder PNG")
-        return PLACEHOLDER_PNG, "image/png"
-
-    try:
-        from PIL import ImageDraw, ImageFont
-        import os
-
-        # Create portrait image with dark background
-        img = Image.new('RGB', (width, height), (26, 26, 46))
-        draw = ImageDraw.Draw(img)
-
-        # Text color (Stash-like blue)
-        text_color = (74, 144, 217)  # #4a90d9
-
-        # Maximum text area (leave padding on sides)
-        PADDING = 30
-        max_text_width = width - (PADDING * 2)
-
-        # Try to load a font
-        font_paths = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        ]
-
-        font_path_found = None
-        for font_path in font_paths:
-            if os.path.exists(font_path):
-                font_path_found = font_path
-                break
-
-        # Word wrap the text first (using character count as rough guide)
-        words = text.split()
-        lines = []
-        current_line = ""
-
-        for word in words:
-            test_line = (current_line + " " + word).strip() if current_line else word
-
-            if len(test_line) <= max_chars_per_line:
-                current_line = test_line
-            else:
-                if current_line:
-                    lines.append(current_line)
-                if len(word) > max_chars_per_line:
-                    current_line = word[:max_chars_per_line - 3] + "..."
-                else:
-                    current_line = word
-
-        if current_line:
-            lines.append(current_line)
-
-        # Truncate to max lines
-        if len(lines) > max_lines:
-            lines = lines[:max_lines]
-            if len(lines[-1]) > max_chars_per_line - 3:
-                lines[-1] = lines[-1][:max_chars_per_line - 3] + "..."
-            else:
-                lines[-1] = lines[-1] + "..."
-
-        # Now find the right font size that fits all lines within max_text_width
-        # Start at 48px and scale down if needed
-        font_size = 48
-        min_font_size = 24
-        font = None
-
-        while font_size >= min_font_size:
-            if font_path_found:
-                try:
-                    font = ImageFont.truetype(font_path_found, font_size)
-                except (IOError, OSError):
-                    font = ImageFont.load_default()
-                    break
-            else:
-                font = ImageFont.load_default()
-                break
-
-            # Check if all lines fit
-            all_fit = True
-            for line in lines:
-                bbox = draw.textbbox((0, 0), line, font=font)
-                line_width = bbox[2] - bbox[0]
-                if line_width > max_text_width:
-                    all_fit = False
-                    break
-
-            if all_fit:
-                break
-
-            font_size -= 2  # Try smaller font
-
-        if font is None:
-            font = ImageFont.load_default()
-
-        logger.debug(f"Icon '{text}': {len(lines)} lines, font size {font_size}px")
-
-        # Calculate line dimensions with final font
-        line_heights = []
-        line_widths = []
-        for line in lines:
-            bbox = draw.textbbox((0, 0), line, font=font)
-            line_widths.append(bbox[2] - bbox[0])
-            line_heights.append(bbox[3] - bbox[1])
-
-        line_spacing = 10
-        total_height = sum(line_heights) + (len(lines) - 1) * line_spacing if lines else 0
-
-        # Center vertically
-        start_y = (height - total_height) // 2
-
-        # Draw each line centered horizontally
-        current_y = start_y
-        for i, line in enumerate(lines):
-            x = (width - line_widths[i]) // 2
-            draw.text((x, current_y), line, fill=text_color, font=font)
-            current_y += line_heights[i] + line_spacing
-
-        # Save as PNG
-        output = io.BytesIO()
-        img.save(output, format='PNG')
-        return output.getvalue(), "image/png"
-
-    except Exception as e:
-        logger.warning(f"Text icon generation failed: {e}")
-        return PLACEHOLDER_PNG, "image/png"
-
-def generate_menu_icon(icon_type: str, width: int = 400, height: int = 600) -> Tuple[bytes, str]:
-    """Generate a menu icon for top-level folders (12 chars wide, 4 lines max)."""
-    icon_names = {
-        "root-scenes": "Scenes",
-        "root-studios": "Studios",
-        "root-performers": "Performers",
-        "root-groups": "Groups",
-        "root-tag": "Tags",
-    }
-
-    text = icon_names.get(icon_type, icon_type.replace("root-", "").replace("-", " ").title())
-    return generate_text_icon(text, width, height, max_chars_per_line=12, max_lines=4)
-
-def generate_filter_icon(text: str, width: int = 400, height: int = 600) -> Tuple[bytes, str]:
-    """Generate a filter icon (10 chars wide, 6 lines max for poster-sized display)."""
-    return generate_text_icon(text, width, height, max_chars_per_line=10, max_lines=6)
-
-def generate_placeholder_icon(item_type: str = "group", width: int = 400, height: int = 600) -> Tuple[bytes, str]:
-    """Generate a placeholder icon for items without images."""
-    if not PILLOW_AVAILABLE:
-        # Return dark PNG placeholder
-        return PLACEHOLDER_PNG, "image/png"
-
-    try:
-        from PIL import ImageDraw
-
-        # Create image with dark background
-        img = Image.new('RGB', (width, height), (30, 30, 35))
-        draw = ImageDraw.Draw(img)
-
-        # Gray placeholder color
-        placeholder_color = (80, 80, 90)
-
-        if item_type == "group":
-            # Film strip / movie icon
-            draw.rectangle([120, 200, 280, 360], outline=placeholder_color, width=6)
-            # Film holes on sides
-            for y in [220, 270, 320]:
-                draw.rectangle([130, y, 150, y+20], fill=placeholder_color)
-                draw.rectangle([250, y, 270, y+20], fill=placeholder_color)
-        else:
-            # Generic placeholder - question mark or film icon
-            draw.ellipse([140, 200, 260, 320], outline=placeholder_color, width=6)
-            draw.text((180, 230), "?", fill=placeholder_color)
-
-        # Save as PNG
-        output = io.BytesIO()
-        img.save(output, format='PNG')
-        return output.getvalue(), "image/png"
-
-    except Exception as e:
-        logger.warning(f"Placeholder icon generation failed: {e}")
-        return b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82', "image/png"
+# generate_text_icon / _menu_icon / _filter_icon / _placeholder_icon all
+# live in proxy/util/images.py (imported at top).
 
 async def endpoint_image(request):
     """Proxy image from Stash with proper authentication. Handles scenes, studios, performers, groups, and menu icons."""
