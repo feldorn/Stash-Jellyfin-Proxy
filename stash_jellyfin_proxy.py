@@ -742,60 +742,22 @@ STREAM_START_THRESHOLD = 0.05  # 5% - seeking to first 5% of file considered "st
 _stream_positions = {}
 
 # --- Proxy Statistics Tracking ---
-# Stats are persisted to JSON file and survive restarts
-STATS_FILE = os.path.join(os.path.dirname(CONFIG_FILE) if CONFIG_FILE else ".", "proxy_stats.json")
-_proxy_stats = {
-    "total_streams": 0,           # Lifetime total streams
-    "streams_today": 0,           # Streams started today
-    "streams_today_date": "",     # Date string for today's count (YYYY-MM-DD)
-    "unique_ips_today": [],       # List of unique IPs that connected today
-    "auth_success": 0,            # Lifetime successful auths
-    "auth_failed": 0,             # Lifetime failed auths
-    "play_counts": {},            # scene_id -> {"count": int, "title": str, "performer": str, "last_played": timestamp}
-}
-_stats_dirty = False  # Flag to track if stats need saving
-_stats_last_save = 0  # Timestamp of last save
-
-def load_proxy_stats():
-    """Load stats from JSON file."""
-    global _proxy_stats
-    if os.path.isfile(STATS_FILE):
-        try:
-            with open(STATS_FILE, 'r') as f:
-                loaded = json.load(f)
-                # Merge with defaults to handle missing keys
-                for key in _proxy_stats:
-                    if key in loaded:
-                        _proxy_stats[key] = loaded[key]
-            logger.debug(f"Loaded proxy stats from {STATS_FILE}")
-        except Exception as e:
-            logger.warning(f"Could not load proxy stats: {e}")
-
-def save_proxy_stats():
-    """Save stats to JSON file."""
-    global _stats_dirty, _stats_last_save
-    try:
-        with open(STATS_FILE, 'w') as f:
-            json.dump(_proxy_stats, f, indent=2)
-        _stats_dirty = False
-        _stats_last_save = time.time()
-        logger.debug(f"Saved proxy stats to {STATS_FILE}")
-    except Exception as e:
-        logger.warning(f"Could not save proxy stats: {e}")
-
-def maybe_save_stats():
-    """Save stats if dirty and enough time has passed (every 60 seconds)."""
-    global _stats_dirty
-    if _stats_dirty and (time.time() - _stats_last_save) > 60:
-        save_proxy_stats()
-
-def reset_daily_stats_if_needed():
-    """Reset daily counters if the date has changed."""
-    today = time.strftime("%Y-%m-%d")
-    if _proxy_stats["streams_today_date"] != today:
-        _proxy_stats["streams_today"] = 0
-        _proxy_stats["streams_today_date"] = today
-        _proxy_stats["unique_ips_today"] = []
+# Stats live in proxy/state/stats.py. The monolith imports the module
+# (not individual names) so mutations from either side stay coherent.
+# Back-compat aliases: a few existing monolith call sites (middleware,
+# UI endpoints) reference the old bare names; re-export them until each
+# call site is migrated to `_stats_mod.X`.
+from proxy.state import stats as _stats_mod
+_proxy_stats = _stats_mod._proxy_stats      # same dict, mutated in place
+load_proxy_stats = _stats_mod.load_proxy_stats
+save_proxy_stats = _stats_mod.save_proxy_stats
+maybe_save_stats = _stats_mod.maybe_save_stats
+reset_daily_stats_if_needed = _stats_mod.reset_daily_stats_if_needed
+record_play_count = _stats_mod.record_play_count
+record_auth_attempt = _stats_mod.record_auth_attempt
+get_top_played_scenes = _stats_mod.get_top_played_scenes
+get_proxy_stats = _stats_mod.get_proxy_stats
+STATS_FILE = _stats_mod._stats_file()
 
 def should_count_as_new_stream(scene_id: str, client_ip: str, byte_position: int, file_size: int) -> tuple:
     """Determine if this stream request should count as a new stream.
@@ -865,104 +827,9 @@ def should_count_as_new_stream(scene_id: str, client_ip: str, byte_position: int
     logger.debug(f"Same stream session for {scene_id}: position {byte_position}, {int(elapsed)}s since last")
     return (False, False)
 
-def record_play_count(scene_id: str, title: str, performer: str, client_ip: str, duration: float = 0):
-    """Record a play count for the Top Played list with duration-based cooldown.
-
-    Args:
-        scene_id: The scene identifier
-        title: Scene title for display
-        performer: Performer name(s)
-        client_ip: Client IP address
-        duration: Video duration in seconds (for cooldown calculation)
-
-    Play counts use duration-based cooldown (duration + 30 min buffer) to count unique views.
-    Stream counts are handled separately by should_count_as_new_stream().
-    """
-    global _stats_dirty
-
-    # Ensure duration is a valid positive number (guard against None/negative)
-    safe_duration = max(0, float(duration or 0))
-    cooldown_key = (scene_id, client_ip)
-    cooldown_seconds = safe_duration + PLAY_COOLDOWN_BUFFER
-    now = time.time()
-
-    should_count_play = True
-    if cooldown_key in _play_cooldowns:
-        last_play = _play_cooldowns[cooldown_key]
-        elapsed = now - last_play["timestamp"]
-        if elapsed < last_play["cooldown_seconds"]:
-            # Still in cooldown - don't count this play
-            should_count_play = False
-            remaining = int(last_play["cooldown_seconds"] - elapsed)
-            logger.debug(f"Play cooldown active for {scene_id} from {client_ip} ({remaining}s remaining)")
-
-    if should_count_play:
-        # Update cooldown tracking
-        _play_cooldowns[cooldown_key] = {
-            "timestamp": now,
-            "cooldown_seconds": cooldown_seconds
-        }
-
-        # Update play count for this scene
-        if scene_id not in _proxy_stats["play_counts"]:
-            _proxy_stats["play_counts"][scene_id] = {
-                "count": 0,
-                "title": title,
-                "performer": performer,
-                "last_played": 0
-            }
-
-        _proxy_stats["play_counts"][scene_id]["count"] += 1
-        _proxy_stats["play_counts"][scene_id]["title"] = title  # Update in case it changed
-        _proxy_stats["play_counts"][scene_id]["performer"] = performer
-        _proxy_stats["play_counts"][scene_id]["last_played"] = now
-
-        # Log the cooldown duration for debugging
-        cooldown_mins = int(cooldown_seconds / 60)
-        logger.debug(f"Play counted for {scene_id} from {client_ip} (cooldown: {cooldown_mins}min)")
-
-    _stats_dirty = True
-    maybe_save_stats()
-
-def record_auth_attempt(success: bool):
-    """Record an authentication attempt."""
-    global _stats_dirty
-    if success:
-        _proxy_stats["auth_success"] += 1
-    else:
-        _proxy_stats["auth_failed"] += 1
-    _stats_dirty = True
-
-def get_top_played_scenes(limit: int = 5) -> list:
-    """Get the top N most played scenes."""
-    play_counts = _proxy_stats.get("play_counts", {})
-    sorted_scenes = sorted(
-        play_counts.items(),
-        key=lambda x: x[1].get("count", 0),
-        reverse=True
-    )[:limit]
-
-    return [
-        {
-            "scene_id": scene_id,
-            "title": info.get("title", scene_id),
-            "performer": info.get("performer", ""),
-            "count": info.get("count", 0)
-        }
-        for scene_id, info in sorted_scenes
-    ]
-
-def get_proxy_stats() -> dict:
-    """Get current proxy statistics."""
-    reset_daily_stats_if_needed()
-    return {
-        "total_streams": _proxy_stats["total_streams"],
-        "streams_today": _proxy_stats["streams_today"],
-        "unique_ips_today": len(_proxy_stats["unique_ips_today"]),
-        "auth_success": _proxy_stats["auth_success"],
-        "auth_failed": _proxy_stats["auth_failed"],
-        "top_played": get_top_played_scenes(5)
-    }
+# record_play_count / record_auth_attempt / get_top_played_scenes /
+# get_proxy_stats now live in proxy/state/stats.py. Back-compat aliases
+# installed at the import block above keep existing call sites working.
 
 def get_scene_title(scene_id: str) -> str:
     """Fetch scene title from Stash for logging."""
@@ -1177,15 +1044,14 @@ class RequestLoggingMiddleware:
             should_count, is_trailing_after_restart = count_result
 
             if should_count:
-                reset_daily_stats_if_needed()
-                _proxy_stats["total_streams"] += 1
-                _proxy_stats["streams_today"] += 1
+                _stats_mod.reset_daily_stats_if_needed()
+                _stats_mod._proxy_stats["total_streams"] += 1
+                _stats_mod._proxy_stats["streams_today"] += 1
                 # Track unique IPs
-                if client_ip not in _proxy_stats["unique_ips_today"]:
-                    _proxy_stats["unique_ips_today"].append(client_ip)
-                global _stats_dirty
-                _stats_dirty = True
-                maybe_save_stats()
+                if client_ip not in _stats_mod._proxy_stats["unique_ips_today"]:
+                    _stats_mod._proxy_stats["unique_ips_today"].append(client_ip)
+                _stats_mod.mark_dirty()
+                _stats_mod.maybe_save_stats()
 
             # Check if stream_info has expired (gap > 30 min = treat as new for UI purposes)
             if stream_info and (now - stream_info["last_seen"]) >= STREAM_COUNT_COOLDOWN:
@@ -6318,25 +6184,12 @@ async def ui_api_stats(request):
 
 async def ui_api_stats_reset(request):
     """Reset all proxy statistics."""
-    global _proxy_stats, _stats_dirty
-
     if request.method != "POST":
         return JSONResponse({"error": "Method not allowed"}, status_code=405)
 
     logger.info("Statistics reset requested via Web UI")
-
-    # Reset all stats to initial values
-    _proxy_stats = {
-        "total_streams": 0,
-        "streams_today": 0,
-        "streams_today_date": time.strftime("%Y-%m-%d"),
-        "unique_ips_today": [],
-        "auth_success": 0,
-        "auth_failed": 0,
-        "play_counts": {},
-    }
-    _stats_dirty = True
-    save_proxy_stats()
+    _stats_mod.reset_stats()
+    _stats_mod.save_proxy_stats()
 
     return JSONResponse({"success": True, "message": "Statistics reset"})
 
