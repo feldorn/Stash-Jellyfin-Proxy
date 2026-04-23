@@ -1,4 +1,5 @@
-"""Stash GraphQL client — the only module that talks to Stash directly.
+"""Stash GraphQL client + binary-fetch helper — the modules that talk to
+Stash directly.
 
 Reads connection config + session state from proxy.runtime. Writes
 STASH_SESSION / STASH_VERSION / STASH_CONNECTED / GRAPHQL_URL back to
@@ -10,7 +11,7 @@ migration is a post-v7.00 follow-on noted in plan §13.
 """
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import requests
 
@@ -144,3 +145,35 @@ def stash_query(query: str, variables: Dict[str, Any] = None, retries: int = Non
 
     logger.error(f"Stash API failed after {retries + 1} attempts: {last_error}")
     return {"errors": [str(last_error)], "data": {}}
+
+
+def fetch_from_stash(url: str, extra_headers: Dict[str, str] = None, timeout: int = 30, stream: bool = False) -> Tuple[bytes, str, Dict[str, str]]:
+    """Fetch binary content (images, video bytes) from Stash using the
+    authenticated session so redirects carry auth correctly.
+    Returns (data, content_type, response_headers)."""
+    session = get_stash_session()
+    headers = extra_headers or {}
+    try:
+        response = session.get(url, headers=headers, timeout=timeout, stream=stream, allow_redirects=True)
+        content_type = response.headers.get('Content-Type', 'application/octet-stream')
+        # HTML response means auth flow redirected to a login page —
+        # something about the session is wrong.
+        if 'text/html' in content_type:
+            if stream:
+                preview = next(response.iter_content(chunk_size=200), b'').decode('utf-8', errors='ignore')
+            else:
+                preview = response.text[:200]
+            logger.error(f"Got HTML response instead of media from {url}")
+            logger.error(f"First 200 chars: {preview}")
+            raise Exception("Authentication failed - received HTML instead of media")
+        response.raise_for_status()
+        resp_headers = dict(response.headers)
+        if stream:
+            data = b''.join(response.iter_content(chunk_size=65536))
+        else:
+            data = response.content
+        logger.debug(f"Fetch success from {url}: {len(data)} bytes, type={content_type}")
+        return data, content_type, resp_headers
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request failed for {url}: {e}")
+        raise
