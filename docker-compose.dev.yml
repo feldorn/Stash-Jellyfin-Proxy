@@ -18,7 +18,10 @@ services:
       - TZ=America/Chicago
     networks:
       # Joins the prod network so dev container can resolve `stash:9999`.
+      # That network is internal-only, so also attach the compose default
+      # network to allow port publishing to the host.
       - media_mgmt_network
+      - default
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8096/System/Info/Public"]
       interval: 30s
@@ -35,7 +38,12 @@ services:
     restart: unless-stopped
     ports:
       - "18098:80"
+    volumes:
+      # Preconfigure the web client to auto-target the dev proxy. Overrides
+      # the config.json shipped inside the upstream jellyfin-web bundle.
+      - ./build_docker/jellyfin-web.config.json:/usr/share/nginx/html/config.json:ro
 
 networks:
   media_mgmt_network:
     external: true
+  default:
