@@ -17,10 +17,13 @@ SOURCE = PROXY_SRC_PATH.read_text()
 
 
 def _extract():
-    """Pull load_config, run_config_migration, _write_v2_config and their
-    module-level state into a self-contained namespace."""
+    """Pull run_config_migration, _write_v2_config and their module-level
+    state from the monolith (where they still live pre-extraction) into a
+    self-contained namespace. load_config is now its own module so we just
+    import it."""
+    from proxy.config.loader import load_config as _load_config
     tree = ast.parse(SOURCE)
-    wanted_funcs = {"load_config", "run_config_migration", "_write_v2_config"}
+    wanted_funcs = {"run_config_migration", "_write_v2_config"}
     wanted_assigns = {
         "CURRENT_CONFIG_VERSION", "_V2_DEFAULT_FLAT", "_V2_DEFAULT_PLAYERS",
         "_V2_FILE_HEADER", "MIGRATION_PERFORMED", "MIGRATION_LOG",
@@ -37,8 +40,10 @@ def _extract():
         "os": os,
         "sys": sys,
         "datetime": __import__("datetime"),
+        "load_config": _load_config,  # migration helpers call this internally
     }
     exec("\n\n".join(parts), ns)
+    ns["load_config"] = _load_config
     return ns
 
 

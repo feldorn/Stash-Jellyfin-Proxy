@@ -1,35 +1,7 @@
 """Unit tests for the INI-section-aware config parser."""
-import importlib.util
-import sys
-from pathlib import Path
-
 import pytest
 
-# Load stash_jellyfin_proxy.load_config without importing the whole module
-# (which would try to start Starlette, set up Stash, etc.). Execute just the
-# function in isolation by pulling the file and running it via exec — the
-# parser itself has no external dependencies.
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PROXY_SRC = REPO_ROOT / "stash_jellyfin_proxy.py"
-
-
-def _extract_load_config():
-    # Parse the source to grab only the load_config function body. Simpler
-    # than spinning up the full module — and doesn't require the proxy to
-    # be importable in isolation.
-    import ast
-    tree = ast.parse(PROXY_SRC.read_text())
-    fn_node = next(
-        n for n in tree.body
-        if isinstance(n, ast.FunctionDef) and n.name == "load_config"
-    )
-    fn_source = ast.get_source_segment(PROXY_SRC.read_text(), fn_node)
-    module_globals = {"os": __import__("os"), "sys": sys}
-    exec(fn_source, module_globals)
-    return module_globals["load_config"]
-
-
-load_config = _extract_load_config()
+from proxy.config.loader import load_config
 
 
 def _write(tmp_path, text):
