@@ -16,7 +16,7 @@ import json
 import logging
 import os
 import random
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from starlette.responses import JSONResponse
 
@@ -1707,6 +1707,107 @@ async def endpoint_items(request):
     return JSONResponse(response_data)
 
 
+async def _fetch_studio_packet(studio_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch the rich studio packet from Stash and shape it for Jellyfin's
+    About section. Returns None if the studio doesn't exist.
+
+    Covers: Overview (details + aliases + homepage), CommunityRating,
+    ProductionYear/EndDate (from earliest/latest scene dates), parent studio
+    (as Studios[]), tags mapped to Genres/Tags, favorite flag, StashDb
+    provider id."""
+    q = """query StudioPacket($id: ID!, $sid: [ID!]) {
+        findStudio(id: $id) {
+            id name url details aliases rating100 favorite scene_count
+            parent_studio { id name }
+            tags { id name }
+            stash_ids { endpoint stash_id }
+        }
+        earliest: findScenes(
+            scene_filter: {studios: {value: $sid, modifier: INCLUDES}},
+            filter: {page: 1, per_page: 1, sort: "date", direction: ASC}
+        ) { scenes { date } }
+        latest: findScenes(
+            scene_filter: {studios: {value: $sid, modifier: INCLUDES}},
+            filter: {page: 1, per_page: 1, sort: "date", direction: DESC}
+        ) { scenes { date } }
+    }"""
+    res = await stash_query(q, {"id": studio_id, "sid": [studio_id]})
+    data = (res or {}).get("data") or {}
+    studio = data.get("findStudio")
+    if not studio:
+        return None
+
+    out: Dict[str, Any] = {}
+
+    # Overview — details + aliases. Homepage goes to ExternalUrls only so
+    # it doesn't pollute the description text.
+    overview_parts = []
+    if studio.get("details"):
+        overview_parts.append(studio["details"].strip())
+    aliases = [a for a in (studio.get("aliases") or []) if a]
+    if aliases:
+        overview_parts.append(f"Also known as: {', '.join(aliases)}")
+    if overview_parts:
+        out["Overview"] = "\n\n".join(overview_parts)
+
+    # Rating — Stash rating100 (0–100) → Jellyfin CommunityRating (0–10).
+    if studio.get("rating100") is not None:
+        try:
+            out["CommunityRating"] = round(float(studio["rating100"]) / 10.0, 1)
+        except (TypeError, ValueError):
+            pass
+
+    # Parent studio — rendered as Studios[] so Swiftfin's About shows it
+    # under the Network/Studio field.
+    parent = studio.get("parent_studio") or {}
+    if parent.get("id") and parent.get("name"):
+        out["Studios"] = [{"Name": parent["name"], "Id": f"studio-{parent['id']}"}]
+
+    # Tags — strip the SERIES marker (it's plumbing, not user-facing), map
+    # the rest to Jellyfin Genres + Tags.
+    series_tag_lc = (runtime.SERIES_TAG or "").lower()
+    tag_names = [
+        (t.get("name") or "").strip()
+        for t in (studio.get("tags") or [])
+        if t.get("name") and (t.get("name") or "").lower() != series_tag_lc
+    ]
+    if tag_names:
+        out["Genres"] = tag_names
+        out["Tags"] = tag_names
+
+    # Year range — earliest scene → ProductionYear, latest → EndDate.
+    earliest_scenes = (data.get("earliest") or {}).get("scenes") or []
+    latest_scenes = (data.get("latest") or {}).get("scenes") or []
+    if earliest_scenes and earliest_scenes[0].get("date"):
+        date_str = earliest_scenes[0]["date"]
+        try:
+            out["ProductionYear"] = int(date_str[:4])
+            out["PremiereDate"] = f"{date_str}T00:00:00.0000000Z"
+        except (ValueError, TypeError):
+            pass
+    if latest_scenes and latest_scenes[0].get("date"):
+        date_str = latest_scenes[0]["date"]
+        try:
+            out["EndDate"] = f"{date_str}T00:00:00.0000000Z"
+        except (ValueError, TypeError):
+            pass
+
+    # Homepage as an external link.
+    if studio.get("url"):
+        out["ExternalUrls"] = [{"Name": "Homepage", "Url": studio["url"]}]
+
+    # StashDb provider id for client-side deep linking.
+    stash_ids = studio.get("stash_ids") or []
+    if stash_ids and stash_ids[0].get("stash_id"):
+        out["ProviderIds"] = {"StashDb": stash_ids[0]["stash_id"]}
+
+    # Core counts + favorite state — callers merge these into the envelope.
+    out["_favorite"] = bool(studio.get("favorite"))
+    out["_scene_count"] = int(studio.get("scene_count") or 0)
+    out["_name"] = studio.get("name") or f"Studio {studio_id}"
+    return out
+
+
 async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
 
@@ -1804,28 +1905,31 @@ async def endpoint_item_details(request):
 
     elif item_id.startswith("series-"):
         studio_id = item_id.replace("series-", "")
-        q = """query FindStudio($id: ID!) { findStudio(id: $id) { id name image_path scene_count details } }"""
-        res = await stash_query(q, {"id": studio_id})
-        studio = res.get("data", {}).get("findStudio")
-        if not studio:
+        packet = await _fetch_studio_packet(studio_id)
+        if not packet:
             return JSONResponse({"error": "Series not found"}, status_code=404)
+        name = packet.pop("_name")
+        scene_count = packet.pop("_scene_count")
+        is_favorite = packet.pop("_favorite")
         out = {
-            "Name": studio["name"],
-            "SortName": studio["name"],
+            "Name": name,
+            "SortName": name,
             "Id": item_id,
             "ServerId": runtime.SERVER_ID,
             "Type": "Series",
             "IsFolder": True,
-            "ChildCount": studio.get("scene_count", 0),
-            "RecursiveItemCount": studio.get("scene_count", 0),
+            "ChildCount": scene_count,
+            "RecursiveItemCount": scene_count,
             "PrimaryImageAspectRatio": 0.6667,
             "ImageTags": {"Primary": "img"},
             "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"img": "000000"}},
             "BackdropImageTags": ["img"],
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id},
+            "UserData": {
+                "PlaybackPositionTicks": 0, "PlayCount": 0,
+                "IsFavorite": is_favorite, "Played": False, "Key": item_id,
+            },
         }
-        if studio.get("details"):
-            out["Overview"] = studio["details"]
+        out.update(packet)
         return JSONResponse(out)
 
     elif item_id.startswith("season-"):
@@ -1903,15 +2007,13 @@ async def endpoint_item_details(request):
     elif item_id.startswith("studio-"):
         # Fetch actual studio info from Stash
         studio_id = item_id.replace("studio-", "")
-        q = """query FindStudio($id: ID!) { findStudio(id: $id) { id name image_path scene_count } }"""
-        res = await stash_query(q, {"id": studio_id})
-        studio = res.get("data", {}).get("findStudio", {})
-
-        studio_name = studio.get("name", f"Studio {studio_id}")
-        scene_count = studio.get("scene_count", 0)
-        has_image = bool(studio.get("image_path"))
-
-        return JSONResponse({
+        packet = await _fetch_studio_packet(studio_id)
+        if not packet:
+            return JSONResponse({"error": "Studio not found"}, status_code=404)
+        studio_name = packet.pop("_name")
+        scene_count = packet.pop("_scene_count")
+        is_favorite = packet.pop("_favorite")
+        out = {
             "Name": studio_name,
             "SortName": studio_name,
             "Id": item_id,
@@ -1920,13 +2022,18 @@ async def endpoint_item_details(request):
             "CollectionType": "movies",
             "IsFolder": True,
             "ImageTags": {"Primary": "img"},
-            "ImageBlurHashes": {"Primary": {"img": "000000"}},
+            "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"img": "000000"}},
             "PrimaryImageAspectRatio": 0.6667,
-            "BackdropImageTags": [],
+            "BackdropImageTags": ["img"],
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
-            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
-        })
+            "UserData": {
+                "PlaybackPositionTicks": 0, "PlayCount": 0,
+                "IsFavorite": is_favorite, "Played": False, "Key": item_id,
+            },
+        }
+        out.update(packet)
+        return JSONResponse(out)
 
     elif item_id == "root-performers":
         # Get actual count
