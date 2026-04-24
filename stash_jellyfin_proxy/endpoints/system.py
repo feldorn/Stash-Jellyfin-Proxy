@@ -30,9 +30,12 @@ a { color: #5ba8ff; }
 <h1>Stash-Jellyfin Proxy</h1>
 <div class="sub">Jellyfin API emulation layer in front of a Stash media server.</div>
 <div class="card">
-  <strong>This is an API endpoint, not a web app.</strong>
-  Point a Jellyfin-compatible client (Swiftfin, Infuse, SenPlayer, the official Jellyfin iOS/Android app)
-  at this server's address to browse and stream.
+  <strong>API endpoint.</strong>
+  This server works only with a dedicated Jellyfin-compatible
+  <em>media player</em> &mdash; <em>Swiftfin</em> (iOS / iPadOS / tvOS),
+  <em>Infuse</em> (iOS / tvOS), or <em>SenPlayer</em> (iOS).
+  The official Jellyfin mobile apps are not supported because they load
+  the server's web UI in a WebView rather than using the API directly.
 </div>
 <div class="card">
   Configuration and status dashboard: <a href="/"></a>
@@ -40,9 +43,6 @@ a { color: #5ba8ff; }
     window.location.origin.replace(/:\\d+/, ':' + "__UI_PORT__");
     document.querySelector('.card a').textContent = document.querySelector('.card a').href;
   </script>
-</div>
-<div class="card">
-  Server identity: <a href="/System/Info/Public"><code>/System/Info/Public</code></a>
 </div>
 </body>
 </html>
