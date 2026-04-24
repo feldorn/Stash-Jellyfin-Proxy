@@ -55,7 +55,84 @@
         <div class="page-title">Connection</div>
         <div class="page-subtitle">Stash server connection and client credentials</div>
       </div>
-      <div class="page-content"><em class="section-note">Connection — coming in Phase 5B pass 3</em></div>
+      <div class="page-content" id="connection-content">
+
+        <!-- Stash Server -->
+        <div class="card" data-section="stash-server">
+          <div class="card-header">
+            <div class="card-title">Stash Server <span class="unsaved-dot hide"></span></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <div class="field-label">Stash URL <span class="badge restart">⚠ Requires restart</span></div>
+              <input type="text" data-key="STASH_URL" placeholder="http://localhost:9999">
+              <div class="field-help">Full URL including port. Use <code>host.docker.internal</code> if Stash is on the Docker host.</div>
+            </div>
+            <div class="field">
+              <div class="field-label">API Key <span class="badge restart">⚠ Requires restart</span></div>
+              <input type="password" data-key="STASH_API_KEY" autocomplete="off" placeholder="(unchanged)">
+              <div class="field-help">From Stash → Settings → Security → API Key. Required for images to load. Leave blank to keep the current value.</div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <div class="field-label">GraphQL Path <span class="badge restart">⚠</span></div>
+                <input type="text" data-key="STASH_GRAPHQL_PATH" placeholder="/graphql">
+                <div class="field-help">Advanced: override for reverse-proxy setups.</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Request Timeout (seconds) <span class="badge restart">⚠</span></div>
+                <input type="number" data-key="STASH_TIMEOUT" min="1" max="300">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <div class="field-label">Retry Attempts <span class="badge restart">⚠</span></div>
+                <input type="number" data-key="STASH_RETRIES" min="0" max="10">
+              </div>
+              <div class="field">
+                <div class="toggle-row">
+                  <div class="info">
+                    <div class="tl">Verify TLS Certificate <span class="badge restart">⚠</span></div>
+                    <div class="th">Disable for self-signed certificates.</div>
+                  </div>
+                  <div class="toggle" data-key="STASH_VERIFY_TLS"></div>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <button class="btn" id="conn-test-btn">Test Connection</button>
+              <div id="conn-test-result" class="field-help" style="margin-top: 8px;"></div>
+              <div class="field-help">Runs a live probe against the values above (no save required).</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn primary" data-save="stash-server">Save</button>
+          </div>
+        </div>
+
+        <!-- Client Credentials -->
+        <div class="card" data-section="credentials">
+          <div class="card-header">
+            <div class="card-title">Client Credentials <span class="unsaved-dot hide"></span></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <div class="field-label">Username <span class="badge restart">⚠ Requires restart</span></div>
+              <input type="text" data-key="SJS_USER" autocomplete="off">
+              <div class="field-help">The username Jellyfin clients use to connect to this proxy.</div>
+            </div>
+            <div class="field">
+              <div class="field-label">Password <span class="badge restart">⚠ Requires restart</span></div>
+              <input type="password" data-key="SJS_PASSWORD" autocomplete="new-password" placeholder="(unchanged)">
+              <div class="field-help">Leave blank to keep the current password.</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn primary" data-save="credentials">Save</button>
+          </div>
+        </div>
+
+      </div>
     </section>
 
     <!-- ================ LIBRARIES ================ -->

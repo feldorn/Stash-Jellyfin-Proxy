@@ -192,6 +192,50 @@ async def ui_api_download_config(request):
     )
 
 
+async def ui_api_stash_test(request):
+    """Live-probe Stash with candidate connection settings from the Connection
+    tab. Does NOT touch runtime.STASH_URL/STASH_API_KEY — lets the user
+    validate credentials before saving + restarting."""
+    if request.method != "POST":
+        return JSONResponse({"error": "Method not allowed"}, status_code=405)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    url = (body.get("STASH_URL") or runtime.STASH_URL or "").rstrip("/")
+    gq_path = body.get("STASH_GRAPHQL_PATH") or runtime.STASH_GRAPHQL_PATH or "/graphql"
+    api_key = body.get("STASH_API_KEY") or runtime.STASH_API_KEY
+    verify_tls = bool(body.get("STASH_VERIFY_TLS", runtime.STASH_VERIFY_TLS))
+
+    if not url:
+        return JSONResponse({"ok": False, "error": "STASH_URL is empty"})
+
+    full_url = url + (gq_path if gq_path.startswith("/") else "/" + gq_path)
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["ApiKey"] = api_key
+
+    def _probe():
+        import httpx
+        try:
+            with httpx.Client(verify=verify_tls, headers=headers, timeout=8, follow_redirects=True) as client:
+                resp = client.post(full_url, json={"query": "{ version { version } }"})
+                resp.raise_for_status()
+                data = resp.json()
+                version = (data.get("data") or {}).get("version", {}).get("version")
+                if not version:
+                    errs = data.get("errors") or []
+                    msg = errs[0].get("message") if errs else "no version in response"
+                    return {"ok": False, "error": f"GraphQL returned no version: {msg}"}
+                return {"ok": True, "version": version}
+        except Exception as e:
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    result = await asyncio.to_thread(_probe)
+    return JSONResponse(result)
+
+
 async def ui_api_restart(request):
     """Request a proxy restart. Sets runtime-level flag + event; the
     bootstrap loop picks those up and exits for the supervisor to relaunch."""

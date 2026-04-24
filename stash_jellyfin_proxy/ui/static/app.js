@@ -174,6 +174,13 @@ function bindFormFromConfig(root) {
       el.value = val == null ? "" : String(val);
     } else if (el.type === "checkbox") {
       el.checked = !!val;
+    } else if (el.type === "password") {
+      /* Never bind the masked value into a password input — the backend
+         returns "********", which would round-trip back on save as the
+         literal asterisks. Leaving the field blank (with a "(unchanged)"
+         placeholder) means the user must retype to change it; otherwise
+         readSectionValues skips the key on save. */
+      el.value = "";
     } else if (Array.isArray(val)) {
       el.value = val.join(", ");
     } else {
@@ -224,6 +231,10 @@ function readSectionValues(card) {
       out[key] = el.value;
     } else if (el.type === "checkbox") {
       out[key] = el.checked;
+    } else if (el.type === "password") {
+      /* Blank password = user didn't retype = keep existing (the backend
+         preserves the stored value when a masked or empty string arrives). */
+      if (el.value !== "") out[key] = el.value;
     } else if (el.type === "number") {
       out[key] = el.value === "" ? "" : Number(el.value);
     } else {
@@ -243,6 +254,52 @@ async function saveSection(card) {
     toast(`Save failed: ${e.message}`, "error");
   }
 }
+
+/* ============================================================ */
+/* Connection tab                                               */
+/* ============================================================ */
+window.init_connection = async function () {
+  try { await loadConfig(); } catch {}
+  bindFormFromConfig(pageRoot("connection"));
+
+  qs("#conn-test-btn").addEventListener("click", async () => {
+    const btn = qs("#conn-test-btn");
+    const result = qs("#conn-test-result");
+    const root = pageRoot("connection");
+    /* Read current form values (may be unsaved edits). Omit blank API key
+       so the backend falls back to the stored key. */
+    const payload = {
+      STASH_URL: qs('[data-key=STASH_URL]', root).value.trim(),
+      STASH_GRAPHQL_PATH: qs('[data-key=STASH_GRAPHQL_PATH]', root).value.trim() || "/graphql",
+      STASH_VERIFY_TLS: qs('[data-key=STASH_VERIFY_TLS]', root).classList.contains("on"),
+    };
+    const apiKeyInput = qs('[data-key=STASH_API_KEY]', root).value;
+    if (apiKeyInput !== "") payload.STASH_API_KEY = apiKeyInput;
+
+    btn.disabled = true;
+    result.textContent = "Testing…";
+    result.style.color = "";
+    try {
+      const res = await apiPost("/api/stash/test", payload);
+      if (res.ok) {
+        result.innerHTML = `✓ Connected — Stash ${escapeHtml(res.version || "unknown")}`;
+        result.style.color = "var(--ok, #36c563)";
+      } else {
+        result.innerHTML = `✗ Connection failed: ${escapeHtml(res.error || "unknown error")}`;
+        result.style.color = "var(--err, #e86464)";
+      }
+    } catch (e) {
+      result.innerHTML = `✗ Connection failed: ${escapeHtml(e.message)}`;
+      result.style.color = "var(--err, #e86464)";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+};
+
+window.show_connection = async function () {
+  try { await loadConfig(); bindFormFromConfig(pageRoot("connection")); } catch {}
+};
 
 /* ============================================================ */
 /* System tab                                                   */
