@@ -35,10 +35,12 @@ def _reset_runtime():
 # --- all_tags mode (allowed=None) -----------------------------------------
 
 def test_all_tags_mode_every_non_system_tag_becomes_genre():
+    # Stash's per-scene tag order is arbitrary; the proxy sorts genres
+    # alphabetically (case-insensitive) so clients render a predictable list.
     genres, residual = genre.compute_genres(
         ["Masturbation", "POV", "Dirty Talk"], allowed_lower=None
     )
-    assert genres == ["Masturbation", "POV", "Dirty Talk"]
+    assert genres == ["Dirty Talk", "Masturbation", "POV"]
     assert residual == []
 
 
@@ -48,6 +50,7 @@ def test_all_tags_mode_strips_system_excludes():
         allowed_lower=None,
     )
     # FAVORITE_TAG, SERIES_TAG, GENRE_PARENT_TAG, TAG_GROUPS value (JOI) excluded.
+    # Alphabetical sort means Masturbation sorts before POV anyway.
     assert genres == ["Masturbation", "POV"]
     assert residual == []
 

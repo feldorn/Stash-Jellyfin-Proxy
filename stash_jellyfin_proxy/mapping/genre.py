@@ -167,7 +167,11 @@ def compute_genres(
 
     System excludes (SERIES/FAVORITE/TAG_GROUPS/GENRE_PARENT_TAG/RATING:)
     are stripped from BOTH output lists — they're plumbing, not user-facing.
-    Order is preserved; tags are deduped case-insensitively."""
+    Tags are deduped case-insensitively; the genres list is sorted
+    alphabetically (case-insensitive) so clients render a predictable
+    order — Stash's per-scene tag order is effectively arbitrary.
+    Residual tags preserve scene order (Stash already sorts them by
+    tag usage upstream in some flows, and we want to leave that alone)."""
     if allowed_lower is _UNSET:
         snap = _sync_snapshot
         if snap is _ALL_TAGS_SENTINEL:
@@ -198,6 +202,7 @@ def compute_genres(
         else:
             residual.append(name)
 
+    genres.sort(key=str.lower)
     return genres, residual
 
 
