@@ -22,11 +22,13 @@ from stash_jellyfin_proxy.stash.client import fetch_from_stash, stash_query
 from stash_jellyfin_proxy.util.ids import get_numeric_id
 from stash_jellyfin_proxy.util.images import (
     PILLOW_AVAILABLE,
+    compose_library_card,
     crop_to_portrait,
     generate_filter_icon,
     generate_menu_icon,
     generate_placeholder_icon,
     generate_text_icon,
+    menu_icon_label,
     pad_image_to_portrait,
 )
 
@@ -196,15 +198,18 @@ async def endpoint_image(request):
     )
 
     if item_id in MENU_ICONS:
-        # Phase 4 §8.3: library cards should show a scene screenshot
-        # rather than a generated SVG icon. Cache for 24h so the card
+        # Library-card artwork (design §8.3) — a scene screenshot cropped
+        # to 2:3 portrait, uniformly darkened to 50%, with the library
+        # name overlaid in the same blue text style as the legacy text-
+        # only icons. Scene pick is cached 24h upstream so the poster
         # doesn't flicker on every home-screen reopen.
         art = await _library_card_artwork(item_id)
+        label = menu_icon_label(item_id)
         if art is not None:
-            data, ct = art
+            data, ct = compose_library_card(art[0], label)
             return Response(content=data, media_type=ct, headers=_IMAGE_CACHE_HEADERS)
         img_data, content_type = generate_menu_icon(item_id)
-        logger.debug(f"Serving fallback SVG menu icon for {item_id} (no scene artwork)")
+        logger.debug(f"Serving fallback text icon for {item_id} (no scene artwork)")
         return Response(content=img_data, media_type=content_type, headers=_ICON_CACHE_HEADERS)
 
     if item_id.startswith("tag-"):
