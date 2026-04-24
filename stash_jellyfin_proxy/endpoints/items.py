@@ -477,7 +477,7 @@ async def endpoint_items(request):
     total_count = 0
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     if ids:
         # Specific items requested
@@ -841,6 +841,147 @@ async def endpoint_items(request):
                     logger.warning(f"Unsupported filter mode: {filter_mode}")
             else:
                 logger.warning(f"Saved filter not found: {filter_id}")
+
+    elif parent_id == "root-series":
+        # Series library root → list of SERIES-tagged studios, typed as Series.
+        from stash_jellyfin_proxy.stash.tags import get_or_create_tag
+        series_tag_id = await get_or_create_tag(runtime.SERIES_TAG) if runtime.SERIES_TAG else None
+        if not series_tag_id:
+            logger.debug("root-series requested but SERIES_TAG not resolvable; returning empty")
+            total_count = 0
+        else:
+            count_q = """query CountSeries($tid: [ID!]) {
+                findStudios(studio_filter: {tags: {value: $tid, modifier: INCLUDES}}) { count }
+            }"""
+            count_res = await stash_query(count_q, {"tid": [series_tag_id]})
+            total_count = count_res.get("data", {}).get("findStudios", {}).get("count", 0)
+
+            page = (start_index // limit) + 1
+            q = """query FindSeriesStudios($tid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {
+                findStudios(
+                    studio_filter: {tags: {value: $tid, modifier: INCLUDES}},
+                    filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}
+                ) {
+                    studios { id name image_path scene_count }
+                }
+            }"""
+            folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
+            res = await stash_query(q, {"tid": [series_tag_id], "page": page, "per_page": limit, "sort": folder_sort, "direction": folder_dir})
+            studios = res.get("data", {}).get("findStudios", {}).get("studios", [])
+            for s in studios:
+                items.append({
+                    "Name": s["name"],
+                    "Id": f"series-{s['id']}",
+                    "ServerId": runtime.SERVER_ID,
+                    "Type": "Series",
+                    "IsFolder": True,
+                    "ParentId": parent_id,
+                    "ChildCount": s.get("scene_count", 0),
+                    "RecursiveItemCount": s.get("scene_count", 0),
+                    "PrimaryImageAspectRatio": 0.6667,
+                    "ImageTags": {"Primary": "img"} if s.get("image_path") else {},
+                    "ImageBlurHashes": {"Primary": {"img": "000000"}} if s.get("image_path") else {},
+                    "BackdropImageTags": [],
+                    "UserData": {
+                        "PlaybackPositionTicks": 0, "PlayCount": 0,
+                        "IsFavorite": False, "Played": False,
+                        "Key": f"series-{s['id']}",
+                    },
+                })
+
+    elif parent_id and parent_id.startswith("series-"):
+        # Series detail → list of Seasons. Seasons are synthetic: derived
+        # from the distinct ParentIndexNumber values we'd emit for this
+        # studio's scenes. One GraphQL query for all scenes, reduce locally.
+        studio_id = parent_id.replace("series-", "")
+        q = """query FindSeriesScenes($sid: [ID!], $one: ID!) {
+            findStudio(id: $one) { id name image_path }
+            findScenes(
+                scene_filter: {studios: {value: $sid, modifier: INCLUDES}},
+                filter: {per_page: -1, sort: "date", direction: ASC}
+            ) {
+                scenes { id title }
+            }
+        }"""
+        res = await stash_query(q, {"sid": [studio_id], "one": studio_id})
+        studio = res.get("data", {}).get("findStudio") or {}
+        series_name = studio.get("name") or f"Series {studio_id}"
+        series_image = studio.get("image_path")
+        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+
+        from stash_jellyfin_proxy.util.series import parse_episode
+        seasons_seen = {}
+        for scene in scenes:
+            parsed = parse_episode(scene.get("title") or "")
+            season_num = parsed[0] if parsed else 0
+            seasons_seen.setdefault(season_num, 0)
+            seasons_seen[season_num] += 1
+
+        for season_num in sorted(seasons_seen.keys()):
+            season_id = f"season-{studio_id}-{season_num}"
+            season_label = f"Season {season_num}" if season_num else "Specials"
+            items.append({
+                "Name": season_label,
+                "SortName": f"{season_num:04d}",
+                "Id": season_id,
+                "ServerId": runtime.SERVER_ID,
+                "Type": "Season",
+                "IsFolder": True,
+                "ParentId": parent_id,
+                "SeriesId": parent_id,
+                "SeriesName": series_name,
+                "IndexNumber": season_num,
+                "ChildCount": seasons_seen[season_num],
+                "RecursiveItemCount": seasons_seen[season_num],
+                "ImageTags": {"Primary": "img"} if series_image else {},
+                "ImageBlurHashes": {"Primary": {"img": "000000"}} if series_image else {},
+                "BackdropImageTags": [],
+                "UserData": {
+                    "PlaybackPositionTicks": 0, "PlayCount": 0,
+                    "IsFavorite": False, "Played": False,
+                    "Key": season_id,
+                },
+            })
+        total_count = len(items)
+
+    elif parent_id and parent_id.startswith("season-"):
+        # season-<studio_id>-<season_num> → all scenes from that studio whose
+        # parsed title season matches. Studio scenes that don't parse end up
+        # in Season 0 (Specials).
+        rest = parent_id.replace("season-", "", 1)
+        try:
+            studio_id, season_str = rest.rsplit("-", 1)
+            want_season = int(season_str)
+        except (ValueError, IndexError):
+            logger.warning(f"Bad season id: {parent_id}")
+            studio_id, want_season = "", -1
+
+        if studio_id:
+            q = f"""query FindSeasonScenes($sid: [ID!]) {{
+                findScenes(
+                    scene_filter: {{studios: {{value: $sid, modifier: INCLUDES}}}},
+                    filter: {{per_page: -1, sort: "date", direction: ASC}}
+                ) {{
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = await stash_query(q, {"sid": [studio_id]})
+            all_scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+
+            from stash_jellyfin_proxy.util.series import parse_episode
+            matched = []
+            for scene in all_scenes:
+                parsed = parse_episode(scene.get("title") or "")
+                s_num = parsed[0] if parsed else 0
+                if s_num == want_season:
+                    matched.append(scene)
+
+            total_count = len(matched)
+            # Apply pagination on the in-memory list.
+            for scene in matched[start_index:start_index + limit]:
+                items.append(format_jellyfin_item(scene, parent_id=parent_id))
+        else:
+            total_count = 0
 
     elif parent_id == "root-scenes":
         # First get total count
@@ -1544,7 +1685,7 @@ async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { name } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type }"
 
     # Handle special folder IDs - return the folder ITSELF (not children)
 
@@ -1606,6 +1747,86 @@ async def endpoint_item_details(request):
                     "BackdropImageTags": [],
                     "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id}
                 })
+
+    if item_id == "root-series":
+        from stash_jellyfin_proxy.stash.tags import get_or_create_tag
+        total_count = 0
+        if runtime.SERIES_TAG:
+            tag_id = await get_or_create_tag(runtime.SERIES_TAG)
+            if tag_id:
+                count_q = """query Cnt($tid: [ID!]) { findStudios(studio_filter: {tags: {value: $tid, modifier: INCLUDES}}) { count } }"""
+                count_res = await stash_query(count_q, {"tid": [tag_id]})
+                total_count = count_res.get("data", {}).get("findStudios", {}).get("count", 0)
+        return JSONResponse({
+            "Name": "Series",
+            "SortName": "Series",
+            "Id": "root-series",
+            "ServerId": runtime.SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": "tvshows",
+            "IsFolder": True,
+            "ImageTags": {},
+            "BackdropImageTags": [],
+            "ChildCount": total_count,
+            "RecursiveItemCount": total_count,
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-series"}
+        })
+
+    elif item_id.startswith("series-"):
+        studio_id = item_id.replace("series-", "")
+        q = """query FindStudio($id: ID!) { findStudio(id: $id) { id name image_path scene_count details } }"""
+        res = await stash_query(q, {"id": studio_id})
+        studio = res.get("data", {}).get("findStudio")
+        if not studio:
+            return JSONResponse({"error": "Series not found"}, status_code=404)
+        out = {
+            "Name": studio["name"],
+            "SortName": studio["name"],
+            "Id": item_id,
+            "ServerId": runtime.SERVER_ID,
+            "Type": "Series",
+            "IsFolder": True,
+            "ChildCount": studio.get("scene_count", 0),
+            "RecursiveItemCount": studio.get("scene_count", 0),
+            "PrimaryImageAspectRatio": 0.6667,
+            "ImageTags": {"Primary": "img"} if studio.get("image_path") else {},
+            "ImageBlurHashes": {"Primary": {"img": "000000"}} if studio.get("image_path") else {},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id},
+        }
+        if studio.get("details"):
+            out["Overview"] = studio["details"]
+        return JSONResponse(out)
+
+    elif item_id.startswith("season-"):
+        rest = item_id.replace("season-", "", 1)
+        try:
+            studio_id, season_str = rest.rsplit("-", 1)
+            season_num = int(season_str)
+        except (ValueError, IndexError):
+            return JSONResponse({"error": "Bad season id"}, status_code=404)
+        q = """query FindStudio($id: ID!) { findStudio(id: $id) { id name image_path } }"""
+        res = await stash_query(q, {"id": studio_id})
+        studio = res.get("data", {}).get("findStudio")
+        if not studio:
+            return JSONResponse({"error": "Season not found"}, status_code=404)
+        label = f"Season {season_num}" if season_num else "Specials"
+        return JSONResponse({
+            "Name": label,
+            "SortName": f"{season_num:04d}",
+            "Id": item_id,
+            "ServerId": runtime.SERVER_ID,
+            "Type": "Season",
+            "IsFolder": True,
+            "ParentId": f"series-{studio_id}",
+            "SeriesId": f"series-{studio_id}",
+            "SeriesName": studio["name"],
+            "IndexNumber": season_num,
+            "ImageTags": {"Primary": "img"} if studio.get("image_path") else {},
+            "ImageBlurHashes": {"Primary": {"img": "000000"}} if studio.get("image_path") else {},
+            "BackdropImageTags": [],
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id},
+        })
 
     if item_id == "root-scenes":
         # Get actual count

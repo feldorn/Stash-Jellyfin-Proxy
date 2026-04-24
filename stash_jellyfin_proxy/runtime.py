@@ -118,6 +118,11 @@ env_overrides: List[str] = []
 # The Stash tag id for FAVORITE_TAG, cached after first lookup.
 favorite_tag_id_cache: Any = None
 
+# --- Series / player profiles (Phase 2) ---
+SERIES_TAG: str = "Series"
+SERIES_EPISODE_PATTERNS: str = ""
+PLAYER_PROFILES: List[Any] = []
+
 
 def publish(**kwargs):
     """Bulk-set attributes. Used by the monolith bootstrap to copy its

@@ -11,9 +11,27 @@ rebuilt with expected-diff annotations.
 """
 import hashlib
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from stash_jellyfin_proxy import runtime
+from stash_jellyfin_proxy.util.series import parse_episode
+
+
+def is_series_scene(scene: Dict[str, Any]) -> bool:
+    """A scene is a Series Episode if its studio (or any ancestor studio)
+    is tagged with runtime.SERIES_TAG. Per audit §3.5 consistency rule:
+    SERIES-tagged studio → Episode type in every context."""
+    if not runtime.SERIES_TAG:
+        return False
+    tag_name = runtime.SERIES_TAG
+    studio = scene.get("studio") or {}
+    # Walk the studio chain: studio itself, then parent_studio recursively.
+    while studio:
+        for t in studio.get("tags") or []:
+            if (t.get("name") or "").lower() == tag_name.lower():
+                return True
+        studio = studio.get("parent_studio")
+    return False
 
 
 def is_scene_favorite(scene: Dict[str, Any]) -> bool:
@@ -85,13 +103,20 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
     if resume_seconds > 0 and duration > 0:
         user_data["PlayedPercentage"] = min(100.0, (resume_seconds / duration) * 100.0)
 
+    # Per audit §3.5: SERIES-tagged studio scenes are Episode type *everywhere*.
+    # Consistency rule applies in browse, search, favorites, history — no
+    # exceptions. Season/Episode numbers come from title parsing; unparseable
+    # titles fall back to Season 0 so grouping still works.
+    is_episode = is_series_scene(scene)
+    item_type = "Episode" if is_episode else "Movie"
+
     item = {
         "Name": title,
         "SortName": title,
         "Id": item_id,
         "Etag": etag,
         "ServerId": runtime.SERVER_ID,
-        "Type": "Movie",
+        "Type": item_type,
         "IsFolder": False,
         "MediaType": "Video",
         "CanDownload": True,
@@ -102,6 +127,20 @@ def format_jellyfin_item(scene: Dict[str, Any], parent_id: str = "root-scenes") 
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": user_data,
     }
+
+    if is_episode:
+        studio_obj = scene.get("studio") or {}
+        studio_id = studio_obj.get("id")
+        studio_name = studio_obj.get("name") or ""
+        parsed = parse_episode(title)
+        season_num, episode_num = parsed if parsed else (0, 0)
+        item["ParentIndexNumber"] = season_num
+        item["IndexNumber"] = episode_num
+        if studio_id:
+            item["SeriesId"] = f"series-{studio_id}"
+            item["SeriesName"] = studio_name
+            item["SeasonId"] = f"season-{studio_id}-{season_num}"
+            item["SeasonName"] = f"Season {season_num}" if season_num else "Specials"
 
     if date:
         item["ProductionYear"] = int(date[:4])

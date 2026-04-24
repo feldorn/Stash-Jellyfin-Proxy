@@ -94,6 +94,9 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
     BANNED_IPS = set()
     BAN_THRESHOLD = 10
     BAN_WINDOW_MINUTES = 15
+    SERIES_TAG = "Series"
+    SERIES_EPISODE_PATTERNS = r"S(\d+)[:\.]?E(\d+), S(\d+)\s+E(\d+), Season\s*(\d+).*?Episode\s*(\d+)"
+    PLAYER_PROFILES = []
 
     # ---- Load + migrate + merge ----
     cfg, cfg_defined_keys, cfg_sections = load_config(config_file)
@@ -189,6 +192,10 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
             BAN_THRESHOLD = int(cfg.get("BAN_THRESHOLD", BAN_THRESHOLD))
         if "BAN_WINDOW_MINUTES" in cfg:
             BAN_WINDOW_MINUTES = int(cfg.get("BAN_WINDOW_MINUTES", BAN_WINDOW_MINUTES))
+        if "series_tag" in cfg:
+            SERIES_TAG = cfg.get("series_tag", SERIES_TAG).strip()
+        if "series_episode_patterns" in cfg:
+            SERIES_EPISODE_PATTERNS = cfg.get("series_episode_patterns", SERIES_EPISODE_PATTERNS)
         print(f"Loaded config from {config_file}")
     else:
         cfg_defined_keys = set()
@@ -273,6 +280,14 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         print(f"  Latest groups: {', '.join(LATEST_GROUPS)}")
     banner_suffix = f", tags=[{', '.join(BANNER_TAGS)}]" if BANNER_TAGS else ""
     print(f"  Banner: mode={BANNER_MODE}, pool={BANNER_POOL_SIZE}{banner_suffix}")
+    print(f"  Series tag: {SERIES_TAG}")
+
+    # ---- Load player profiles from [player.*] sections ----
+    from stash_jellyfin_proxy.players.profiles import load_profiles
+    PLAYER_PROFILES = load_profiles(cfg_sections or {})
+    print(f"  Player profiles: {', '.join(p.name for p in PLAYER_PROFILES)}")
+    if not any(p.name == "default" for p in PLAYER_PROFILES):
+        print("  WARNING: no [player.default] section found — using hardcoded fallback")
 
     # ---- Auto-generate SERVER_ID / normalize legacy format ----
     if not SERVER_ID:
@@ -364,4 +379,7 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         JELLYFIN_VERSION=JELLYFIN_VERSION,
         USER_ID=USER_ID,
         env_overrides=env_overrides,
+        SERIES_TAG=SERIES_TAG,
+        SERIES_EPISODE_PATTERNS=SERIES_EPISODE_PATTERNS,
+        PLAYER_PROFILES=PLAYER_PROFILES,
     )

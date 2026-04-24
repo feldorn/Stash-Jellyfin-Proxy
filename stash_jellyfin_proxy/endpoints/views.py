@@ -9,6 +9,7 @@ from stash_jellyfin_proxy import runtime
 from stash_jellyfin_proxy.mapping.scene import format_jellyfin_item, is_group_favorite
 from stash_jellyfin_proxy.stash.client import stash_query
 from stash_jellyfin_proxy.stash.scene import get_scene_title
+from stash_jellyfin_proxy.stash.tags import get_or_create_tag
 from stash_jellyfin_proxy.state import streams as _streams
 
 logger = logging.getLogger("stash-jellyfin-proxy")
@@ -17,9 +18,45 @@ logger = logging.getLogger("stash-jellyfin-proxy")
 _SCENE_FIELDS = (
     "id title code date details play_count resume_time last_played_at "
     "files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } "
-    "studio { name } tags { name } performers { name id image_path } "
+    "studio { id name tags { name } parent_studio { id name tags { name } } } "
+    "tags { name } performers { name id image_path } "
     "captions { language_code caption_type }"
 )
+
+
+# Cache for Series-library visibility — the root /UserViews call hits this
+# on every page load so we don't want a live Stash query each time. TTL is
+# short because series tagging changes rarely but we want fresh-enough state.
+import time as _time
+_series_visibility: dict = {"expires": 0.0, "value": False}
+
+
+async def _has_series_studios() -> bool:
+    """True when at least one studio is tagged with SERIES_TAG. Cached
+    60s to keep /UserViews cheap."""
+    now = _time.monotonic()
+    if now < _series_visibility["expires"]:
+        return _series_visibility["value"]
+
+    if not runtime.SERIES_TAG:
+        result = False
+    else:
+        tag_id = await get_or_create_tag(runtime.SERIES_TAG)
+        if not tag_id:
+            result = False
+        else:
+            q = """query HasSeriesStudios($tid: [ID!]) {
+                findStudios(studio_filter: {tags: {value: $tid, modifier: INCLUDES}}, filter: {per_page: 1}) {
+                    count
+                }
+            }"""
+            res = await stash_query(q, {"tid": [tag_id]})
+            count = ((res.get("data") or {}).get("findStudios") or {}).get("count", 0)
+            result = count > 0
+
+    _series_visibility["value"] = result
+    _series_visibility["expires"] = now + 60.0
+    return result
 
 
 # --- User views / virtual folders ---
@@ -77,6 +114,10 @@ async def endpoint_user_views(request):
         _make_library("Performers", "root-performers", "movies"),
         _make_library("Groups",     "root-groups",     "movies"),
     ]
+    # Series library: appears only when at least one studio has SERIES_TAG.
+    # Uses tvshows CollectionType so Swiftfin renders Series/Season/Episode nav.
+    if await _has_series_studios():
+        items.append(_make_library("Series", "root-series", "tvshows"))
     if runtime.ENABLE_TAG_FILTERS:
         items.append(_make_library("Tags", "root-tags", "movies"))
     for tag_name in sorted(runtime.TAG_GROUPS, key=str.lower):
@@ -94,6 +135,8 @@ async def endpoint_virtual_folders(request):
         {"Name": "Performers", "Locations": [], "CollectionType": "movies",  "ItemId": "root-performers"},
         {"Name": "Groups",     "Locations": [], "CollectionType": "movies", "ItemId": "root-groups"},
     ]
+    if await _has_series_studios():
+        folders.append({"Name": "Series", "Locations": [], "CollectionType": "tvshows", "ItemId": "root-series"})
     if runtime.ENABLE_TAG_FILTERS:
         folders.append({"Name": "Tags", "Locations": [], "CollectionType": "movies", "ItemId": "root-tags"})
     for tag_name in sorted(runtime.TAG_GROUPS, key=str.lower):
