@@ -1,7 +1,7 @@
 """Unit tests for the TTL cache helper."""
 import time
 
-from proxy.cache.ttl import TTLCache
+from stash_jellyfin_proxy.cache.ttl import TTLCache
 
 
 def test_miss_then_hit():

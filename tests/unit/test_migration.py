@@ -3,15 +3,15 @@ import os
 
 import pytest
 
-from proxy.config.loader import load_config
-from proxy.config.migration import (
+from stash_jellyfin_proxy.config.loader import load_config
+from stash_jellyfin_proxy.config.migration import (
     run_config_migration,
     CURRENT_CONFIG_VERSION as CURRENT,
 )
 
 
 def _write(tmp_path, text):
-    p = tmp_path / "proxy.conf"
+    p = tmp_path / "stash_jellyfin_proxy.conf"
     p.write_text(text)
     return str(p)
 
@@ -50,7 +50,7 @@ TAG_GROUPS = Gooning, JOI
     assert performed is True
     assert os.path.isfile(path + ".v1.bak")
     # Backup preserves original content
-    assert "STASH_URL = http://example:9999" in (tmp_path / "proxy.conf.v1.bak").read_text()
+    assert "STASH_URL = http://example:9999" in (tmp_path / "stash_jellyfin_proxy.conf.v1.bak").read_text()
 
     # All v1 keys preserved
     assert new_flat["STASH_URL"] == "http://example:9999"

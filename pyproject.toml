@@ -8,10 +8,13 @@ requires-python = ">=3.10"
 dependencies = [
     "hypercorn>=0.16",
     "starlette>=0.37",
-    "requests>=2.31",
+    "httpx>=0.27",
     "Pillow>=10.0",
     "setproctitle>=1.3",
 ]
+
+[project.scripts]
+stash-jellyfin-proxy = "stash_jellyfin_proxy.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/feldorn/stash-jellyfin-proxy"
@@ -22,7 +25,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-only-include = ["stash_jellyfin_proxy.py"]
+packages = ["stash_jellyfin_proxy"]
 
 [tool.uv]
 # `uv run stash_jellyfin_proxy.py` resolves dependencies from [project].

@@ -1,11 +1,11 @@
 """Unit tests for the INI-section-aware config parser."""
 import pytest
 
-from proxy.config.loader import load_config
+from stash_jellyfin_proxy.config.loader import load_config
 
 
 def _write(tmp_path, text):
-    p = tmp_path / "proxy.conf"
+    p = tmp_path / "stash_jellyfin_proxy.conf"
     p.write_text(text)
     return str(p)
 

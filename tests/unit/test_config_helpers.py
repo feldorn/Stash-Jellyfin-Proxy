@@ -3,7 +3,7 @@ import uuid
 
 import pytest
 
-from proxy.config.helpers import (
+from stash_jellyfin_proxy.config.helpers import (
     parse_bool,
     normalize_path,
     normalize_server_id,

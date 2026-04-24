@@ -1,5 +1,5 @@
 """Unit tests for the ID conversion helpers."""
-from proxy.util.ids import make_guid, extract_numeric_id, get_numeric_id
+from stash_jellyfin_proxy.util.ids import make_guid, extract_numeric_id, get_numeric_id
 
 
 def test_make_guid_pads_and_formats():

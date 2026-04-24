@@ -46,7 +46,7 @@ jobs:
       - name: Copy files to build context
         run: |
           cp stash_jellyfin_proxy.py build_docker/
-          cp -r proxy build_docker/
+          cp -r stash_jellyfin_proxy build_docker/
 
       - name: Set up QEMU (for multi-arch builds)
         uses: docker/setup-qemu-action@v3

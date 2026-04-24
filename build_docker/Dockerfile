@@ -20,14 +20,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --no-cache-dir \
     hypercorn \
     starlette \
-    requests \
+    httpx \
     Pillow
 
 RUN mkdir -p /app /config && \
     chmod 755 /app /config
 
 COPY stash_jellyfin_proxy.py /app/
-COPY proxy/ /app/proxy/
+COPY stash_jellyfin_proxy/ /app/stash_jellyfin_proxy/
 RUN chmod +x /app/stash_jellyfin_proxy.py
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh

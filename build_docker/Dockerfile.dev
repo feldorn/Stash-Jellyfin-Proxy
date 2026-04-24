@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir hypercorn starlette requests Pillow
+RUN pip install --no-cache-dir hypercorn starlette httpx Pillow
 
 WORKDIR /app
 

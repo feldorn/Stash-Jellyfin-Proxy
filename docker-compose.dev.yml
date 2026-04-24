@@ -11,9 +11,7 @@ services:
       - "18097:8097"
     volumes:
       - ./stash_jellyfin_proxy.py:/app/stash_jellyfin_proxy.py:ro
-      # Phase 0.6 extraction target — leaves (cache, util, config, etc.)
-      # get moved into this package; the monolith imports them back.
-      - ./proxy:/app/proxy:ro
+      - ./stash_jellyfin_proxy:/app/stash_jellyfin_proxy:ro
       - ./dev-data:/config
     environment:
       - CONFIG_FILE=/config/stash_jellyfin_proxy.conf
