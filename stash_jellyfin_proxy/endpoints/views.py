@@ -77,13 +77,29 @@ async def _has_series_studios() -> bool:
 
 # --- User views / virtual folders ---
 
+def _library_image_tag(lib_id: str) -> str:
+    """Per-library cache-busting tag for the library-tile image.
+
+    Native Jellyfin clients (Infuse/SenPlayer/Swiftfin) cache images by
+    (ItemId, ImageTag) and only refetch when the tag changes — they
+    ignore HTTP Cache-Control for image bodies. A static string like
+    "icon" means the client caches whatever it sees first forever,
+    across server restarts and config changes. Mix the library id with
+    a per-startup salt so every restart rotates the tag and clients
+    pull fresh artwork. Within one startup the tag is stable so the
+    same tile isn't refetched on every Home-screen poll."""
+    salt = int(runtime.PROXY_START_TIME or 0)
+    return hashlib.md5(f"{lib_id}:{salt}".encode()).hexdigest()[:16]
+
+
 def _make_library(name: str, lib_id: str, collection_type: str = "movies",
                   child_count: int = 0) -> dict:
+    image_tag = _library_image_tag(lib_id)
     return {
         "Name": name,
         "Id": lib_id,
         "ServerId": runtime.SERVER_ID,
-        "Etag": hashlib.md5(lib_id.encode()).hexdigest()[:16],
+        "Etag": image_tag,
         "DateCreated": "2024-01-01T00:00:00.0000000Z",
         "CanDelete": False,
         "CanDownload": False,
@@ -102,7 +118,7 @@ def _make_library(name: str, lib_id: str, collection_type: str = "movies",
         "PrimaryImageAspectRatio": 1.0,
         "DisplayPreferencesId": hashlib.md5(lib_id.encode()).hexdigest()[:32],
         "Tags": [],
-        "ImageTags": {"Primary": "icon"},
+        "ImageTags": {"Primary": image_tag},
         "BackdropImageTags": [],
         "ScreenshotImageTags": [],
         "ImageBlurHashes": {},
