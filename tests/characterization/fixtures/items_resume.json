@@ -738,7 +738,7 @@
           ],
           "CanDownload": true,
           "Container": "mp4",
-          "Etag": "38dcacfb89d67326",
+          "Etag": "8bb7694fc1c2ecd9",
           "Genres": [
             "!2. Miscellenous JOI",
             "FAVORITE",
@@ -903,9 +903,9 @@
             "Key": "scene-37644",
             "LastPlayedDate": "2026-04-14T03:38:03Z",
             "PlayCount": 13,
-            "PlaybackPositionTicks": 2250000000,
+            "PlaybackPositionTicks": 2180000000,
             "Played": true,
-            "PlayedPercentage": 11.191858296151493
+            "PlayedPercentage": 10.843667149160114
           },
           "VideoType": "VideoFile"
         },

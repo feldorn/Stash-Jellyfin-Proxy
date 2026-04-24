@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 3,
       "CollectionType": "movies",
+      "EndDate": "2023-07-17T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://www.allgirlmassage.com/"
+        }
+      ],
       "Id": "studio-120",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,10 +34,22 @@
       },
       "IsFolder": true,
       "Name": "All Girl Massage",
+      "Overview": "All Girl Massage — 3 titles, 2013–2023, part of the Fantasy Massage (Network) network.",
+      "PremiereDate": "2013-10-07T00:00:00.0000000Z",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProductionYear": 2013,
+      "ProviderIds": {
+        "StashDb": "4316179d-9bff-4561-9395-be089320614b"
+      },
       "RecursiveItemCount": 3,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "All Girl Massage",
+      "Studios": [
+        {
+          "Id": "studio-440",
+          "Name": "Fantasy Massage (Network)"
+        }
+      ],
       "Type": "BoxSet",
       "UserData": {
         "IsFavorite": false,

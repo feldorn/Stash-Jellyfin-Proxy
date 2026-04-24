@@ -8,11 +8,17 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 2,
       "CollectionType": "movies",
+      "EndDate": "2019-04-12T00:00:00.0000000Z",
       "Id": "studio-160",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,10 +28,22 @@
       },
       "IsFolder": true,
       "Name": "AliceNZ",
+      "Overview": "AliceNZ — 2 titles, 2017–2019, part of the ManyVids network.",
+      "PremiereDate": "2017-08-31T00:00:00.0000000Z",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProductionYear": 2017,
+      "ProviderIds": {
+        "StashDb": "f1594755-34ab-4167-9383-3206ebf44f9d"
+      },
       "RecursiveItemCount": 2,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "AliceNZ",
+      "Studios": [
+        {
+          "Id": "studio-422",
+          "Name": "ManyVids"
+        }
+      ],
       "Type": "BoxSet",
       "UserData": {
         "IsFavorite": false,

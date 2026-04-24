@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 31,
       "CollectionType": "movies",
+      "EndDate": "2023-02-11T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://apovstory.com/"
+        }
+      ],
       "Id": "studio-147",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,10 +34,22 @@
       },
       "IsFolder": true,
       "Name": "A POV Story",
+      "Overview": "A POV Story — 31 titles, 2021–2023, part of the MissaX network.",
+      "PremiereDate": "2021-02-16T00:00:00.0000000Z",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProductionYear": 2021,
+      "ProviderIds": {
+        "StashDb": "22da6aab-bd9b-4051-81e5-664a57958cda"
+      },
       "RecursiveItemCount": 31,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "A POV Story",
+      "Studios": [
+        {
+          "Id": "studio-405",
+          "Name": "MissaX"
+        }
+      ],
       "Type": "BoxSet",
       "UserData": {
         "IsFavorite": false,

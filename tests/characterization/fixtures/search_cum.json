@@ -125,7 +125,7 @@
           "Name": "Angel Cummings",
           "PrimaryImageTag": "img",
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "Type": "Person"
+          "Type": "BoxSet"
         },
         {
           "Id": "performer-3967",
@@ -133,7 +133,7 @@
           "Name": "Anna Cummings",
           "PrimaryImageTag": "img",
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "Type": "Person"
+          "Type": "BoxSet"
         },
         {
           "Id": "performer-274",
@@ -141,7 +141,7 @@
           "Name": "Annabelle Rogers",
           "PrimaryImageTag": "img",
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "Type": "Person"
+          "Type": "BoxSet"
         },
         {
           "Id": "performer-1276",
@@ -149,7 +149,7 @@
           "Name": "Barbie Cummings",
           "PrimaryImageTag": "img",
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "Type": "Person"
+          "Type": "BoxSet"
         },
         {
           "Id": "performer-3197",
@@ -157,7 +157,7 @@
           "Name": "Carrie Cummings",
           "PrimaryImageTag": "img",
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "Type": "Person"
+          "Type": "BoxSet"
         }
       ],
       "TotalRecordCount": 4571

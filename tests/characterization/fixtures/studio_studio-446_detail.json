@@ -8,11 +8,16 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 0,
       "CollectionType": "movies",
       "Id": "studio-446",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -23,6 +28,9 @@
       "IsFolder": true,
       "Name": "Alex Adams Media",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProviderIds": {
+        "StashDb": "e42f2af3-d410-4bb4-bb5c-1b5fbbb07eae"
+      },
       "RecursiveItemCount": 0,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Alex Adams Media",

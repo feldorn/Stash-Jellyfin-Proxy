@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 255,
       "CollectionType": "movies",
+      "EndDate": "2019-03-08T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://amberhahn.com/"
+        }
+      ],
       "Id": "studio-171",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,7 +34,11 @@
       },
       "IsFolder": true,
       "Name": "Amber Hahn",
+      "Overview": "Amber Hahn — 255 titles.",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProviderIds": {
+        "StashDb": "a621eb62-5bb7-4e8e-b925-b74e852965e3"
+      },
       "RecursiveItemCount": 255,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Amber Hahn",

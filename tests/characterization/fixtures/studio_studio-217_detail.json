@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 2,
       "CollectionType": "movies",
+      "EndDate": "2009-12-31T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://www.adamevepictures.com/"
+        }
+      ],
       "Id": "studio-217",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,7 +34,13 @@
       },
       "IsFolder": true,
       "Name": "Adam & Eve Pictures",
+      "Overview": "Adam & Eve Pictures — 2 titles, 2009.",
+      "PremiereDate": "2009-10-22T00:00:00.0000000Z",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProductionYear": 2009,
+      "ProviderIds": {
+        "StashDb": "c7ff5793-eada-4367-b4f7-507b3b847751"
+      },
       "RecursiveItemCount": 2,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Adam & Eve Pictures",

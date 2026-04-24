@@ -188,6 +188,49 @@
           "ChildCount": 100,
           "CollectionType": "movies",
           "DateCreated": "2024-01-01T00:00:00.0000000Z",
+          "DisplayPreferencesId": "d649d6e50b36da30ddc4c83bb9311965",
+          "EnableMediaSourceDisplay": false,
+          "Etag": "d649d6e50b36da30",
+          "ExternalUrls": [],
+          "Genres": [],
+          "Id": "root-series",
+          "ImageBlurHashes": {},
+          "ImageTags": {
+            "Primary": "icon"
+          },
+          "IsFolder": true,
+          "LocationType": "FileSystem",
+          "LockData": false,
+          "LockedFields": [],
+          "Name": "Series",
+          "Path": "/root-series",
+          "PlayAccess": "Full",
+          "PrimaryImageAspectRatio": 1.0,
+          "ProviderIds": {},
+          "RemoteTrailers": [],
+          "ScreenshotImageTags": [],
+          "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+          "SortName": "Series",
+          "SpecialFeatureCount": 0,
+          "Taglines": [],
+          "Tags": [],
+          "Type": "CollectionFolder",
+          "UserData": {
+            "IsFavorite": false,
+            "Key": "root-series",
+            "PlayCount": 0,
+            "PlaybackPositionTicks": 0,
+            "Played": false,
+            "UnplayedItemCount": 100
+          }
+        },
+        {
+          "BackdropImageTags": [],
+          "CanDelete": false,
+          "CanDownload": false,
+          "ChildCount": 100,
+          "CollectionType": "movies",
+          "DateCreated": "2024-01-01T00:00:00.0000000Z",
           "DisplayPreferencesId": "b7a79744b943447d4f04aaa025def373",
           "EnableMediaSourceDisplay": false,
           "Etag": "b7a79744b943447d",
@@ -440,7 +483,7 @@
           }
         }
       ],
-      "TotalRecordCount": 10
+      "TotalRecordCount": 11
     },
     "content_type": "application/json",
     "status": 200

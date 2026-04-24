@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 13,
       "CollectionType": "movies",
+      "EndDate": "2020-02-20T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://onlyfans.com/alexapearl"
+        }
+      ],
       "Id": "studio-148",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,7 +34,11 @@
       },
       "IsFolder": true,
       "Name": "Alexa Pearl",
+      "Overview": "Alexa Pearl — 13 titles.",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProviderIds": {
+        "StashDb": "f6a90a1d-351d-449d-9874-c728113926bf"
+      },
       "RecursiveItemCount": 13,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Alexa Pearl",

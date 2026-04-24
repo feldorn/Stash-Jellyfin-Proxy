@@ -11,7 +11,7 @@
       "Items": [
         {
           "BackdropImageTags": [],
-          "ChildCount": 1,
+          "ChildCount": 2,
           "CollectionType": "movies",
           "Id": "filters-studios",
           "ImageBlurHashes": {
@@ -26,7 +26,7 @@
           "Name": "FILTERS",
           "ParentId": "root-studios",
           "PrimaryImageAspectRatio": 0.6667,
-          "RecursiveItemCount": 1,
+          "RecursiveItemCount": 2,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "!!!FILTERS",
           "Type": "BoxSet",

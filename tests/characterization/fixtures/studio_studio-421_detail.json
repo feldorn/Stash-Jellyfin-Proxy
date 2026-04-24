@@ -8,11 +8,22 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 0,
       "CollectionType": "movies",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://www.adulttime.com/"
+        }
+      ],
       "Id": "studio-421",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -23,6 +34,9 @@
       "IsFolder": true,
       "Name": "Adult Time Originals",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProviderIds": {
+        "StashDb": "91bfd32c-2f56-43a1-8bb9-55d3a84d88d5"
+      },
       "RecursiveItemCount": 0,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Adult Time Originals",

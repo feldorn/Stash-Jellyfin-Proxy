@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 1,
       "CollectionType": "movies",
+      "EndDate": "2009-01-04T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://www.3rddegreefilms.com/"
+        }
+      ],
       "Id": "studio-377",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,10 +34,22 @@
       },
       "IsFolder": true,
       "Name": "3rd Degree",
+      "Overview": "3rd Degree — 1 title, 2009, part of the Zero Tolerance Films network.",
+      "PremiereDate": "2009-01-04T00:00:00.0000000Z",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProductionYear": 2009,
+      "ProviderIds": {
+        "StashDb": "3b1e408c-e111-4fe4-aa86-379ccc83b3cc"
+      },
       "RecursiveItemCount": 1,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "3rd Degree",
+      "Studios": [
+        {
+          "Id": "studio-376",
+          "Name": "Zero Tolerance Films"
+        }
+      ],
       "Type": "BoxSet",
       "UserData": {
         "IsFavorite": false,

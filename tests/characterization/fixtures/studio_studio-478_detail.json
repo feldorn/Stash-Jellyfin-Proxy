@@ -8,11 +8,22 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 0,
       "CollectionType": "movies",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "http://aireroseent.com/"
+        }
+      ],
       "Id": "studio-478",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -23,6 +34,9 @@
       "IsFolder": true,
       "Name": "Airerose Entertainment (Network)",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProviderIds": {
+        "StashDb": "632a8877-ebcb-4ee1-8245-8d928cf1eae5"
+      },
       "RecursiveItemCount": 0,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Airerose Entertainment (Network)",

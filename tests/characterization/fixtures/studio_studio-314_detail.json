@@ -8,11 +8,23 @@
   },
   "response": {
     "body": {
-      "BackdropImageTags": [],
+      "BackdropImageTags": [
+        "img"
+      ],
       "ChildCount": 20,
       "CollectionType": "movies",
+      "EndDate": "2009-12-09T00:00:00.0000000Z",
+      "ExternalUrls": [
+        {
+          "Name": "Homepage",
+          "Url": "https://afterhoursexposed.com/"
+        }
+      ],
       "Id": "studio-314",
       "ImageBlurHashes": {
+        "Backdrop": {
+          "img": "000000"
+        },
         "Primary": {
           "img": "000000"
         }
@@ -22,10 +34,22 @@
       },
       "IsFolder": true,
       "Name": "After Hours Exposed",
+      "Overview": "After Hours Exposed — 20 titles, 2009, part of the Coed Productions network.",
+      "PremiereDate": "2009-07-29T00:00:00.0000000Z",
       "PrimaryImageAspectRatio": 0.6667,
+      "ProductionYear": 2009,
+      "ProviderIds": {
+        "StashDb": "e0070ebe-dd47-4675-893c-6e5c4fe2e810"
+      },
       "RecursiveItemCount": 20,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "After Hours Exposed",
+      "Studios": [
+        {
+          "Id": "studio-408",
+          "Name": "Coed Productions"
+        }
+      ],
       "Type": "BoxSet",
       "UserData": {
         "IsFavorite": false,
