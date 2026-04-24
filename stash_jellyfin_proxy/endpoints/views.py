@@ -250,26 +250,122 @@ async def _warm_genre_snapshot() -> None:
     await genre_allowed_names()
 
 
+_NEXTUP_CACHE = {"expires": 0.0, "payload": None}
+_NEXTUP_TTL_SECONDS = 60.0
+
+
 async def endpoint_shows_nextup(request):
-    """`GET /Shows/NextUp` — Swiftfin's home-page Next Up row. Stash has
-    no notion of episode succession, so return random suggestions. Phase
-    4 will replace this with a proper SERIES-aware algorithm."""
+    """`GET /Shows/NextUp` — Swiftfin's Home Next Up row.
+
+    Phase 4 §8.1 algorithm:
+      1. Find every SERIES-tagged studio that has at least one scene
+         with play_count > 0.
+      2. Within each such studio, find the most-recently-played scene.
+      3. Parse its S/E; return the NEXT scene in order (same season
+         next episode; end-of-season → next season episode 1).
+      4. Skip series with no watched scenes or all watched.
+      5. Sort output by last_played_at desc so the series you most
+         recently touched shows first.
+
+    Cached 60s per-process since this endpoint is hit on every Home-tab
+    load."""
+    import time as _time
     await _warm_genre_snapshot()
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
-    q = f"""query FindScenes($page: Int!, $per_page: Int!) {{
-        findScenes(filter: {{page: $page, per_page: $per_page, sort: "random", direction: DESC}}) {{
-            findScenes: scenes {{ {_SCENE_FIELDS} }}
-        }}
-    }}"""
+
+    now = _time.monotonic()
+    if _NEXTUP_CACHE["payload"] is not None and _NEXTUP_CACHE["expires"] > now:
+        cached = _NEXTUP_CACHE["payload"]
+        return JSONResponse({"Items": cached[:limit], "TotalRecordCount": min(len(cached), limit)})
+
     try:
-        res = await stash_query(q, {"page": 1, "per_page": limit})
-        scenes = res.get("data", {}).get("findScenes", {}).get("findScenes", [])
-        items = [format_jellyfin_item(s) for s in scenes]
-        logger.debug(f"NextUp returning {len(items)} random suggestions")
-        return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+        items = await _compute_nextup(limit)
     except Exception as e:
-        logger.warning(f"NextUp query failed: {e}")
-        return JSONResponse({"Items": [], "TotalRecordCount": 0})
+        logger.warning(f"NextUp compute failed: {e}")
+        items = []
+
+    _NEXTUP_CACHE["payload"] = items
+    _NEXTUP_CACHE["expires"] = now + _NEXTUP_TTL_SECONDS
+    return JSONResponse({"Items": items, "TotalRecordCount": len(items)})
+
+
+async def _compute_nextup(limit: int) -> list:
+    """Find each SERIES studio's next episode after its last-played scene."""
+    from stash_jellyfin_proxy.stash.tags import get_or_create_tag
+    from stash_jellyfin_proxy.util.series import parse_episode
+
+    if not runtime.SERIES_TAG:
+        return []
+    series_tag_id = await get_or_create_tag(runtime.SERIES_TAG)
+    if not series_tag_id:
+        return []
+
+    studios_q = """query SeriesStudios($tid: [ID!]) {
+        findStudios(studio_filter: {tags: {value: $tid, modifier: INCLUDES}}, filter: {per_page: -1}) {
+            studios { id name }
+        }
+    }"""
+    sres = await stash_query(studios_q, {"tid": [series_tag_id]})
+    studios = ((sres or {}).get("data") or {}).get("findStudios", {}).get("studios", []) or []
+
+    candidates: list = []  # (last_played_dt_str, next_scene_dict, studio_name)
+
+    for studio in studios:
+        studio_id = studio.get("id")
+        if not studio_id:
+            continue
+        # Pull every scene in this studio with relevant play state.
+        scenes_q = f"""query SeriesScenes($sid: [ID!]) {{
+            findScenes(
+                scene_filter: {{studios: {{value: $sid, modifier: INCLUDES}}}},
+                filter: {{per_page: -1}}
+            ) {{ scenes {{ {_SCENE_FIELDS} play_count last_played_at }} }}
+        }}"""
+        sc_res = await stash_query(scenes_q, {"sid": [studio_id]})
+        scenes = ((sc_res or {}).get("data") or {}).get("findScenes", {}).get("scenes", []) or []
+        if not scenes:
+            continue
+
+        # Sort scenes into (season, episode, created_at) order so we can
+        # find the logical successor.
+        def _key(s):
+            parsed = parse_episode(s.get("title") or "")
+            se = parsed if parsed else (0, 0)
+            return (se[0], se[1], s.get("created_at") or "", s.get("id"))
+
+        scenes_ordered = sorted(scenes, key=_key)
+        # Latest played scene in this studio.
+        played = [s for s in scenes if (s.get("play_count") or 0) > 0 and s.get("last_played_at")]
+        if not played:
+            continue
+        played.sort(key=lambda s: s.get("last_played_at") or "", reverse=True)
+        last = played[0]
+
+        # Find the index of `last` in the ordered list, return the NEXT
+        # scene that hasn't been fully watched.
+        try:
+            idx = next(i for i, s in enumerate(scenes_ordered) if s.get("id") == last.get("id"))
+        except StopIteration:
+            continue
+        next_scene = None
+        for s in scenes_ordered[idx + 1:]:
+            # Skip scenes that are themselves fully watched (play_count>0 and no resume).
+            if (s.get("play_count") or 0) == 0:
+                next_scene = s
+                break
+        if next_scene is None:
+            # All remaining scenes already played — this series is caught
+            # up. Skip it so Next Up doesn't recycle completed series.
+            continue
+
+        candidates.append((last.get("last_played_at") or "", next_scene, studio.get("name")))
+
+    # Most recently touched series first.
+    candidates.sort(key=lambda c: c[0], reverse=True)
+    items = [format_jellyfin_item(c[1]) for c in candidates[:limit]]
+    logger.debug(f"NextUp computed {len(items)} SERIES continuations "
+                 f"across {len(candidates)} candidate series")
+    return items
 
 
 async def endpoint_shows_seasons(request):

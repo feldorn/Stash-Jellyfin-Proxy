@@ -436,6 +436,189 @@ def transform_saved_filter_to_graphql(object_filter, filter_mode="SCENES"):
     return result
 
 
+def _parse_filter_params(request):
+    """Extract the multi-value filter params Jellyfin Web / Swiftfin send
+    on a filtered scene list. Returns (genres, tags, years) — each a
+    de-duplicated list."""
+    qp = request.query_params
+
+    def _multi(*keys):
+        out = []
+        for k in keys:
+            # Repeated param (?genres=A&genres=B)
+            for v in qp.getlist(k) if hasattr(qp, "getlist") else qp.multi_items():
+                if isinstance(v, tuple):
+                    k2, val = v
+                    if k2 == k:
+                        out.extend(s.strip() for s in (val or "").split(",") if s.strip())
+                else:
+                    out.extend(s.strip() for s in (v or "").split(",") if s.strip())
+        return list(dict.fromkeys(out))
+
+    genres = _multi("Genres", "genres")
+    tags = _multi("Tags", "tags")
+    years = _multi("Years", "years")
+    return genres, tags, years
+
+
+async def _resolve_tag_ids(tag_names):
+    """Resolve tag names to Stash tag ids. Missing names are dropped
+    silently. Results are batched into one GraphQL call per distinct
+    name (Stash's name filter doesn't accept a list)."""
+    ids = []
+    for name in tag_names:
+        try:
+            res = await stash_query(
+                """query FindTag($n: String!) {
+                    findTags(tag_filter: {name: {value: $n, modifier: EQUALS}}, filter: {per_page: 5}) {
+                        tags { id name }
+                    }
+                }""",
+                {"n": name},
+            )
+            tags = ((res or {}).get("data") or {}).get("findTags", {}).get("tags") or []
+            match = next(
+                (t for t in tags if (t.get("name") or "").lower() == name.lower()),
+                None,
+            )
+            if match and match.get("id"):
+                ids.append(match["id"])
+        except Exception as e:
+            logger.debug(f"tag lookup failed for '{name}': {e}")
+    return ids
+
+
+async def _filter_clause(request, filter_favorites: bool):
+    """Build the extra scene_filter: {...} body (as a string) plus its
+    variables dict for genre / tag / year filter params on the request.
+
+    Returns (clause_parts, vars_dict). clause_parts is a list of
+    "key: {...}" strings; callers stitch them together inside the
+    scene_filter block. Empty list means no extra filter applies.
+
+    Respects runtime.GENRE_FILTER_LOGIC (AND→INCLUDES_ALL, OR→INCLUDES)
+    and runtime.FILTER_TAGS_WALK_HIERARCHY (depth: -1 when true).
+    Years filter currently applies single-year; multi-year OR is a
+    future enhancement."""
+    genres, tags, years = _parse_filter_params(request)
+    all_names = list(dict.fromkeys(genres + tags))
+
+    parts = []
+    vars_ = {}
+
+    if all_names:
+        tag_ids = await _resolve_tag_ids(all_names)
+        if tag_ids:
+            modifier = "INCLUDES_ALL" if (runtime.GENRE_FILTER_LOGIC or "AND").upper() == "AND" else "INCLUDES"
+            depth_line = ", depth: -1" if runtime.FILTER_TAGS_WALK_HIERARCHY else ""
+            parts.append(f"tags: {{value: $_filter_tag_ids, modifier: {modifier}{depth_line}}}")
+            vars_["_filter_tag_ids"] = tag_ids
+
+    if years:
+        # Take the first parseable year; Swiftfin / Infuse send a single
+        # value here, multi-year OR is outside Stash's scene_filter scope.
+        for y in years:
+            try:
+                yr = int(y)
+                parts.append(
+                    f'date: {{value: "{yr}-01-01", value2: "{yr}-12-31", modifier: BETWEEN}}'
+                )
+                break
+            except ValueError:
+                continue
+
+    return parts, vars_
+
+
+async def _hero_pool(scene_fields: str, tag_ids_override: list) -> list:
+    """Return the candidate scene pool for the Home-tab hero banner.
+
+    Switches on `runtime.HERO_SOURCE`:
+        recent            newest by created_at (default)
+        random            uniform random across the library
+        favorites         scenes tagged FAVORITE_TAG
+        top_rated         rating100 >= HERO_MIN_RATING, sorted by rating desc
+        recently_watched  last_played_at within 30 days
+
+    When the legacy BANNER_MODE=tag is active and BANNER_TAGS resolved,
+    the tag filter takes precedence over HERO_SOURCE.
+    """
+    pool_size = runtime.BANNER_POOL_SIZE
+
+    # Legacy BANNER_MODE=tag path — explicit tag override wins.
+    if runtime.BANNER_MODE == "tag" and tag_ids_override:
+        q = f"""query HeroByTags($tids: [ID!], $per_page: Int!) {{
+            findScenes(
+                scene_filter: {{tags: {{value: $tids, modifier: INCLUDES}}}},
+                filter: {{page: 1, per_page: $per_page, sort: "created_at", direction: DESC}}
+            ) {{ scenes {{ {scene_fields} }} }}
+        }}"""
+        res = await stash_query(q, {"tids": tag_ids_override, "per_page": pool_size})
+        pool = res.get("data", {}).get("findScenes", {}).get("scenes", []) or []
+        logger.debug(f"Hero (banner_mode=tag): pool={len(pool)}")
+        return pool
+
+    source = (runtime.HERO_SOURCE or "recent").lower()
+
+    if source == "random":
+        q = f"""query HeroRandom($n: Int!) {{
+            findScenes(filter: {{page: 1, per_page: $n, sort: "random", direction: DESC}}) {{
+                scenes {{ {scene_fields} }}
+            }}
+        }}"""
+        res = await stash_query(q, {"n": pool_size})
+
+    elif source == "favorites":
+        fav_tag_id = None
+        if runtime.FAVORITE_TAG:
+            fav_tag_id = await get_or_create_tag(runtime.FAVORITE_TAG)
+        if not fav_tag_id:
+            logger.debug("hero_source=favorites but FAVORITE_TAG unresolved; falling back to recent")
+            source = "recent"
+        else:
+            q = f"""query HeroFavorites($tid: [ID!], $n: Int!) {{
+                findScenes(
+                    scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
+                    filter: {{page: 1, per_page: $n, sort: "random", direction: DESC}}
+                ) {{ scenes {{ {scene_fields} }} }}
+            }}"""
+            res = await stash_query(q, {"tid": [fav_tag_id], "n": pool_size})
+
+    elif source == "top_rated":
+        min_rating = int(runtime.HERO_MIN_RATING or 75)
+        q = f"""query HeroTopRated($min: Int!, $n: Int!) {{
+            findScenes(
+                scene_filter: {{rating100: {{value: $min, modifier: GREATER_THAN_OR_EQUAL}}}},
+                filter: {{page: 1, per_page: $n, sort: "rating", direction: DESC}}
+            ) {{ scenes {{ {scene_fields} }} }}
+        }}"""
+        res = await stash_query(q, {"min": min_rating, "n": pool_size})
+
+    elif source == "recently_watched":
+        q = f"""query HeroRecent($n: Int!) {{
+            findScenes(
+                scene_filter: {{last_played_at: {{value: "1 month", modifier: LESS_THAN}}}},
+                filter: {{page: 1, per_page: $n, sort: "last_played_at", direction: DESC}}
+            ) {{ scenes {{ {scene_fields} }} }}
+        }}"""
+        res = await stash_query(q, {"n": pool_size})
+
+    else:
+        source = "recent"
+
+    if source == "recent":
+        q = f"""query HeroRecent($n: Int!) {{
+            findScenes(filter: {{page: 1, per_page: $n, sort: "created_at", direction: DESC}}) {{
+                scenes {{ {scene_fields} }}
+            }}
+        }}"""
+        res = await stash_query(q, {"n": pool_size})
+
+    pool = ((res or {}).get("data") or {}).get("findScenes", {}).get("scenes", []) or []
+    logger.debug(f"Hero (source={runtime.HERO_SOURCE}): pool={len(pool)}")
+    return pool
+
+
 async def endpoint_items(request):
     # Refresh the genre allow-list snapshot — format_jellyfin_item reads
     # it sync on each scene. Cached 5 min in mapping.genre so this is a
@@ -542,9 +725,13 @@ async def endpoint_items(request):
         logger.info(f"Search: '{clean_search}' (types={include_type_list})")
 
         # Only search for scenes if Movie/Video type is requested (or no type filter)
-        # Skip for Series-only or Episode-only requests since Stash only has movie-type content
+        # Skip for Series-only or Episode-only requests since Stash only has movie-type content.
+        # Also honour runtime.SEARCH_INCLUDE_SCENES — users can disable scene
+        # hits globally even when the client requests them.
         if not has_movie_type:
             logger.debug(f"Search skipped - requested types {include_type_list} don't include Movie/Video")
+        elif not runtime.SEARCH_INCLUDE_SCENES:
+            logger.debug("Search scenes skipped (search_include_scenes=false)")
         else:
             # Get count of matching scenes
             count_q = """query CountScenes($q: String!) {
@@ -1003,9 +1190,27 @@ async def endpoint_items(request):
             total_count = 0
 
     elif parent_id == "root-scenes":
-        # First get total count
-        count_q = """query { findScenes { count } }"""
-        count_res = await stash_query(count_q)
+        # Filter-panel params: Genres, Tags, Years → scene_filter clause.
+        filter_parts, filter_vars = await _filter_clause(request, filter_favorites)
+        filter_body = ""
+        filter_var_defs = ""
+        filter_var_args = ""
+        if filter_parts:
+            filter_body = ", ".join(filter_parts)
+            if "_filter_tag_ids" in filter_vars:
+                filter_var_defs = ", $_filter_tag_ids: [ID!]"
+                filter_var_args = ", _filter_tag_ids"
+
+        # Count (filtered or total)
+        if filter_body:
+            count_q = f"""query CountFilteredScenes($_filter_tag_ids: [ID!]) {{
+                findScenes(scene_filter: {{{filter_body}}}) {{ count }}
+            }}"""
+            cvars = {k: v for k, v in filter_vars.items()}
+            count_res = await stash_query(count_q, cvars)
+        else:
+            count_q = """query { findScenes { count } }"""
+            count_res = await stash_query(count_q)
         scene_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
 
         # Check if there are saved filters for scenes (only if runtime.ENABLE_FILTERS is on)
@@ -1036,13 +1241,24 @@ async def endpoint_items(request):
         # Reduce per_page when filters folder takes a slot, so total stays within limit
         fetch_limit = limit - 1 if filters_added else limit
 
-        # Then get paginated scenes with sort from request
-        q = f"""query FindScenes($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
-            findScenes(filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}) {{
-                scenes {{ {scene_fields} }}
-            }}
-        }}"""
-        res = await stash_query(q, {"page": page, "per_page": fetch_limit, "sort": sort_field, "direction": sort_direction})
+        # Then get paginated scenes with sort + filter-panel params from request
+        if filter_body:
+            q = f"""query FindScenes($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!{filter_var_defs}) {{
+                findScenes(
+                    scene_filter: {{{filter_body}}},
+                    filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+                ) {{ scenes {{ {scene_fields} }} }}
+            }}"""
+            q_vars = {"page": page, "per_page": fetch_limit, "sort": sort_field, "direction": sort_direction}
+            q_vars.update(filter_vars)
+            res = await stash_query(q, q_vars)
+        else:
+            q = f"""query FindScenes($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
+                findScenes(filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}) {{
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = await stash_query(q, {"page": page, "per_page": fetch_limit, "sort": sort_field, "direction": sort_direction})
         for s in res.get("data", {}).get("findScenes", {}).get("scenes", []):
             items.append(format_jellyfin_item(s, parent_id="root-scenes"))
 
@@ -1608,25 +1824,7 @@ async def endpoint_items(request):
                     if not tag_ids:
                         logger.debug(f"Banner mode=tag but no runtime.BANNER_TAGS resolved ({runtime.BANNER_TAGS}); falling back to recent")
 
-                if runtime.BANNER_MODE == "tag" and tag_ids:
-                    q = f"""query BannerScenesByTags($tids: [ID!], $per_page: Int!) {{
-                        findScenes(
-                            scene_filter: {{tags: {{value: $tids, modifier: INCLUDES}}}},
-                            filter: {{page: 1, per_page: $per_page, sort: "created_at", direction: DESC}}
-                        ) {{ scenes {{ {scene_fields} }} }}
-                    }}"""
-                    res = await stash_query(q, {"tids": tag_ids, "per_page": runtime.BANNER_POOL_SIZE})
-                    pool = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-                    logger.debug(f"Banner (tag): pool={len(pool)} from tags={runtime.BANNER_TAGS}, picking {limit}")
-                else:
-                    q = f"""query BannerScenesRecent($per_page: Int!) {{
-                        findScenes(filter: {{page: 1, per_page: $per_page, sort: "created_at", direction: DESC}}) {{
-                            scenes {{ {scene_fields} }}
-                        }}
-                    }}"""
-                    res = await stash_query(q, {"per_page": runtime.BANNER_POOL_SIZE})
-                    pool = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-                    logger.debug(f"Banner (recent): pool={len(pool)} newest, picking {limit}")
+                pool = await _hero_pool(scene_fields, tag_ids)
 
                 if pool:
                     banner_scenes = random.sample(pool, min(limit, len(pool)))

@@ -103,6 +103,21 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
     POSTER_CROP_ANCHOR = "center"
     SORT_STRIP_ARTICLES = ["The", "A", "An"]
     OFFICIAL_RATING = "NC-17"
+    FILTER_TAGS_MAX = 50
+    SCENES_DEFAULT_SORT = "DateCreated"
+    STUDIOS_DEFAULT_SORT = "SortName"
+    PERFORMERS_DEFAULT_SORT = "SortName"
+    GROUPS_DEFAULT_SORT = "SortName"
+    TAG_GROUPS_DEFAULT_SORT = "PlayCount"
+    SAVED_FILTERS_DEFAULT_SORT = "PlayCount"
+    HERO_SOURCE = "recent"
+    HERO_MIN_RATING = 75
+    GENRE_FILTER_LOGIC = "AND"
+    FILTER_TAGS_WALK_HIERARCHY = True
+    SEARCH_INCLUDE_SCENES = True
+    SEARCH_INCLUDE_PERFORMERS = True
+    SEARCH_INCLUDE_STUDIOS = True
+    SEARCH_INCLUDE_GROUPS = True
 
     # ---- Load + migrate + merge ----
     cfg, cfg_defined_keys, cfg_sections = load_config(config_file)
@@ -221,6 +236,47 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         if "official_rating" in cfg:
             rating = cfg.get("official_rating", OFFICIAL_RATING).strip()
             OFFICIAL_RATING = rating if rating else OFFICIAL_RATING
+        if "filter_tags_max" in cfg:
+            try:
+                FILTER_TAGS_MAX = max(1, int(cfg.get("filter_tags_max", FILTER_TAGS_MAX)))
+            except ValueError:
+                pass
+        SCENES_DEFAULT_SORT = cfg.get("scenes_default_sort", SCENES_DEFAULT_SORT).strip() or SCENES_DEFAULT_SORT
+        STUDIOS_DEFAULT_SORT = cfg.get("studios_default_sort", STUDIOS_DEFAULT_SORT).strip() or STUDIOS_DEFAULT_SORT
+        PERFORMERS_DEFAULT_SORT = cfg.get("performers_default_sort", PERFORMERS_DEFAULT_SORT).strip() or PERFORMERS_DEFAULT_SORT
+        GROUPS_DEFAULT_SORT = cfg.get("groups_default_sort", GROUPS_DEFAULT_SORT).strip() or GROUPS_DEFAULT_SORT
+        TAG_GROUPS_DEFAULT_SORT = cfg.get("tag_groups_default_sort", TAG_GROUPS_DEFAULT_SORT).strip() or TAG_GROUPS_DEFAULT_SORT
+        SAVED_FILTERS_DEFAULT_SORT = cfg.get("saved_filters_default_sort", SAVED_FILTERS_DEFAULT_SORT).strip() or SAVED_FILTERS_DEFAULT_SORT
+        if "hero_source" in cfg:
+            raw = cfg.get("hero_source", "recent").strip().lower()
+            if raw in ("recent", "random", "favorites", "top_rated", "recently_watched"):
+                HERO_SOURCE = raw
+        if "hero_min_rating" in cfg:
+            try:
+                HERO_MIN_RATING = max(0, min(100, int(cfg.get("hero_min_rating", HERO_MIN_RATING))))
+            except ValueError:
+                pass
+        if "genre_filter_logic" in cfg:
+            raw = cfg.get("genre_filter_logic", "AND").strip().upper()
+            GENRE_FILTER_LOGIC = "OR" if raw == "OR" else "AND"
+        if "filter_tags_walk_hierarchy" in cfg:
+            FILTER_TAGS_WALK_HIERARCHY = cfg.get("filter_tags_walk_hierarchy", "true").strip().lower() in ("true", "yes", "1", "on")
+        for cfg_key, var_name in (
+            ("search_include_scenes", "SEARCH_INCLUDE_SCENES"),
+            ("search_include_performers", "SEARCH_INCLUDE_PERFORMERS"),
+            ("search_include_studios", "SEARCH_INCLUDE_STUDIOS"),
+            ("search_include_groups", "SEARCH_INCLUDE_GROUPS"),
+        ):
+            if cfg_key in cfg:
+                val = cfg.get(cfg_key, "true").strip().lower() in ("true", "yes", "1", "on")
+                if var_name == "SEARCH_INCLUDE_SCENES":
+                    SEARCH_INCLUDE_SCENES = val
+                elif var_name == "SEARCH_INCLUDE_PERFORMERS":
+                    SEARCH_INCLUDE_PERFORMERS = val
+                elif var_name == "SEARCH_INCLUDE_STUDIOS":
+                    SEARCH_INCLUDE_STUDIOS = val
+                elif var_name == "SEARCH_INCLUDE_GROUPS":
+                    SEARCH_INCLUDE_GROUPS = val
         print(f"Loaded config from {config_file}")
     else:
         cfg_defined_keys = set()
@@ -413,4 +469,19 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         POSTER_CROP_ANCHOR=POSTER_CROP_ANCHOR,
         SORT_STRIP_ARTICLES=SORT_STRIP_ARTICLES,
         OFFICIAL_RATING=OFFICIAL_RATING,
+        FILTER_TAGS_MAX=FILTER_TAGS_MAX,
+        SCENES_DEFAULT_SORT=SCENES_DEFAULT_SORT,
+        STUDIOS_DEFAULT_SORT=STUDIOS_DEFAULT_SORT,
+        PERFORMERS_DEFAULT_SORT=PERFORMERS_DEFAULT_SORT,
+        GROUPS_DEFAULT_SORT=GROUPS_DEFAULT_SORT,
+        TAG_GROUPS_DEFAULT_SORT=TAG_GROUPS_DEFAULT_SORT,
+        SAVED_FILTERS_DEFAULT_SORT=SAVED_FILTERS_DEFAULT_SORT,
+        HERO_SOURCE=HERO_SOURCE,
+        HERO_MIN_RATING=HERO_MIN_RATING,
+        GENRE_FILTER_LOGIC=GENRE_FILTER_LOGIC,
+        FILTER_TAGS_WALK_HIERARCHY=FILTER_TAGS_WALK_HIERARCHY,
+        SEARCH_INCLUDE_SCENES=SEARCH_INCLUDE_SCENES,
+        SEARCH_INCLUDE_PERFORMERS=SEARCH_INCLUDE_PERFORMERS,
+        SEARCH_INCLUDE_STUDIOS=SEARCH_INCLUDE_STUDIOS,
+        SEARCH_INCLUDE_GROUPS=SEARCH_INCLUDE_GROUPS,
     )

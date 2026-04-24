@@ -1,0 +1,73 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39387_playback_post",
+  "request": {
+    "body": {
+      "DeviceProfile": {
+        "Name": "char-capture"
+      },
+      "MaxStreamingBitrate": 140000000,
+      "UserId": "bed0fa2f-5a08-543a-96eb-ef0150360506"
+    },
+    "method": "POST",
+    "path": "/Items/scene-39387/PlaybackInfo"
+  },
+  "response": {
+    "body": {
+      "MediaSources": [
+        {
+          "Bitrate": 10485590,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39387",
+          "MediaStreams": [
+            {
+              "AspectRatio": "3840:2160",
+              "AverageFrameRate": 30,
+              "BitRate": 10485590,
+              "Codec": "h264",
+              "Height": 2160,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 30,
+              "Type": "Video",
+              "Width": 3840
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            }
+          ],
+          "Name": "ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p.mp4",
+          "Path": "/data/Video-B/--NEW/ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p/ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 7877300000,
+          "Size": 1032481170,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "PlaySessionId": "session-scene-39387"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

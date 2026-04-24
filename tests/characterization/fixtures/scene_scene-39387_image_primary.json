@@ -1,0 +1,17 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39387_image_primary",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Items/scene-39387/Images/Primary?maxHeight=400"
+  },
+  "response": {
+    "body": {
+      "__bytes__": 42153,
+      "__content_type__": "image/jpeg"
+    },
+    "content_type": "image/jpeg",
+    "status": 200
+  }
+}

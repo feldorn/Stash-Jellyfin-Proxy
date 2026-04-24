@@ -1,0 +1,140 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39387_detail",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39387"
+  },
+  "response": {
+    "body": {
+      "BackdropImageTags": [
+        "b39387"
+      ],
+      "CanDownload": true,
+      "Container": "mp4",
+      "Etag": "3ce76c1ae85351fa",
+      "HasSubtitles": false,
+      "Id": "scene-39387",
+      "ImageBlurHashes": {
+        "Backdrop": {
+          "b39387": "000000"
+        },
+        "Primary": {
+          "p39387": "000000"
+        }
+      },
+      "ImageTags": {
+        "Primary": "p39387"
+      },
+      "IsFolder": false,
+      "LocationType": "FileSystem",
+      "MediaSources": [
+        {
+          "Bitrate": 10485590,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39387",
+          "MediaStreams": [
+            {
+              "AspectRatio": "3840:2160",
+              "AverageFrameRate": 30,
+              "BitRate": 10485590,
+              "Codec": "h264",
+              "Height": 2160,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 30,
+              "Type": "Video",
+              "Width": 3840
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            }
+          ],
+          "Name": "ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p",
+          "Path": "/data/Video-B/--NEW/ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p/ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 7877300000,
+          "Size": 1032481170,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "MediaStreams": [
+        {
+          "AspectRatio": "3840:2160",
+          "AverageFrameRate": 30,
+          "BitRate": 10485590,
+          "Codec": "h264",
+          "Height": 2160,
+          "Index": 0,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "RealFrameRate": 30,
+          "Type": "Video",
+          "Width": 3840
+        },
+        {
+          "ChannelLayout": "stereo",
+          "Channels": 2,
+          "Codec": "aac",
+          "DisplayLanguage": "Unknown",
+          "DisplayTitle": "AAC - Stereo",
+          "Index": 1,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "IsInterlaced": false,
+          "IsTextSubtitleStream": false,
+          "Language": "und",
+          "SampleRate": 48000,
+          "SupportsExternalStream": false,
+          "Type": "Audio"
+        }
+      ],
+      "MediaType": "Video",
+      "Name": "ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p",
+      "OfficialRating": "NC-17",
+      "ParentId": "root-scenes",
+      "PartCount": 1,
+      "Path": "/data/Video-B/--NEW/ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p/ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p.mp4",
+      "RunTimeTicks": 7877300000,
+      "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+      "SortName": "ManyVids.Lizzie.Buns.Ass.Worship.JOI.2160p",
+      "SourceType": "Default",
+      "Type": "Movie",
+      "UserData": {
+        "IsFavorite": false,
+        "ItemId": "scene-39387",
+        "Key": "scene-39387",
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 0,
+        "Played": false
+      },
+      "VideoType": "VideoFile"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

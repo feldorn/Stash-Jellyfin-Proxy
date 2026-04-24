@@ -1,0 +1,18 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39382_intros",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39382/Intros"
+  },
+  "response": {
+    "body": {
+      "Items": [],
+      "StartIndex": 0,
+      "TotalRecordCount": 0
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

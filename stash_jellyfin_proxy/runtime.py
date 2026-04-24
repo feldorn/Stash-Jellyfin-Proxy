@@ -141,6 +141,42 @@ GENRE_TOP_N: int = 25
 SORT_STRIP_ARTICLES: List[str] = ["The", "A", "An"]
 OFFICIAL_RATING: str = "NC-17"
 
+# --- Filter panel (Phase 4 §8.5) ---
+# Max tags in each Genres / Tags dimension of /Items/Filters.
+FILTER_TAGS_MAX: int = 50
+# AND  → scene must have every selected tag (INCLUDES_ALL).
+# OR   → scene must have any (INCLUDES). Jellyfin's default is OR; AND
+# is a proxy-only enhancement per design §5.4.
+GENRE_FILTER_LOGIC: str = "AND"
+# When True, a selected tag also matches scenes tagged with any of its
+# descendants in Stash's tag hierarchy (depth: -1 on scene_filter tags).
+FILTER_TAGS_WALK_HIERARCHY: bool = True
+
+# --- Search scope (Phase 4 §8.5) ---
+SEARCH_INCLUDE_SCENES: bool = True
+SEARCH_INCLUDE_PERFORMERS: bool = True
+SEARCH_INCLUDE_STUDIOS: bool = True
+SEARCH_INCLUDE_GROUPS: bool = True
+
+# --- Hero image source (Phase 4 §8.2) ---
+# Pool the banner/hero pick from:
+#   recent            most-recently-added scenes (default)
+#   random            uniform random across the library
+#   favorites         scenes tagged FAVORITE
+#   top_rated         scenes with rating100 >= HERO_MIN_RATING
+#   recently_watched  scenes with last_played_at within 30 days
+HERO_SOURCE: str = "recent"
+HERO_MIN_RATING: int = 75
+
+# --- Per-library default sort (Phase 4 §8.4) ---
+# Used when a client issues a list request with no SortBy param.
+SCENES_DEFAULT_SORT: str = "DateCreated"
+STUDIOS_DEFAULT_SORT: str = "SortName"
+PERFORMERS_DEFAULT_SORT: str = "SortName"
+GROUPS_DEFAULT_SORT: str = "SortName"
+TAG_GROUPS_DEFAULT_SORT: str = "PlayCount"
+SAVED_FILTERS_DEFAULT_SORT: str = "PlayCount"
+
 
 def publish(**kwargs):
     """Bulk-set attributes. Used by the monolith bootstrap to copy its

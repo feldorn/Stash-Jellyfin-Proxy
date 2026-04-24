@@ -9,14 +9,40 @@ from typing import Tuple
 logger = logging.getLogger("stash-jellyfin-proxy")
 
 
+def _default_sort_for_request(request, context: str, runtime) -> str:
+    """Pick the configured per-library default SortBy value that best
+    matches the request's ParentId. Falls back to old hardcoded defaults
+    ("PremiereDate" / "SortName") when nothing maps."""
+    pid = (request.query_params.get("ParentId") or
+           request.query_params.get("parentId") or "")
+    if pid.startswith("tag-") and pid not in ("tag-favorites", "tags-favorites", "tags-all"):
+        return runtime.TAG_GROUPS_DEFAULT_SORT
+    if pid.startswith("filter-"):
+        return runtime.SAVED_FILTERS_DEFAULT_SORT
+    if pid == "root-studios" or pid.startswith("studio-"):
+        return runtime.STUDIOS_DEFAULT_SORT if context == "folders" else runtime.SCENES_DEFAULT_SORT
+    if pid == "root-performers" or pid.startswith("performer-") or pid.startswith("person-"):
+        return runtime.PERFORMERS_DEFAULT_SORT if context == "folders" else runtime.SCENES_DEFAULT_SORT
+    if pid == "root-groups" or pid.startswith("group-"):
+        return runtime.GROUPS_DEFAULT_SORT if context == "folders" else runtime.SCENES_DEFAULT_SORT
+    if pid == "root-scenes" or pid.startswith("tagitem-"):
+        return runtime.SCENES_DEFAULT_SORT
+    # Fall back to the original hardcoded defaults.
+    return "PremiereDate" if context == "scenes" else "SortName"
+
+
 def get_stash_sort_params(request, context: str = "scenes") -> Tuple[str, str]:
     """Map Jellyfin SortBy/SortOrder to Stash sort/direction.
     context: 'scenes' for scene listings, 'folders' for
-    performers/studios/groups/tags."""
+    performers/studios/groups/tags. When the request omits SortBy, fall
+    back to the configured per-library default derived from the current
+    ParentId (runtime.{SCENES,STUDIOS,PERFORMERS,GROUPS,TAG_GROUPS,
+    SAVED_FILTERS}_DEFAULT_SORT)."""
+    from stash_jellyfin_proxy import runtime  # local — runtime mutates at hot-reload
     sort_by_raw = (
         request.query_params.get("SortBy")
         or request.query_params.get("sortBy")
-        or ("PremiereDate" if context == "scenes" else "SortName")
+        or _default_sort_for_request(request, context, runtime)
     )
     sort_order = (
         request.query_params.get("SortOrder")

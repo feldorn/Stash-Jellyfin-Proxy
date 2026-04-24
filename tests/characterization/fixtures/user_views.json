@@ -228,7 +228,7 @@
           "BackdropImageTags": [],
           "CanDelete": false,
           "CanDownload": false,
-          "ChildCount": 822,
+          "ChildCount": 821,
           "CollectionType": "movies",
           "DateCreated": "2024-01-01T00:00:00.0000000Z",
           "DisplayPreferencesId": "b7a79744b943447d4f04aaa025def373",
@@ -264,7 +264,7 @@
             "PlayCount": 0,
             "PlaybackPositionTicks": 0,
             "Played": false,
-            "UnplayedItemCount": 822
+            "UnplayedItemCount": 821
           }
         },
         {

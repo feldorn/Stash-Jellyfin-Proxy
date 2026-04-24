@@ -1,0 +1,147 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39381_detail",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39381"
+  },
+  "response": {
+    "body": {
+      "BackdropImageTags": [
+        "b39381"
+      ],
+      "CanDownload": true,
+      "Container": "mp4",
+      "Etag": "d58a67021375a433",
+      "Genres": [],
+      "HasSubtitles": false,
+      "Id": "scene-39381",
+      "ImageBlurHashes": {
+        "Backdrop": {
+          "b39381": "000000"
+        },
+        "Primary": {
+          "p39381": "000000"
+        }
+      },
+      "ImageTags": {
+        "Primary": "p39381"
+      },
+      "IsFolder": false,
+      "LocationType": "FileSystem",
+      "MediaSources": [
+        {
+          "Bitrate": 47774306,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39381",
+          "MediaStreams": [
+            {
+              "AspectRatio": "5760:2880",
+              "AverageFrameRate": 50,
+              "BitRate": 47774306,
+              "Codec": "hevc",
+              "Height": 2880,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 50,
+              "Type": "Video",
+              "Width": 5760
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            }
+          ],
+          "Name": "Goon All Day Never Cum Compilation",
+          "Path": "/data/Video-B/--NEW/2025.01.19.Alec.Hardy.Goon.All.Day.Never.Cum.Compilation.Unknown.Performers.1/2025.01.19.Alec.Hardy.Goon.All.Day.Never.Cum.Compilation.Unknown.Performers.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 5292400000,
+          "Size": 3160493311,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "MediaStreams": [
+        {
+          "AspectRatio": "5760:2880",
+          "AverageFrameRate": 50,
+          "BitRate": 47774306,
+          "Codec": "hevc",
+          "Height": 2880,
+          "Index": 0,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "RealFrameRate": 50,
+          "Type": "Video",
+          "Width": 5760
+        },
+        {
+          "ChannelLayout": "stereo",
+          "Channels": 2,
+          "Codec": "aac",
+          "DisplayLanguage": "Unknown",
+          "DisplayTitle": "AAC - Stereo",
+          "Index": 1,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "IsInterlaced": false,
+          "IsTextSubtitleStream": false,
+          "Language": "und",
+          "SampleRate": 48000,
+          "SupportsExternalStream": false,
+          "Type": "Audio"
+        }
+      ],
+      "MediaType": "Video",
+      "Name": "Goon All Day Never Cum Compilation",
+      "OfficialRating": "NC-17",
+      "ParentId": "root-scenes",
+      "PartCount": 1,
+      "Path": "/data/Video-B/--NEW/2025.01.19.Alec.Hardy.Goon.All.Day.Never.Cum.Compilation.Unknown.Performers.1/2025.01.19.Alec.Hardy.Goon.All.Day.Never.Cum.Compilation.Unknown.Performers.mp4",
+      "PremiereDate": "2025-01-19T00:00:00.0000000Z",
+      "ProductionYear": 2025,
+      "RunTimeTicks": 5292400000,
+      "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+      "SortName": "Goon All Day Never Cum Compilation",
+      "SourceType": "Default",
+      "Tags": [
+        "Virtual Reality"
+      ],
+      "Type": "Movie",
+      "UserData": {
+        "IsFavorite": false,
+        "ItemId": "scene-39381",
+        "Key": "scene-39381",
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 3099878330,
+        "Played": false,
+        "PlayedPercentage": 58.57226078905601
+      },
+      "VideoType": "VideoFile"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39367_detail",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39367"
+  },
+  "response": {
+    "body": {
+      "BackdropImageTags": [
+        "b39367"
+      ],
+      "CanDownload": true,
+      "Container": "mp4",
+      "Etag": "4c8570dc10ed924a",
+      "Genres": [],
+      "HasSubtitles": true,
+      "Id": "scene-39367",
+      "ImageBlurHashes": {
+        "Backdrop": {
+          "b39367": "000000"
+        },
+        "Primary": {
+          "p39367": "000000"
+        }
+      },
+      "ImageTags": {
+        "Primary": "p39367"
+      },
+      "IsFolder": false,
+      "LocationType": "FileSystem",
+      "MediaSources": [
+        {
+          "Bitrate": 1198111,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39367",
+          "MediaStreams": [
+            {
+              "AspectRatio": "960:720",
+              "AverageFrameRate": 30,
+              "BitRate": 1198111,
+              "Codec": "h264",
+              "Height": 720,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 30,
+              "Type": "Video",
+              "Width": 960
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            },
+            {
+              "Codec": "srt",
+              "DeliveryMethod": "External",
+              "DeliveryUrl": "Subtitles/1/0/Stream.srt",
+              "DisplayLanguage": "ENG",
+              "DisplayTitle": "ENG (SRT)",
+              "Index": 2,
+              "IsDefault": true,
+              "IsExternal": true,
+              "IsForced": false,
+              "IsTextSubtitleStream": true,
+              "Language": "eng",
+              "SupportsExternalStream": true,
+              "Title": "ENG",
+              "Type": "Subtitle"
+            }
+          ],
+          "Name": "XXX - CUM JOI - 4Pornaddict Gooners-1280x720",
+          "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/XXX - CUM JOI - 4Pornaddict Gooners-1280x720.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 6081000000,
+          "Size": 91071437,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "MediaStreams": [
+        {
+          "AspectRatio": "960:720",
+          "AverageFrameRate": 30,
+          "BitRate": 1198111,
+          "Codec": "h264",
+          "Height": 720,
+          "Index": 0,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "RealFrameRate": 30,
+          "Type": "Video",
+          "Width": 960
+        },
+        {
+          "ChannelLayout": "stereo",
+          "Channels": 2,
+          "Codec": "aac",
+          "DisplayLanguage": "Unknown",
+          "DisplayTitle": "AAC - Stereo",
+          "Index": 1,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "IsInterlaced": false,
+          "IsTextSubtitleStream": false,
+          "Language": "und",
+          "SampleRate": 48000,
+          "SupportsExternalStream": false,
+          "Type": "Audio"
+        },
+        {
+          "Codec": "srt",
+          "DeliveryMethod": "External",
+          "DeliveryUrl": "Subtitles/1/0/Stream.srt",
+          "DisplayLanguage": "ENG",
+          "DisplayTitle": "ENG (SRT)",
+          "Index": 2,
+          "IsDefault": true,
+          "IsExternal": true,
+          "IsForced": false,
+          "IsTextSubtitleStream": true,
+          "Language": "eng",
+          "SupportsExternalStream": true,
+          "Title": "ENG",
+          "Type": "Subtitle"
+        }
+      ],
+      "MediaType": "Video",
+      "Name": "XXX - CUM JOI - 4Pornaddict Gooners-1280x720",
+      "OfficialRating": "NC-17",
+      "ParentId": "root-scenes",
+      "PartCount": 1,
+      "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/XXX - CUM JOI - 4Pornaddict Gooners-1280x720.mp4",
+      "RunTimeTicks": 6081000000,
+      "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+      "SortName": "XXX - CUM JOI - 4Pornaddict Gooners-1280x720",
+      "SourceType": "Default",
+      "Tags": [],
+      "Type": "Movie",
+      "UserData": {
+        "IsFavorite": false,
+        "ItemId": "scene-39367",
+        "Key": "scene-39367",
+        "LastPlayedDate": "2026-04-22T14:16:31Z",
+        "PlayCount": 1,
+        "PlaybackPositionTicks": 5521767300,
+        "Played": true,
+        "PlayedPercentage": 90.80360631475087
+      },
+      "VideoType": "VideoFile"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

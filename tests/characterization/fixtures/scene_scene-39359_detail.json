@@ -1,0 +1,175 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39359_detail",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39359"
+  },
+  "response": {
+    "body": {
+      "BackdropImageTags": [
+        "b39359"
+      ],
+      "CanDownload": true,
+      "Container": "mp4",
+      "Etag": "eeeeb792b66165c1",
+      "Genres": [],
+      "HasSubtitles": true,
+      "Id": "scene-39359",
+      "ImageBlurHashes": {
+        "Backdrop": {
+          "b39359": "000000"
+        },
+        "Primary": {
+          "p39359": "000000"
+        }
+      },
+      "ImageTags": {
+        "Primary": "p39359"
+      },
+      "IsFolder": false,
+      "LocationType": "FileSystem",
+      "MediaSources": [
+        {
+          "Bitrate": 4220803,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39359",
+          "MediaStreams": [
+            {
+              "AspectRatio": "1920:1080",
+              "AverageFrameRate": 30,
+              "BitRate": 4220803,
+              "Codec": "h264",
+              "Height": 1080,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 30,
+              "Type": "Video",
+              "Width": 1920
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            },
+            {
+              "Codec": "srt",
+              "DeliveryMethod": "External",
+              "DeliveryUrl": "Subtitles/1/0/Stream.srt",
+              "DisplayLanguage": "ENG",
+              "DisplayTitle": "ENG (SRT)",
+              "Index": 2,
+              "IsDefault": true,
+              "IsExternal": true,
+              "IsForced": false,
+              "IsTextSubtitleStream": true,
+              "Language": "eng",
+              "SupportsExternalStream": true,
+              "Title": "ENG",
+              "Type": "Subtitle"
+            }
+          ],
+          "Name": "NCC - The End - Goon",
+          "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/NCC - The End - Goon.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 8970300000,
+          "Size": 473275171,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "MediaStreams": [
+        {
+          "AspectRatio": "1920:1080",
+          "AverageFrameRate": 30,
+          "BitRate": 4220803,
+          "Codec": "h264",
+          "Height": 1080,
+          "Index": 0,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "RealFrameRate": 30,
+          "Type": "Video",
+          "Width": 1920
+        },
+        {
+          "ChannelLayout": "stereo",
+          "Channels": 2,
+          "Codec": "aac",
+          "DisplayLanguage": "Unknown",
+          "DisplayTitle": "AAC - Stereo",
+          "Index": 1,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "IsInterlaced": false,
+          "IsTextSubtitleStream": false,
+          "Language": "und",
+          "SampleRate": 48000,
+          "SupportsExternalStream": false,
+          "Type": "Audio"
+        },
+        {
+          "Codec": "srt",
+          "DeliveryMethod": "External",
+          "DeliveryUrl": "Subtitles/1/0/Stream.srt",
+          "DisplayLanguage": "ENG",
+          "DisplayTitle": "ENG (SRT)",
+          "Index": 2,
+          "IsDefault": true,
+          "IsExternal": true,
+          "IsForced": false,
+          "IsTextSubtitleStream": true,
+          "Language": "eng",
+          "SupportsExternalStream": true,
+          "Title": "ENG",
+          "Type": "Subtitle"
+        }
+      ],
+      "MediaType": "Video",
+      "Name": "NCC - The End - Goon",
+      "OfficialRating": "NC-17",
+      "ParentId": "root-scenes",
+      "PartCount": 1,
+      "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/NCC - The End - Goon.mp4",
+      "RunTimeTicks": 8970300000,
+      "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+      "SortName": "NCC - The End - Goon",
+      "SourceType": "Default",
+      "Tags": [],
+      "Type": "Movie",
+      "UserData": {
+        "IsFavorite": false,
+        "ItemId": "scene-39359",
+        "Key": "scene-39359",
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 99574430,
+        "Played": false,
+        "PlayedPercentage": 1.1100457063866314
+      },
+      "VideoType": "VideoFile"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39386_detail",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39386"
+  },
+  "response": {
+    "body": {
+      "BackdropImageTags": [
+        "b39386"
+      ],
+      "CanDownload": true,
+      "Container": "mp4",
+      "Etag": "b7523a0e517a251d",
+      "HasSubtitles": false,
+      "Id": "scene-39386",
+      "ImageBlurHashes": {
+        "Backdrop": {
+          "b39386": "000000"
+        },
+        "Primary": {
+          "p39386": "000000"
+        }
+      },
+      "ImageTags": {
+        "Primary": "p39386"
+      },
+      "IsFolder": false,
+      "LocationType": "FileSystem",
+      "MediaSources": [
+        {
+          "Bitrate": 12264156,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39386",
+          "MediaStreams": [
+            {
+              "AspectRatio": "3840:2160",
+              "AverageFrameRate": 29.97,
+              "BitRate": 12264156,
+              "Codec": "h264",
+              "Height": 2160,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 29.97,
+              "Type": "Video",
+              "Width": 3840
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            }
+          ],
+          "Name": "Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K",
+          "Path": "/data/Video-B/--NEW/Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K/Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 10280700000,
+          "Size": 1576058618,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "MediaStreams": [
+        {
+          "AspectRatio": "3840:2160",
+          "AverageFrameRate": 29.97,
+          "BitRate": 12264156,
+          "Codec": "h264",
+          "Height": 2160,
+          "Index": 0,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "RealFrameRate": 29.97,
+          "Type": "Video",
+          "Width": 3840
+        },
+        {
+          "ChannelLayout": "stereo",
+          "Channels": 2,
+          "Codec": "aac",
+          "DisplayLanguage": "Unknown",
+          "DisplayTitle": "AAC - Stereo",
+          "Index": 1,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "IsInterlaced": false,
+          "IsTextSubtitleStream": false,
+          "Language": "und",
+          "SampleRate": 48000,
+          "SupportsExternalStream": false,
+          "Type": "Audio"
+        }
+      ],
+      "MediaType": "Video",
+      "Name": "Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K",
+      "OfficialRating": "NC-17",
+      "ParentId": "root-scenes",
+      "PartCount": 1,
+      "Path": "/data/Video-B/--NEW/Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K/Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K.mp4",
+      "RunTimeTicks": 10280700000,
+      "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+      "SortName": "Bettie.Bondage.MILF.is.Desperate.for.Your.Cock.JOI.4K",
+      "SourceType": "Default",
+      "Type": "Movie",
+      "UserData": {
+        "IsFavorite": false,
+        "ItemId": "scene-39386",
+        "Key": "scene-39386",
+        "PlayCount": 0,
+        "PlaybackPositionTicks": 0,
+        "Played": false
+      },
+      "VideoType": "VideoFile"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

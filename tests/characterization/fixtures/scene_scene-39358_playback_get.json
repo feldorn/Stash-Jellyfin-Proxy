@@ -1,0 +1,67 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39358_playback_get",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Items/scene-39358/PlaybackInfo?UserId=bed0fa2f-5a08-543a-96eb-ef0150360506"
+  },
+  "response": {
+    "body": {
+      "MediaSources": [
+        {
+          "Bitrate": 3398467,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39358",
+          "MediaStreams": [
+            {
+              "AspectRatio": "1920:1080",
+              "AverageFrameRate": 24,
+              "BitRate": 3398467,
+              "Codec": "h264",
+              "Height": 1080,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 24,
+              "Type": "Video",
+              "Width": 1920
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            }
+          ],
+          "Name": "NCC - Pump Drip Goon Repeat.mp4",
+          "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/NCC - Pump Drip Goon Repeat.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 2979600000,
+          "Size": 126575196,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "PlaySessionId": "session-scene-39358"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

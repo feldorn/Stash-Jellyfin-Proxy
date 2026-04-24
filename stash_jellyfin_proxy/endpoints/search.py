@@ -47,51 +47,164 @@ async def endpoint_items_counts(request):
 
 
 async def endpoint_items_filters(request):
-    """`GET /Items/Filters` — filter-panel options for Swiftfin's filter drawer.
+    """`GET /Items/Filters` — filter-panel options for Swiftfin's filter
+    drawer. Per Phase 4 §8.5:
 
-    Returns top Stash tags as Genres (by scene count), the full year range
-    of scenes, and a hardcoded NC-17 rating. Phase 3 replaces this with
-    the configurable genre_mode logic and per-parent scoping."""
+      - Scope to ParentId. Global query for unscoped / root-scenes /
+        unknown-prefix parents; aggregate from scenes-under-parent for
+        studio / performer / group / tag-item parents.
+      - Split tags into Genres + Tags using the genre_mode allow-list
+        (mapping.genre.genre_allowed_names). System tags (SERIES /
+        FAVORITE / TAG_GROUPS / GENRE_PARENT_TAG / RATING:) stripped.
+      - Sort each dimension by scene count desc, cap at FILTER_TAGS_MAX.
+      - Year range and OfficialRatings scoped similarly."""
+    parent_id = request.query_params.get("ParentId") or request.query_params.get("parentId")
     try:
-        # Top 50 tags alphabetically → Genres (Phase 3 will sort by scene_count and split into Genres vs Tags)
-        tags_q = """query {
-            findTags(filter: {per_page: 50, sort: "name", direction: ASC}) {
-                tags { name scene_count }
-            }
-        }"""
-        # Oldest and newest scene dates → year range
-        oldest_q = """query { findScenes(filter: {per_page: 1, sort: "date", direction: ASC})  { scenes { date } } }"""
-        newest_q = """query { findScenes(filter: {per_page: 1, sort: "date", direction: DESC}) { scenes { date } } }"""
+        clause, cvars = scene_filter_clause_for_parent(parent_id)
+        allowed = await genre_allowed_names()
+        excludes = _filter_exclude_set_lower()
 
-        tags_res, oldest_res, newest_res = await asyncio.gather(
-            stash_query(tags_q),
-            stash_query(oldest_q),
-            stash_query(newest_q),
+        if clause:
+            tag_counts, min_year, max_year = await _scoped_filter_data(clause, cvars)
+        else:
+            tag_counts, min_year, max_year = await _global_filter_data()
+
+        genre_names, tag_names = _split_tag_counts(
+            tag_counts, allowed, excludes, runtime.FILTER_TAGS_MAX
         )
 
-        tags = (tags_res.get("data", {}).get("findTags") or {}).get("tags", [])
-        genre_names = [t["name"] for t in tags if t.get("scene_count", 0) > 0]
-
-        oldest_scenes = (oldest_res.get("data", {}).get("findScenes") or {}).get("scenes", [])
-        newest_scenes = (newest_res.get("data", {}).get("findScenes") or {}).get("scenes", [])
-        years = []
-        if oldest_scenes and newest_scenes:
-            try:
-                oldest_year = int((oldest_scenes[0].get("date") or "2000")[:4])
-                newest_year = int((newest_scenes[0].get("date") or "2025")[:4])
-                years = list(range(newest_year, oldest_year - 1, -1))
-            except (ValueError, IndexError):
-                pass
+        years: list = []
+        if min_year and max_year:
+            years = list(range(int(max_year), int(min_year) - 1, -1))
 
         return JSONResponse({
             "Genres": genre_names,
-            "Tags": [],
-            "OfficialRatings": ["NC-17"],
+            "Tags": tag_names,
+            "OfficialRatings": [runtime.OFFICIAL_RATING],
             "Years": years,
         })
     except Exception as e:
-        logger.error(f"Failed to fetch filters: {e}")
-        return JSONResponse({"Genres": [], "Tags": [], "OfficialRatings": ["NC-17"], "Years": []})
+        logger.error(f"Failed to fetch filters for ParentId={parent_id}: {e}")
+        return JSONResponse({
+            "Genres": [], "Tags": [],
+            "OfficialRatings": [runtime.OFFICIAL_RATING], "Years": [],
+        })
+
+
+def _filter_exclude_set_lower() -> set:
+    """Tag names never shown in the filter drawer — plumbing markers."""
+    out = set()
+    if runtime.SERIES_TAG:
+        out.add(runtime.SERIES_TAG.strip().lower())
+    if runtime.FAVORITE_TAG:
+        out.add(runtime.FAVORITE_TAG.strip().lower())
+    if runtime.GENRE_PARENT_TAG:
+        out.add(runtime.GENRE_PARENT_TAG.strip().lower())
+    for tg in runtime.TAG_GROUPS or []:
+        out.add(tg.strip().lower())
+    return out
+
+
+async def _global_filter_data():
+    """Top-N tags across the whole library, sorted by scene_count.
+    Also returns the library-wide min/max scene dates."""
+    tags_q = """query {
+        findTags(filter: {per_page: 300, sort: "scenes_count", direction: DESC}) {
+            tags { name scene_count }
+        }
+    }"""
+    # Null-date scenes sort first under Stash's ASC direction, which would
+    # leave min_year as None. NOT {is_missing: "date"} excludes them.
+    oldest_q = """query { findScenes(
+        scene_filter: {NOT: {is_missing: "date"}},
+        filter: {per_page: 1, sort: "date", direction: ASC}
+    ) { scenes { date } } }"""
+    newest_q = """query { findScenes(filter: {per_page: 1, sort: "date", direction: DESC}) { scenes { date } } }"""
+
+    tags_res, oldest_res, newest_res = await asyncio.gather(
+        stash_query(tags_q),
+        stash_query(oldest_q),
+        stash_query(newest_q),
+    )
+
+    tag_counts = {}
+    for t in ((tags_res or {}).get("data", {}).get("findTags") or {}).get("tags", []):
+        name = (t.get("name") or "").strip()
+        count = int(t.get("scene_count") or 0)
+        if name and count > 0:
+            tag_counts[name] = count
+
+    def _year(res):
+        scenes = ((res or {}).get("data", {}).get("findScenes") or {}).get("scenes") or []
+        if scenes and scenes[0].get("date"):
+            try:
+                return int(scenes[0]["date"][:4])
+            except (ValueError, TypeError):
+                return None
+        return None
+
+    return tag_counts, _year(oldest_res), _year(newest_res)
+
+
+async def _scoped_filter_data(scene_clause: str, scene_vars: dict):
+    """Aggregate tag counts + year range from scenes matching scene_clause.
+
+    One GraphQL call pulls every in-scope scene's tag list and date in a
+    single query. The single-studio / single-performer / single-group
+    libraries are small enough (hundreds to low thousands of scenes) that
+    the full aggregation beats chained Stash queries."""
+    q = f"""query ScopedFilterData($ids: [ID!]) {{
+        findScenes({scene_clause}, filter: {{per_page: -1}}) {{
+            scenes {{ date tags {{ name }} }}
+        }}
+    }}"""
+    res = await stash_query(q, scene_vars)
+    scenes = ((res or {}).get("data", {}).get("findScenes") or {}).get("scenes", []) or []
+
+    tag_counts: dict = {}
+    min_year = None
+    max_year = None
+    for s in scenes:
+        date = s.get("date")
+        if date:
+            try:
+                yr = int(date[:4])
+                if min_year is None or yr < min_year:
+                    min_year = yr
+                if max_year is None or yr > max_year:
+                    max_year = yr
+            except (ValueError, TypeError):
+                pass
+        for t in s.get("tags") or []:
+            name = (t.get("name") or "").strip()
+            if not name:
+                continue
+            tag_counts[name] = tag_counts.get(name, 0) + 1
+    return tag_counts, min_year, max_year
+
+
+def _split_tag_counts(tag_counts: dict, allowed, excludes: set, cap: int):
+    """Return (genres, residual_tags), both sorted by count desc and capped
+    at `cap`. `allowed` is a lowercase frozenset from genre_allowed_names;
+    None means "every non-system tag is a genre" (all_tags mode)."""
+    genres: list = []
+    residual: list = []
+    for name, count in sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0].lower())):
+        lc = name.lower()
+        if lc in excludes or lc.startswith("rating:"):
+            continue
+        if allowed is None or lc in allowed:
+            genres.append(name)
+        else:
+            residual.append(name)
+    return genres[:cap], residual[:cap]
+
+
+# Lazy import so genre module's stash-client dependency isn't pulled in at
+# import time (test envs without httpx need to import this module).
+async def genre_allowed_names():
+    from stash_jellyfin_proxy.mapping.genre import genre_allowed_names as _g
+    return await _g()
 
 
 async def endpoint_genres(request):
@@ -143,12 +256,18 @@ async def endpoint_genres(request):
 
 async def endpoint_persons(request):
     """`GET /Persons` — performers as Jellyfin Person items with search
-    and IsFavorite filter support."""
+    and IsFavorite filter support. Gated by runtime.SEARCH_INCLUDE_PERFORMERS
+    when the request is a search (has SearchTerm)."""
     start_index = max(0, int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0))
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or runtime.DEFAULT_PAGE_SIZE)
     limit = max(1, min(limit, runtime.MAX_PAGE_SIZE))
 
     search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm")
+    # Respect search_include_performers only when the call is a search —
+    # /Persons is also used for the Persons *library* browse which should
+    # never be gated.
+    if search_term and not runtime.SEARCH_INCLUDE_PERFORMERS:
+        return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": start_index})
     filters_param = request.query_params.get("Filters") or request.query_params.get("filters") or ""
     filter_favorites = "isfavorite" in filters_param.lower()
     folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
@@ -293,8 +412,17 @@ async def endpoint_search_hints(request):
         return JSONResponse({"SearchHints": [], "TotalRecordCount": 0})
 
     clean_search = search_term.strip('"\'')
-    search_scenes = not include_item_types or "movie" in include_item_types or "video" in include_item_types
-    search_persons = not include_item_types or "person" in include_item_types
+    # Client IncludeItemTypes filter intersected with runtime search-scope
+    # toggles (§8.5). If SEARCH_INCLUDE_SCENES is off, scene hits are
+    # dropped even when the client asked for Movie/Video.
+    search_scenes = (
+        (not include_item_types or "movie" in include_item_types or "video" in include_item_types)
+        and runtime.SEARCH_INCLUDE_SCENES
+    )
+    search_persons = (
+        (not include_item_types or "person" in include_item_types)
+        and runtime.SEARCH_INCLUDE_PERFORMERS
+    )
 
     try:
         if search_scenes:

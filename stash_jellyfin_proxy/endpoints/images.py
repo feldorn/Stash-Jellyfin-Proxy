@@ -61,6 +61,117 @@ MENU_ICONS = {
 }
 
 
+# Library-card artwork cache (Phase 4 §8.3). Key → (expires_at_monotonic,
+# bytes, content_type). 24h TTL per card. Picked scene rotates every day.
+_LIBRARY_CARD_CACHE: dict = {}
+_LIBRARY_CARD_TTL = 24 * 60 * 60  # seconds
+
+
+async def _pick_random_scene(scene_filter_clause: str, vars_: dict) -> "str | None":
+    """Return one scene id that matches scene_filter_clause, picked at
+    random by Stash. scene_filter_clause is the inner part of a
+    scene_filter: {...} block; pass empty string for unscoped."""
+    try:
+        if scene_filter_clause:
+            q = f"""query PickScene($ids: [ID!]) {{
+                findScenes(
+                    scene_filter: {{{scene_filter_clause}}},
+                    filter: {{page: 1, per_page: 1, sort: "random"}}
+                ) {{ scenes {{ id }} }}
+            }}"""
+        else:
+            q = """query PickScene {
+                findScenes(filter: {page: 1, per_page: 1, sort: "random"}) {
+                    scenes { id }
+                }
+            }"""
+        res = await stash_query(q, vars_ if scene_filter_clause else None)
+        scenes = ((res or {}).get("data") or {}).get("findScenes", {}).get("scenes") or []
+        return scenes[0].get("id") if scenes else None
+    except Exception as e:
+        logger.debug(f"_pick_random_scene failed: {e}")
+        return None
+
+
+async def _fetch_scene_screenshot(scene_id: str) -> "tuple[bytes, str] | None":
+    url = f"{runtime.STASH_URL}/scene/{scene_id}/screenshot"
+    headers = {"ApiKey": runtime.STASH_API_KEY} if runtime.STASH_API_KEY else {}
+    try:
+        data, ct, _ = await fetch_from_stash(url, extra_headers=headers, timeout=30)
+        if not data or len(data) < 500 or not (ct or "").startswith("image/"):
+            return None
+        return data, ct
+    except Exception as e:
+        logger.debug(f"scene screenshot fetch failed for {scene_id}: {e}")
+        return None
+
+
+async def _library_card_artwork(library_id: str) -> "tuple[bytes, str] | None":
+    """Return (bytes, ct) for a library-card background image or None
+    if the library is empty / Stash is unreachable. Cached 24h."""
+    import time as _time
+    now = _time.monotonic()
+    hit = _LIBRARY_CARD_CACHE.get(library_id)
+    if hit and hit[0] > now:
+        return hit[1], hit[2]
+
+    # Library cards all get a random scene screenshot — users don't
+    # visually distinguish "studios library card" from "scenes library
+    # card", so a random scene is fine for every root-* tile and keeps
+    # this logic cheap (one query, no filter permutations to get wrong).
+    scene_id = await _pick_random_scene("", None)
+    if not scene_id:
+        return None
+    shot = await _fetch_scene_screenshot(scene_id)
+    if shot is None:
+        return None
+    _LIBRARY_CARD_CACHE[library_id] = (now + _LIBRARY_CARD_TTL, shot[0], shot[1])
+    logger.debug(f"Library card artwork {library_id} → scene-{scene_id} ({len(shot[0])} bytes)")
+    return shot
+
+
+async def _tag_card_artwork(tag_name: str) -> "tuple[bytes, str] | None":
+    """Artwork for a TAG_GROUPS library card — random scene tagged with tag_name."""
+    import time as _time
+    now = _time.monotonic()
+    key = f"tag:{tag_name.lower()}"
+    hit = _LIBRARY_CARD_CACHE.get(key)
+    if hit and hit[0] > now:
+        return hit[1], hit[2]
+
+    # Resolve tag id by name, then pick a random scene.
+    try:
+        tag_q = """query FindTagByName($n: String!) {
+            findTags(tag_filter: {name: {value: $n, modifier: EQUALS}}, filter: {per_page: 5}) {
+                tags { id name }
+            }
+        }"""
+        tag_res = await stash_query(tag_q, {"n": tag_name})
+        tags = ((tag_res or {}).get("data") or {}).get("findTags", {}).get("tags") or []
+        target = next(
+            (t for t in tags if (t.get("name") or "").lower() == tag_name.lower()),
+            None,
+        )
+        if not target:
+            return None
+        tag_id = target.get("id")
+    except Exception as e:
+        logger.debug(f"tag lookup failed for '{tag_name}': {e}")
+        return None
+
+    scene_id = await _pick_random_scene(
+        "tags: {value: $ids, modifier: INCLUDES}", {"ids": [tag_id]}
+    )
+    if not scene_id:
+        return None
+    shot = await _fetch_scene_screenshot(scene_id)
+    if shot is None:
+        return None
+    _LIBRARY_CARD_CACHE[key] = (now + _LIBRARY_CARD_TTL, shot[0], shot[1])
+    logger.debug(f"Tag card artwork '{tag_name}' → scene-{scene_id} ({len(shot[0])} bytes)")
+    return shot
+
+
 _ICON_CACHE_HEADERS = {"Cache-Control": "no-cache, must-revalidate", "Pragma": "no-cache"}
 _IMAGE_CACHE_HEADERS = {
     "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -85,17 +196,31 @@ async def endpoint_image(request):
     )
 
     if item_id in MENU_ICONS:
+        # Phase 4 §8.3: library cards should show a scene screenshot
+        # rather than a generated SVG icon. Cache for 24h so the card
+        # doesn't flicker on every home-screen reopen.
+        art = await _library_card_artwork(item_id)
+        if art is not None:
+            data, ct = art
+            return Response(content=data, media_type=ct, headers=_IMAGE_CACHE_HEADERS)
         img_data, content_type = generate_menu_icon(item_id)
-        logger.debug(f"Serving menu icon for {item_id}")
+        logger.debug(f"Serving fallback SVG menu icon for {item_id} (no scene artwork)")
         return Response(content=img_data, media_type=content_type, headers=_ICON_CACHE_HEADERS)
 
     if item_id.startswith("tag-"):
+        # TAG_GROUPS card: try a scene from that tag, fall back to the
+        # generated text-icon below.
         tag_slug = item_id[4:]
         tag_name = None
         for t in runtime.TAG_GROUPS:
             if t.lower().replace(' ', '-') == tag_slug:
                 tag_name = t
                 break
+        if tag_name:
+            art = await _tag_card_artwork(tag_name)
+            if art is not None:
+                data, ct = art
+                return Response(content=data, media_type=ct, headers=_IMAGE_CACHE_HEADERS)
         display_name = tag_name if tag_name else tag_slug.replace('-', ' ').title()
         img_data, content_type = generate_text_icon(display_name)
         logger.debug(f"Serving text icon for tag folder: {display_name}")

@@ -1,0 +1,143 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39363_detail",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Users/bed0fa2f-5a08-543a-96eb-ef0150360506/Items/scene-39363"
+  },
+  "response": {
+    "body": {
+      "BackdropImageTags": [
+        "b39363"
+      ],
+      "CanDownload": true,
+      "Container": "mp4",
+      "Etag": "dde2027eecfa270c",
+      "Genres": [],
+      "HasSubtitles": false,
+      "Id": "scene-39363",
+      "ImageBlurHashes": {
+        "Backdrop": {
+          "b39363": "000000"
+        },
+        "Primary": {
+          "p39363": "000000"
+        }
+      },
+      "ImageTags": {
+        "Primary": "p39363"
+      },
+      "IsFolder": false,
+      "LocationType": "FileSystem",
+      "MediaSources": [
+        {
+          "Bitrate": 2207617,
+          "Container": "mp4",
+          "DefaultAudioStreamIndex": 1,
+          "DefaultSubtitleStreamIndex": -1,
+          "Id": "scene-39363",
+          "MediaStreams": [
+            {
+              "AspectRatio": "1524:720",
+              "AverageFrameRate": 50,
+              "BitRate": 2207617,
+              "Codec": "h264",
+              "Height": 720,
+              "Index": 0,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "RealFrameRate": 50,
+              "Type": "Video",
+              "Width": 1524
+            },
+            {
+              "ChannelLayout": "stereo",
+              "Channels": 2,
+              "Codec": "aac",
+              "DisplayLanguage": "Unknown",
+              "DisplayTitle": "AAC - Stereo",
+              "Index": 1,
+              "IsDefault": true,
+              "IsExternal": false,
+              "IsForced": false,
+              "IsInterlaced": false,
+              "IsTextSubtitleStream": false,
+              "Language": "und",
+              "SampleRate": 48000,
+              "SupportsExternalStream": false,
+              "Type": "Audio"
+            }
+          ],
+          "Name": "NCC - goober goon goon",
+          "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/NCC - goober goon goon.mp4",
+          "Protocol": "File",
+          "RunTimeTicks": 1246900000,
+          "Size": 34408798,
+          "SupportsDirectPlay": true,
+          "SupportsDirectStream": true,
+          "SupportsTranscoding": false,
+          "Type": "Default"
+        }
+      ],
+      "MediaStreams": [
+        {
+          "AspectRatio": "1524:720",
+          "AverageFrameRate": 50,
+          "BitRate": 2207617,
+          "Codec": "h264",
+          "Height": 720,
+          "Index": 0,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "RealFrameRate": 50,
+          "Type": "Video",
+          "Width": 1524
+        },
+        {
+          "ChannelLayout": "stereo",
+          "Channels": 2,
+          "Codec": "aac",
+          "DisplayLanguage": "Unknown",
+          "DisplayTitle": "AAC - Stereo",
+          "Index": 1,
+          "IsDefault": true,
+          "IsExternal": false,
+          "IsForced": false,
+          "IsInterlaced": false,
+          "IsTextSubtitleStream": false,
+          "Language": "und",
+          "SampleRate": 48000,
+          "SupportsExternalStream": false,
+          "Type": "Audio"
+        }
+      ],
+      "MediaType": "Video",
+      "Name": "NCC - goober goon goon",
+      "OfficialRating": "NC-17",
+      "ParentId": "root-scenes",
+      "PartCount": 1,
+      "Path": "/data/Video-B/--NEW/empornium/Gooning Megapack/NCC - goober goon goon.mp4",
+      "RunTimeTicks": 1246900000,
+      "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
+      "SortName": "NCC - goober goon goon",
+      "SourceType": "Default",
+      "Tags": [],
+      "Type": "Movie",
+      "UserData": {
+        "IsFavorite": false,
+        "ItemId": "scene-39363",
+        "Key": "scene-39363",
+        "LastPlayedDate": "2026-04-23T21:24:28Z",
+        "PlayCount": 1,
+        "PlaybackPositionTicks": 0,
+        "Played": true
+      },
+      "VideoType": "VideoFile"
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}

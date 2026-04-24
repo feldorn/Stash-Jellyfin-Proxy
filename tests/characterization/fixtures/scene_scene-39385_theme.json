@@ -1,0 +1,18 @@
+{
+  "compare_mode": "full",
+  "name": "scene_scene-39385_theme",
+  "request": {
+    "body": null,
+    "method": "GET",
+    "path": "/Items/scene-39385/ThemeSongs"
+  },
+  "response": {
+    "body": {
+      "Items": [],
+      "OwnerId": "scene-39385",
+      "TotalRecordCount": 0
+    },
+    "content_type": "application/json",
+    "status": 200
+  }
+}
