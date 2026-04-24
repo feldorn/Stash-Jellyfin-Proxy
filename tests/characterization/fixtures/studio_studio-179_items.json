@@ -118,7 +118,7 @@
           ],
           "MediaType": "Video",
           "Name": "I'm back with JOI for you!",
-          "Overview": "Studio: Amadani",
+          "OfficialRating": "NC-17",
           "ParentId": "studio-179",
           "PartCount": 1,
           "Path": "/data2/Video-B/Performers/Amandani/Amandani - Amadani - 2023-11-27 I'm back with JOI for you!.mp4",
@@ -135,6 +135,7 @@
               },
               "Name": "Amandani",
               "PrimaryImageTag": "p3496",
+              "Role": "",
               "Type": "Actor"
             }
           ],
@@ -144,6 +145,12 @@
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "I'm back with JOI for you!",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-179",
+              "Name": "Amadani"
+            }
+          ],
           "Tags": [
             "!1. File By Performer",
             "!2. Miscellenous JOI",
@@ -276,7 +283,7 @@
           ],
           "MediaType": "Video",
           "Name": "Roommate/step-sister quarantine JOI - Amadani",
-          "Overview": "Studio: Amadani",
+          "OfficialRating": "NC-17",
           "ParentId": "studio-179",
           "PartCount": 1,
           "Path": "/data2/Video-B/Performers/Amadani/Amadani - Amadani - 2020-04-29 Roommatestep-sister quarantine JOI - Amadani.mp4",
@@ -293,15 +300,25 @@
               },
               "Name": "Amandani",
               "PrimaryImageTag": "p3496",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2020-04-29T00:00:00.0000000Z",
           "ProductionYear": 2020,
+          "ProviderIds": {
+            "StashDb": "0542d652-d2c7-4a1a-bc12-86b0a52a6e6b"
+          },
           "RunTimeTicks": 8570200000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "Roommate/step-sister quarantine JOI - Amadani",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-179",
+              "Name": "Amadani"
+            }
+          ],
           "Tags": [
             "!1. File By Performer",
             "!2. Miscellenous JOI"

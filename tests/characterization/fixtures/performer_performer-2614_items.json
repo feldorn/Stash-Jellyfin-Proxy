@@ -118,7 +118,8 @@
           ],
           "MediaType": "Video",
           "Name": "Vacation In Purgatory: Episode 3",
-          "Overview": "Rebellious teen Roxy (Kimmy Granger) is on probation, and as part of a new government initiative, she’s been court-ordered to move in with a “model” family to start her “rehabilitation” process. As Roxy navigates the dynamics between stern matriarch Mildred (Emily Addison), her professional “Thought Organizer” June-Marie (Lacy Lennon), and Mildred’s milquetoast centrist newspaper columnist husband Brooks (Tommy Gunn), she discovers underlying conflict related to Mildred and Brooks’ children from previous marriages – Eli (Xander Corvus), Books’ aspiring preacher son and self-described “Virgin Warrior”, and Hillary (Aaliyah Hadid), Mildred’s pompous head-cheerleader daughter.\n\nStudio: Episodes",
+          "OfficialRating": "NC-17",
+          "Overview": "Rebellious teen Roxy (Kimmy Granger) is on probation, and as part of a new government initiative, she’s been court-ordered to move in with a “model” family to start her “rehabilitation” process. As Roxy navigates the dynamics between stern matriarch Mildred (Emily Addison), her professional “Thought Organizer” June-Marie (Lacy Lennon), and Mildred’s milquetoast centrist newspaper columnist husband Brooks (Tommy Gunn), she discovers underlying conflict related to Mildred and Brooks’ children from previous marriages – Eli (Xander Corvus), Books’ aspiring preacher son and self-described “Virgin Warrior”, and Hillary (Aaliyah Hadid), Mildred’s pompous head-cheerleader daughter.",
           "ParentId": "performer-2614",
           "PartCount": 1,
           "Path": "/data/Video-B/Studios/Digital Playground/Episodes - 2019-08-16 - Aaliyah Hadid Kimmy Granger - Vacation In Purgatory Episode 3.mp4",
@@ -135,6 +136,7 @@
               },
               "Name": "Aaliyah Hadid",
               "PrimaryImageTag": "p2614",
+              "Role": "",
               "Type": "Actor"
             },
             {
@@ -149,15 +151,25 @@
               },
               "Name": "Kimmy Granger",
               "PrimaryImageTag": "p3083",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2019-08-16T00:00:00.0000000Z",
           "ProductionYear": 2019,
+          "ProviderIds": {
+            "StashDb": "aeac7c7c-8cbc-4d6a-bfae-6d1a4d68f647"
+          },
           "RunTimeTicks": 21276700000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "Vacation In Purgatory: Episode 3",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-385",
+              "Name": "Episodes"
+            }
+          ],
           "Tags": [
             "American",
             "Athletic",
@@ -323,7 +335,8 @@
           ],
           "MediaType": "Video",
           "Name": "Aaliyah Hadid - Role Playing",
-          "Overview": "Aaliyah Hadid has been a favorite of mine for a long time, and I’ve spent tons of money on her at strip clubs. But now that I have her all to myself tonight, I want to do a little role playing and make as if it’s about more than the cash. This time around, I want Aaliyah to give me attention because she just wants my dick.\n\nStudio: Tonight's Girlfriend",
+          "OfficialRating": "NC-17",
+          "Overview": "Aaliyah Hadid has been a favorite of mine for a long time, and I’ve spent tons of money on her at strip clubs. But now that I have her all to myself tonight, I want to do a little role playing and make as if it’s about more than the cash. This time around, I want Aaliyah to give me attention because she just wants my dick.",
           "ParentId": "performer-2614",
           "PartCount": 1,
           "Path": "/data/Video-B/Studios/Tonight's Girlfriend/Tonight's Girlfriend - 2017-09-08 - Aaliyah Hadid - Aaliyah Hadid - Role Playing.mp4",
@@ -340,15 +353,25 @@
               },
               "Name": "Aaliyah Hadid",
               "PrimaryImageTag": "p2614",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2017-09-08T00:00:00.0000000Z",
           "ProductionYear": 2017,
+          "ProviderIds": {
+            "StashDb": "fd75afcd-32c9-44ac-a4ce-2dc4d875a573"
+          },
           "RunTimeTicks": 29050200000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "Aaliyah Hadid - Role Playing",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-129",
+              "Name": "Tonight's Girlfriend"
+            }
+          ],
           "Tags": [
             "Role Playing"
           ],

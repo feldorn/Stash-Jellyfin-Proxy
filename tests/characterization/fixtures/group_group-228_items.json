@@ -118,7 +118,8 @@
           ],
           "MediaType": "Video",
           "Name": "All In",
-          "Overview": "You are about to enter a world unlike any you have ever seen before. Where Sin is in, Poker is King and the only game is No-Limit Texas Hold Em! Where courage is rewarded and weakness exploited, and you have to know whether to hold em or fold em! It is survival of the fittest in a high-stakes game of brazen moves and bad beats where the bold, the bad and the beautiful defy the odds and go ALL IN! Are you ready to see what is in the cards and find out the true meaning of No-Limit Hold Em? Starring Katie Morgan, Monica Mayhem, Kami Andrews, Dylan Ryder, Lexi Bardot and Jeannie Marie Sullivan, we soon find out that when the chips are down, these girls are certainly not shy about going All In. A thrilling round of red hot hardcore action running to six hardcore sex scenes and over one and a half hours.\n\nStudio: Private",
+          "OfficialRating": "NC-17",
+          "Overview": "You are about to enter a world unlike any you have ever seen before. Where Sin is in, Poker is King and the only game is No-Limit Texas Hold Em! Where courage is rewarded and weakness exploited, and you have to know whether to hold em or fold em! It is survival of the fittest in a high-stakes game of brazen moves and bad beats where the bold, the bad and the beautiful defy the odds and go ALL IN! Are you ready to see what is in the cards and find out the true meaning of No-Limit Hold Em? Starring Katie Morgan, Monica Mayhem, Kami Andrews, Dylan Ryder, Lexi Bardot and Jeannie Marie Sullivan, we soon find out that when the chips are down, these girls are certainly not shy about going All In. A thrilling round of red hot hardcore action running to six hardcore sex scenes and over one and a half hours.",
           "ParentId": "group-228",
           "PartCount": 1,
           "Path": "/data2/Movies/All In (2006)/All In (2006).mkv",
@@ -135,6 +136,7 @@
               },
               "Name": "Dylan Ryder",
               "PrimaryImageTag": "p89",
+              "Role": "",
               "Type": "Actor"
             },
             {
@@ -149,6 +151,7 @@
               },
               "Name": "Lexi Bardot",
               "PrimaryImageTag": "p902",
+              "Role": "",
               "Type": "Actor"
             },
             {
@@ -163,6 +166,7 @@
               },
               "Name": "Katie Morgan",
               "PrimaryImageTag": "p977",
+              "Role": "",
               "Type": "Actor"
             },
             {
@@ -177,6 +181,7 @@
               },
               "Name": "Jeanie Marie Sullivan",
               "PrimaryImageTag": "p1186",
+              "Role": "",
               "Type": "Actor"
             },
             {
@@ -191,6 +196,7 @@
               },
               "Name": "Monica Mayhem",
               "PrimaryImageTag": "p2257",
+              "Role": "",
               "Type": "Actor"
             }
           ],
@@ -200,6 +206,12 @@
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "All In",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-344",
+              "Name": "Private"
+            }
+          ],
           "Tags": [
             "!8. Movie",
             "European"

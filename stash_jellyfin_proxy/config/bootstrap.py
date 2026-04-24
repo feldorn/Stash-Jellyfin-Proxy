@@ -101,6 +101,8 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
     GENRE_PARENT_TAG = "GENRE"
     GENRE_TOP_N = 25
     POSTER_CROP_ANCHOR = "center"
+    SORT_STRIP_ARTICLES = ["The", "A", "An"]
+    OFFICIAL_RATING = "NC-17"
 
     # ---- Load + migrate + merge ----
     cfg, cfg_defined_keys, cfg_sections = load_config(config_file)
@@ -213,6 +215,12 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         if "poster_crop_anchor" in cfg:
             anchor = cfg.get("poster_crop_anchor", "center").strip().lower()
             POSTER_CROP_ANCHOR = anchor if anchor in ("center", "left", "right") else "center"
+        if "sort_strip_articles" in cfg:
+            raw = cfg.get("sort_strip_articles", "")
+            SORT_STRIP_ARTICLES = [a.strip() for a in raw.split(",") if a.strip()]
+        if "official_rating" in cfg:
+            rating = cfg.get("official_rating", OFFICIAL_RATING).strip()
+            OFFICIAL_RATING = rating if rating else OFFICIAL_RATING
         print(f"Loaded config from {config_file}")
     else:
         cfg_defined_keys = set()
@@ -403,4 +411,6 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         GENRE_PARENT_TAG=GENRE_PARENT_TAG,
         GENRE_TOP_N=GENRE_TOP_N,
         POSTER_CROP_ANCHOR=POSTER_CROP_ANCHOR,
+        SORT_STRIP_ARTICLES=SORT_STRIP_ARTICLES,
+        OFFICIAL_RATING=OFFICIAL_RATING,
     )

@@ -115,7 +115,7 @@
       ],
       "MediaType": "Video",
       "Name": "Wifey Gets A Promotion!",
-      "Overview": "Studio: Wifey's World",
+      "OfficialRating": "NC-17",
       "ParentId": "root-scenes",
       "PartCount": 1,
       "Path": "/data/Video-B/Studios/Wifey's World/Wifey's World - 2026-03-30 - Sandra Otterson - Wifey Gets A Promotion!.mp4",
@@ -132,15 +132,25 @@
           },
           "Name": "Sandra Otterson",
           "PrimaryImageTag": "p38",
+          "Role": "",
           "Type": "Actor"
         }
       ],
       "PremiereDate": "2026-03-30T00:00:00.0000000Z",
       "ProductionYear": 2026,
+      "ProviderIds": {
+        "StashDb": "0a92c52e-14f7-45d2-a787-bc38ed0473d1"
+      },
       "RunTimeTicks": 13962700000,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Wifey Gets A Promotion!",
       "SourceType": "Default",
+      "Studios": [
+        {
+          "Id": "studio-162",
+          "Name": "Wifey's World"
+        }
+      ],
       "Type": "Movie",
       "UserData": {
         "IsFavorite": false,

@@ -118,7 +118,7 @@
           ],
           "MediaType": "Video",
           "Name": "Dangerous Curves Scene 1",
-          "Overview": "Studio: Adam & Eve Pictures",
+          "OfficialRating": "NC-17",
           "ParentId": "studio-217",
           "PartCount": 1,
           "Path": "/data2/Video-B/Performers/Alanah Rae/Alanah Rae - Adam & Eve Pictures - 2009-12-31 Dangerous Curves Scene 1.avi",
@@ -135,15 +135,25 @@
               },
               "Name": "Alanah Rae",
               "PrimaryImageTag": "p524",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2009-12-31T00:00:00.0000000Z",
           "ProductionYear": 2009,
+          "ProviderIds": {
+            "StashDb": "d8d10502-6429-4b83-b1e8-8946d3b6afb7"
+          },
           "RunTimeTicks": 10596000000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "Dangerous Curves Scene 1",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-217",
+              "Name": "Adam & Eve Pictures"
+            }
+          ],
           "Tags": [
             "!1. File By Performer",
             "Bouncing Tits",
@@ -269,7 +279,8 @@
           ],
           "MediaType": "Video",
           "Name": "Superstar MILFS sc4 - Lisa Ann",
-          "Overview": "These magnificent MILFs are back for bone! Yesterday's top XXX stars (Teri Weigel, Lisa Ann, Ginger Lynn, Julia Ann and Dyanna Lauren) have aged like fine wine, and now they are breaking in the hottest studs in the business!\n\nStudio: Adam & Eve Pictures",
+          "OfficialRating": "NC-17",
+          "Overview": "These magnificent MILFs are back for bone! Yesterday's top XXX stars (Teri Weigel, Lisa Ann, Ginger Lynn, Julia Ann and Dyanna Lauren) have aged like fine wine, and now they are breaking in the hottest studs in the business!",
           "ParentId": "studio-217",
           "PartCount": 1,
           "Path": "/data2/Video-B/Performers/Lisa Ann/Lisa Ann - Adam & Eve Pictures - 2009-10-22 Superstar MILFS sc4 - Lisa Ann.avi",
@@ -286,15 +297,25 @@
               },
               "Name": "Lisa Ann",
               "PrimaryImageTag": "p465",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2009-10-22T00:00:00.0000000Z",
           "ProductionYear": 2009,
+          "ProviderIds": {
+            "StashDb": "d63ff039-c711-487e-8929-776e761add85"
+          },
           "RunTimeTicks": 12692400000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
           "SortName": "Superstar MILFS sc4 - Lisa Ann",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-217",
+              "Name": "Adam & Eve Pictures"
+            }
+          ],
           "Tags": [
             "!1. File By Performer",
             "Blowjob",

@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 from stash_jellyfin_proxy import runtime
 from stash_jellyfin_proxy.mapping.genre import compute_genres
 from stash_jellyfin_proxy.util.series import parse_episode
+from stash_jellyfin_proxy.util.sort import sort_name_for
 
 
 def is_series_scene(scene: Dict[str, Any]) -> bool:
@@ -120,7 +121,7 @@ def format_jellyfin_item(
 
     item = {
         "Name": title,
-        "SortName": title,
+        "SortName": sort_name_for(title),
         "Id": item_id,
         "Etag": etag,
         "ServerId": runtime.SERVER_ID,
@@ -132,9 +133,20 @@ def format_jellyfin_item(
         "ImageTags": {"Primary": primary_tag},
         "BackdropImageTags": [backdrop_tag],
         "ImageBlurHashes": {"Primary": {primary_tag: "000000"}, "Backdrop": {backdrop_tag: "000000"}},
+        "OfficialRating": runtime.OFFICIAL_RATING,
         "RunTimeTicks": int(duration * 10000000) if duration else 0,
         "UserData": user_data,
     }
+
+    # StashDB provider id — lets Swiftfin/Infuse surface a "View on StashDB"
+    # external-link button on the scene detail page. Omit if the scene has
+    # no stash_ids entry.
+    stash_ids = scene.get("stash_ids") or []
+    if stash_ids:
+        first = stash_ids[0] or {}
+        sid = first.get("stash_id") if isinstance(first, dict) else None
+        if sid:
+            item["ProviderIds"] = {"StashDb": sid}
 
     if is_episode:
         studio_obj = scene.get("studio") or {}
@@ -159,13 +171,19 @@ def format_jellyfin_item(
         else:
             item["PremiereDate"] = f"{date}T00:00:00.0000000Z"
 
-    overview_parts = []
+    # Overview is just the Stash `details` text now — the studio is already
+    # exposed as a structured field (Studios[] below), appending "Studio: X"
+    # here was redundant and cluttered the description.
     if description:
-        overview_parts.append(description)
-    if studio:
-        overview_parts.append(f"Studio: {studio}")
-    if overview_parts:
-        item["Overview"] = "\n\n".join(overview_parts)
+        item["Overview"] = description
+
+    # Structured studio reference so clients can render it as a clickable
+    # link in the About panel instead of as free-form text.
+    studio_obj = scene.get("studio") or {}
+    if studio_obj.get("name") and studio_obj.get("id"):
+        item["Studios"] = [
+            {"Name": studio_obj["name"], "Id": f"studio-{studio_obj['id']}"}
+        ]
 
     if tags:
         tag_names = [t.get("name") for t in tags if t.get("name")]
@@ -186,6 +204,7 @@ def format_jellyfin_item(
                 person = {
                     "Name": p.get("name"),
                     "Type": "Actor",
+                    "Role": "",
                     "Id": f"person-{p.get('id')}",
                 }
                 if p.get("image_path"):

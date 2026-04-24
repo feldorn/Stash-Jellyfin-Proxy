@@ -118,7 +118,8 @@
           ],
           "MediaType": "Video",
           "Name": "The Masturbater",
-          "Overview": "Red, the color of Abby Cross' itsy bitsy bikini will make any man hard and horny!  The pool boy watches her from the bathroom window and lets his imagination run wild, having Abby guide his dick throughout his fantasy.\n\nStudio: Digital Playground",
+          "OfficialRating": "NC-17",
+          "Overview": "Red, the color of Abby Cross' itsy bitsy bikini will make any man hard and horny!  The pool boy watches her from the bathroom window and lets his imagination run wild, having Abby guide his dick throughout his fantasy.",
           "ParentId": "performer-2919",
           "PartCount": 1,
           "Path": "/data/Video-B/Studios/Digital Playground/Digital Playground - 2014-09-27 - Abby Cross - The Masturbater.mp4",
@@ -135,15 +136,25 @@
               },
               "Name": "Abby Cross",
               "PrimaryImageTag": "p2919",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2014-09-27T00:00:00.0000000Z",
           "ProductionYear": 2014,
+          "ProviderIds": {
+            "StashDb": "8bb3d837-de70-4389-baa0-30150e3bdacc"
+          },
           "RunTimeTicks": 13097300000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "SortName": "The Masturbater",
+          "SortName": "Masturbater",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-10",
+              "Name": "Digital Playground"
+            }
+          ],
           "Tags": [
             "Missing or Removed"
           ],

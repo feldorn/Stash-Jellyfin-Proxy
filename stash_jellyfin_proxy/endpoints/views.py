@@ -22,7 +22,8 @@ _SCENE_FIELDS = (
     "files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } "
     "studio { id name tags { name } parent_studio { id name tags { name } } } "
     "tags { name } performers { name id image_path } "
-    "captions { language_code caption_type }"
+    "captions { language_code caption_type } "
+    "stash_ids { stash_id }"
 )
 
 
@@ -338,7 +339,8 @@ _EPISODE_FIELDS = (
     "files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } "
     "studio { id name tags { name } parent_studio { id name tags { name } } } "
     "tags { name } performers { name id image_path } "
-    "captions { language_code caption_type }"
+    "captions { language_code caption_type } "
+    "stash_ids { stash_id }"
 )
 
 

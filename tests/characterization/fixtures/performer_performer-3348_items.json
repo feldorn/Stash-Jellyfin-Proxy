@@ -118,7 +118,7 @@
           ],
           "MediaType": "Video",
           "Name": "A Very Sweet Girl",
-          "Overview": "Studio: Net Video Girls",
+          "OfficialRating": "NC-17",
           "ParentId": "performer-3348",
           "PartCount": 1,
           "Path": "/data/Video-B/Studios/Net Video Girls/Net Video Girls - 2018-10-23 - Abby Adams - A Very Sweet Girl.mp4",
@@ -135,15 +135,25 @@
               },
               "Name": "Abby Adams",
               "PrimaryImageTag": "p3348",
+              "Role": "",
               "Type": "Actor"
             }
           ],
           "PremiereDate": "2018-10-23T00:00:00.0000000Z",
           "ProductionYear": 2018,
+          "ProviderIds": {
+            "StashDb": "d58e7b0c-36ce-4a47-8c3e-46be1320f97f"
+          },
           "RunTimeTicks": 31486100000,
           "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
-          "SortName": "A Very Sweet Girl",
+          "SortName": "Very Sweet Girl",
           "SourceType": "Default",
+          "Studios": [
+            {
+              "Id": "studio-91",
+              "Name": "Net Video Girls"
+            }
+          ],
           "Tags": [
             "Big Ass",
             "Blonde",

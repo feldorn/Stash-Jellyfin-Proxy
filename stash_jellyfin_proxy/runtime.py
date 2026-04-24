@@ -136,6 +136,11 @@ GENRE_MODE: str = "parent_tag"
 GENRE_PARENT_TAG: str = "GENRE"
 GENRE_TOP_N: int = 25
 
+# --- Metadata policy (Phase 3 §7.2) ---
+# Articles stripped from the head of SortName so "The X" sorts under X.
+SORT_STRIP_ARTICLES: List[str] = ["The", "A", "An"]
+OFFICIAL_RATING: str = "NC-17"
+
 
 def publish(**kwargs):
     """Bulk-set attributes. Used by the monolith bootstrap to copy its

@@ -116,6 +116,7 @@
       ],
       "MediaType": "Video",
       "Name": "Gooncore System Overwrite",
+      "OfficialRating": "NC-17",
       "Overview": "This procedure will overwrite your old system files and turn you into a more obedient gooner.  You'll edge as the intense audio and visuals flash your brain, rewriting your neural pathways.  WARNING: stopping stroking during this update could corrupt and brick you, leaving you even more useless than you already are.",
       "ParentId": "root-scenes",
       "PartCount": 1,
@@ -133,11 +134,15 @@
           },
           "Name": "Alika White",
           "PrimaryImageTag": "p2545",
+          "Role": "",
           "Type": "Actor"
         }
       ],
       "PremiereDate": "2026-04-03T00:00:00.0000000Z",
       "ProductionYear": 2026,
+      "ProviderIds": {
+        "StashDb": "ec8869a1-4135-4d54-b5cf-4ba3a336b5cc"
+      },
       "RunTimeTicks": 9143700000,
       "ServerId": "5884545f-0192-45e3-ae35-70061e0dba57",
       "SortName": "Gooncore System Overwrite",

@@ -30,6 +30,7 @@ from stash_jellyfin_proxy.stash.query_helpers import (
 )
 from stash_jellyfin_proxy.endpoints.users import parse_emby_auth_header
 from stash_jellyfin_proxy.util.ids import extract_numeric_id, get_numeric_id, make_guid
+from stash_jellyfin_proxy.util.sort import sort_name_for
 
 logger = logging.getLogger("stash-jellyfin-proxy")
 
@@ -483,7 +484,7 @@ async def endpoint_items(request):
     total_count = 0
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type } stash_ids { stash_id }"
 
     if ids:
         # Specific items requested
@@ -1081,6 +1082,7 @@ async def endpoint_items(request):
         for s in res.get("data", {}).get("findStudios", {}).get("studios", []):
             studio_item = {
                 "Name": s["name"],
+                "SortName": sort_name_for(s["name"]),
                 "Id": f"studio-{s['id']}",
                 "ServerId": runtime.SERVER_ID,
                 "Type": "BoxSet",
@@ -1162,6 +1164,7 @@ async def endpoint_items(request):
         for p in res.get("data", {}).get("findPerformers", {}).get("performers", []):
             performer_item = {
                 "Name": p["name"],
+                "SortName": sort_name_for(p["name"]),
                 "Id": f"performer-{p['id']}",
                 "ServerId": runtime.SERVER_ID,
                 "Type": "BoxSet",
@@ -1307,6 +1310,7 @@ async def endpoint_items(request):
         for m in movies_to_return:
             group_item = {
                 "Name": m["name"],
+                "SortName": sort_name_for(m["name"]),
                 "Id": f"group-{m['id']}",
                 "ServerId": runtime.SERVER_ID,
                 "Type": "BoxSet",
@@ -2043,7 +2047,7 @@ async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type }"
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type } stash_ids { stash_id }"
 
     # Handle special folder IDs - return the folder ITSELF (not children)
 
@@ -2257,7 +2261,7 @@ async def endpoint_item_details(request):
         is_favorite = packet.pop("_favorite")
         out = {
             "Name": studio_name,
-            "SortName": studio_name,
+            "SortName": sort_name_for(studio_name),
             "Id": item_id,
             "ServerId": runtime.SERVER_ID,
             "Type": "BoxSet",
@@ -2322,7 +2326,7 @@ async def endpoint_item_details(request):
 
         out = {
             "Name": performer_name,
-            "SortName": performer_name,
+            "SortName": sort_name_for(performer_name),
             "Id": item_id,
             "ServerId": runtime.SERVER_ID,
             "Type": item_type,
@@ -2382,7 +2386,7 @@ async def endpoint_item_details(request):
 
         return JSONResponse({
             "Name": group_name,
-            "SortName": group_name,
+            "SortName": sort_name_for(group_name),
             "Id": item_id,
             "ServerId": runtime.SERVER_ID,
             "Type": "BoxSet",
