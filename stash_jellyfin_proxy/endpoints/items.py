@@ -1380,29 +1380,65 @@ async def endpoint_items(request):
     elif parent_id and parent_id.startswith("studio-"):
         studio_id = parent_id.replace("studio-", "")
 
-        # Get count for this studio
-        count_q = """query CountScenes($sid: [ID!]) {
-            findScenes(scene_filter: {studios: {value: $sid, modifier: INCLUDES}}) { count }
-        }"""
-        count_res = await stash_query(count_q, {"sid": [studio_id]})
-        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        # Swiftfin's studio page (like its performer page) fires parallel
+        # requests for Person, BoxSet+UserView, Movie, Video, MusicVideo,
+        # Series, Episode — one rail per match. Return scenes only for
+        # Movie/Episode (or no type filter). See cdd4a04 for the original
+        # performer-branch fix; same pattern applies here.
+        scene_yielding_types = {"movie", "episode"}
+        video_only = (
+            "video" in include_types_lower
+            and not any(t in scene_yielding_types for t in include_types_lower)
+        )
+        wants_scenes = (
+            not include_type_list
+            or any(t in scene_yielding_types for t in include_types_lower)
+        )
+        if video_only or not wants_scenes:
+            logger.debug(
+                f"Studio {studio_id}: skipped type filter "
+                f"{include_type_list} (video_only={video_only})"
+            )
+            total_count = 0
+        else:
+            count_q = """query CountScenes($sid: [ID!]) {
+                findScenes(scene_filter: {studios: {value: $sid, modifier: INCLUDES}}) { count }
+            }"""
+            count_res = await stash_query(count_q, {"sid": [studio_id]})
+            total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
 
-        # Calculate page
-        page = (start_index // limit) + 1
+            page = (start_index // limit) + 1
 
-        q = f"""query FindScenes($sid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
-            findScenes(
-                scene_filter: {{studios: {{value: $sid, modifier: INCLUDES}}}},
-                filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
-            ) {{
-                scenes {{ {scene_fields} }}
-            }}
-        }}"""
-        res = await stash_query(q, {"sid": [studio_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
-        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-        logger.debug(f"Studio {studio_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
-        for s in scenes:
-            items.append(format_jellyfin_item(s, parent_id=parent_id))
+            q = f"""query FindScenes($sid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
+                findScenes(
+                    scene_filter: {{studios: {{value: $sid, modifier: INCLUDES}}}},
+                    filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+                ) {{
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = await stash_query(q, {"sid": [studio_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+            scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+            logger.debug(f"Studio {studio_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
+            # Movie-only / Episode-only split by SERIES-studio detection.
+            wants_episode_only = (
+                "episode" in include_types_lower
+                and "movie" not in include_types_lower
+                and "video" not in include_types_lower
+            )
+            wants_movie_only = (
+                ("movie" in include_types_lower or "video" in include_types_lower)
+                and "episode" not in include_types_lower
+            )
+            for s in scenes:
+                from stash_jellyfin_proxy.mapping.scene import is_series_scene
+                is_ep = is_series_scene(s)
+                if wants_episode_only and not is_ep:
+                    continue
+                if wants_movie_only and is_ep:
+                    continue
+                items.append(format_jellyfin_item(s, parent_id=parent_id))
+            total_count = len(items) if (wants_episode_only or wants_movie_only) else total_count
 
     elif parent_id == "root-performers":
         folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
@@ -1605,29 +1641,64 @@ async def endpoint_items(request):
     elif parent_id and parent_id.startswith("group-"):
         group_id = parent_id.replace("group-", "")
 
-        # Get count for this group/movie
-        count_q = """query CountScenes($mid: [ID!]) {
-            findScenes(scene_filter: {movies: {value: $mid, modifier: INCLUDES}}) { count }
-        }"""
-        count_res = await stash_query(count_q, {"mid": [group_id]})
-        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        # Swiftfin's group page fires parallel rail probes for every
+        # IncludeItemTypes value (Person, BoxSet, Movie, Video, MusicVideo,
+        # Series, Episode). Only emit scenes for Movie/Episode requests so
+        # Music Videos / People / Series rails come back empty. Same pattern
+        # as the performer (cdd4a04) and studio branches above.
+        scene_yielding_types = {"movie", "episode"}
+        video_only = (
+            "video" in include_types_lower
+            and not any(t in scene_yielding_types for t in include_types_lower)
+        )
+        wants_scenes = (
+            not include_type_list
+            or any(t in scene_yielding_types for t in include_types_lower)
+        )
+        if video_only or not wants_scenes:
+            logger.debug(
+                f"Group {group_id}: skipped type filter "
+                f"{include_type_list} (video_only={video_only})"
+            )
+            total_count = 0
+        else:
+            count_q = """query CountScenes($mid: [ID!]) {
+                findScenes(scene_filter: {movies: {value: $mid, modifier: INCLUDES}}) { count }
+            }"""
+            count_res = await stash_query(count_q, {"mid": [group_id]})
+            total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
 
-        # Calculate page
-        page = (start_index // limit) + 1
+            page = (start_index // limit) + 1
 
-        q = f"""query FindScenes($mid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
-            findScenes(
-                scene_filter: {{movies: {{value: $mid, modifier: INCLUDES}}}},
-                filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
-            ) {{
-                scenes {{ {scene_fields} }}
-            }}
-        }}"""
-        res = await stash_query(q, {"mid": [group_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
-        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-        logger.debug(f"Group {group_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
-        for s in scenes:
-            items.append(format_jellyfin_item(s, parent_id=parent_id))
+            q = f"""query FindScenes($mid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
+                findScenes(
+                    scene_filter: {{movies: {{value: $mid, modifier: INCLUDES}}}},
+                    filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+                ) {{
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = await stash_query(q, {"mid": [group_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+            scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+            logger.debug(f"Group {group_id} returned {len(scenes)} scenes (page {page}, total {total_count})")
+            wants_episode_only = (
+                "episode" in include_types_lower
+                and "movie" not in include_types_lower
+                and "video" not in include_types_lower
+            )
+            wants_movie_only = (
+                ("movie" in include_types_lower or "video" in include_types_lower)
+                and "episode" not in include_types_lower
+            )
+            for s in scenes:
+                from stash_jellyfin_proxy.mapping.scene import is_series_scene
+                is_ep = is_series_scene(s)
+                if wants_episode_only and not is_ep:
+                    continue
+                if wants_movie_only and is_ep:
+                    continue
+                items.append(format_jellyfin_item(s, parent_id=parent_id))
+            total_count = len(items) if (wants_episode_only or wants_movie_only) else total_count
 
     elif parent_id == "root-tags":
         # Tags folder: show Favorites, All Tags (if enabled), and saved tag filters
