@@ -9,10 +9,13 @@ expected disconnect noise before it reaches the log stream.
 import asyncio
 import logging
 
+from pathlib import Path
+
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import Mount, Route, WebSocketRoute
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocket  # noqa: F401 (kept for type hints)
 
 from stash_jellyfin_proxy.errors import ERROR_CONTRACT_HANDLERS
@@ -238,8 +241,11 @@ app = Starlette(
 )
 
 # --- Web UI app ---
+_UI_STATIC_DIR = Path(__file__).parent / "ui" / "static"
 ui_routes = [
     Route("/", ui_index),
+    # app.css + app.js extracted from the embedded HTML (Phase 5A).
+    Mount("/static", app=StaticFiles(directory=str(_UI_STATIC_DIR)), name="ui-static"),
     Route("/api/status", ui_api_status),
     Route("/api/config", ui_api_config, methods=["GET", "POST"]),
     Route("/api/auth-config", ui_api_auth_config, methods=["POST"]),
