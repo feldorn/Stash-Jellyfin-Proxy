@@ -7,378 +7,148 @@
     <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
-    <div class="layout">
-        <nav class="sidebar">
-            <div class="logo">
-                <h1>Stash-Jellyfin Proxy</h1>
-                <span id="version">v6.02</span>
-            </div>
-            <a class="nav-item active" data-page="dashboard">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                Dashboard
-            </a>
-            <a class="nav-item" data-page="config">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                Configuration
-            </a>
-            <a class="nav-item" data-page="logs">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                Logs
-            </a>
-        </nav>
-        <main class="main">
-            <!-- Dashboard Page -->
-            <div id="page-dashboard" class="page">
-                <h2 class="page-title">Dashboard</h2>
-                <div class="status-grid">
-                    <div class="status-card">
-                        <div class="status-label">Proxy Status</div>
-                        <div id="proxy-status" class="status-value">Checking...</div>
-                        <div id="proxy-uptime" class="status-hint"></div>
-                    </div>
-                    <div class="status-card">
-                        <div class="status-label">Stash Connection</div>
-                        <div id="stash-status" class="status-value">Checking...</div>
-                    </div>
-                    <div class="status-card">
-                        <div class="status-label">Stash Version</div>
-                        <div id="stash-version" class="status-value">-</div>
-                    </div>
-                    <div class="status-card">
-                        <div class="status-label">Active Streams</div>
-                        <div id="stream-count" class="status-value">0</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title">Active Streams</h3>
-                    <div id="streams-list" class="streams-list">
-                        <div class="empty-state">No active streams</div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                    <div class="card">
-                        <h3 class="card-title">Stash Library</h3>
-                        <div class="stats-grid" id="stash-library-stats">
-                            <div class="stat-item"><span class="stat-value" id="stat-scenes">-</span><span class="stat-label">Scenes</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-performers">-</span><span class="stat-label">Performers</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-studios">-</span><span class="stat-label">Studios</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-tags">-</span><span class="stat-label">Tags</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-groups">-</span><span class="stat-label">Groups</span></div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-                            Proxy Usage
-                            <button type="button" id="reset-stats-btn" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Reset</button>
-                        </h3>
-                        <div class="stats-grid" id="proxy-usage-stats">
-                            <div class="stat-item"><span class="stat-value" id="stat-streams-today">-</span><span class="stat-label">Streams Today</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-total-streams">-</span><span class="stat-label">Total Streams</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-unique-ips">-</span><span class="stat-label">Clients Today</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-auth-success">-</span><span class="stat-label">Auth Success</span></div>
-                            <div class="stat-item"><span class="stat-value" id="stat-auth-failed">-</span><span class="stat-label">Auth Failed</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title">Top Played</h3>
-                    <div id="top-played-list" class="top-played-list">
-                        <div class="empty-state">No play data yet</div>
-                    </div>
-                </div>
-                <div class="card">
-                    <h3 class="card-title">Recent Logs</h3>
-                    <div id="dashboard-logs" class="log-viewer"></div>
-                </div>
-            </div>
-            <!-- Configuration Page -->
-            <div id="page-config" class="page hidden">
-                <h2 class="page-title">Configuration</h2>
-                <form id="config-form" autocomplete="off">
-                    <div class="card">
-                        <h3 class="card-title">Stash Connection</h3>
-                        <div class="form-hint" style="margin-bottom: 1rem; padding: 0.5rem; background: rgba(255,193,7,0.1); border-radius: 4px;">⚠️ All settings in this section require a server restart to take effect.</div>
-                        <div class="form-group">
-                            <label class="form-label">Stash URL</label>
-                            <input type="text" class="form-input" name="STASH_URL" placeholder="https://stash:9999">
-                            <div class="form-hint">Full URL including port (e.g., http://localhost:9999 or https://stash.example.com)</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">API Key</label>
-                            <input type="password" class="form-input" name="STASH_API_KEY" placeholder="Enter API key" autocomplete="off" data-1p-ignore data-lpignore="true">
-                            <div class="form-hint">Found in Stash: Settings → Security → API Key</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">GraphQL Path</label>
-                            <input type="text" class="form-input" name="STASH_GRAPHQL_PATH" placeholder="/graphql">
-                            <div class="form-hint">Usually /graphql but can be overridden for advanced proxy configurations</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="checkbox" name="STASH_VERIFY_TLS" checked style="width: auto;">
-                                Verify TLS Certificate
-                            </label>
-                            <div class="form-hint">Disable for self-signed certificates (not recommended for production)</div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Timeout (seconds)</label>
-                                <input type="number" class="form-input" name="STASH_TIMEOUT" placeholder="30">
-                                <div class="form-hint">API request timeout</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Retries</label>
-                                <input type="number" class="form-input" name="STASH_RETRIES" placeholder="3">
-                                <div class="form-hint">Retry count on failure</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Proxy Settings</h3>
-                        <div class="form-hint" style="margin-bottom: 1rem; padding: 0.5rem; background: rgba(255,193,7,0.1); border-radius: 4px;">⚠️ All settings in this section require a server restart to take effect.</div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Bind Address</label>
-                                <input type="text" class="form-input" name="PROXY_BIND" placeholder="0.0.0.0">
-                                <div class="form-hint">Use 0.0.0.0 for all interfaces, or 127.0.0.1 for local only</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Proxy Port</label>
-                                <input type="number" class="form-input" name="PROXY_PORT" placeholder="8096">
-                                <div class="form-hint">Port for Jellyfin API (default 8096)</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">UI Port</label>
-                                <input type="number" class="form-input" name="UI_PORT" placeholder="8097">
-                                <div class="form-hint">Port for this Web UI (0 to disable)</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Authentication</h3>
-                        <div class="form-hint" style="margin-bottom: 1rem; padding: 0.5rem; background: rgba(255,193,7,0.1); border-radius: 4px;">⚠️ Username and Password changes require a server restart.</div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Username</label>
-                                <input type="text" class="form-input" name="SJS_USER" placeholder="e.g. admin" autocomplete="off" data-1p-ignore data-lpignore="true">
-                                <div class="form-hint">Username for connecting from Infuse</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Password</label>
-                                <input type="password" class="form-input" name="SJS_PASSWORD" placeholder="Enter password" autocomplete="new-password" data-1p-ignore data-lpignore="true">
-                                <div class="form-hint">Password for connecting from Infuse</div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="checkbox" name="REQUIRE_AUTH_FOR_CONFIG" style="width: auto;">
-                                Require Password for Configuration
-                            </label>
-                            <div class="form-hint">Prompt for password before accessing this config page</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Server Identity</h3>
-                        <div class="form-group">
-                            <label class="form-label">Server ID</label>
-                            <input type="text" class="form-input" name="SERVER_ID">
-                            <div class="form-hint" style="color: var(--warning);">Warning: Changing this value will break existing client pairings. Changes require a server restart.</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Server Name</label>
-                            <input type="text" class="form-input" name="SERVER_NAME" placeholder="Stash Media Server">
-                            <div class="form-hint">Display name shown in Infuse and other clients</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Library Organization</h3>
-                        <div class="form-group">
-                            <label class="form-label">Tag Groups</label>
-                            <input type="text" class="form-input" name="TAG_GROUPS" placeholder="e.g. Favorites, VR, 4K">
-                            <div class="form-hint">Comma-separated Stash tag names to create as library folders in Infuse</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Favorite Tag</label>
-                            <input type="text" class="form-input" name="FAVORITE_TAG" placeholder="e.g. Favorite">
-                            <div class="form-hint">Stash tag name used when toggling favorites from Infuse/Swiftfin (leave empty to disable)</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Latest Groups</label>
-                            <input type="text" class="form-input" name="LATEST_GROUPS" placeholder="Scenes">
-                            <div class="form-hint">Libraries to show on Infuse home screen (use "Scenes" for all scenes)</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Home-Screen Banner</h3>
-                        <div class="form-hint" style="margin-bottom: 1rem;">Some clients (e.g. SenPlayer) show a rotating banner at the top of the server home page. When the proxy detects that query (Movie-only + random sort), it returns randomized <strong>scenes</strong> from the pool below instead of the default "newest groups".</div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Banner Mode</label>
-                                <select class="form-input" name="BANNER_MODE">
-                                    <option value="recent">Recent — random from newest N scenes</option>
-                                    <option value="tag">Tag — random from scenes with specific tags</option>
-                                </select>
-                                <div class="form-hint">Tag mode falls back to recent if no tags are resolved</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Recent Pool Size</label>
-                                <input type="number" class="form-input" name="BANNER_POOL_SIZE" placeholder="200">
-                                <div class="form-hint">How many newest scenes to pick from (recent mode)</div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Banner Tags</label>
-                            <input type="text" class="form-input" name="BANNER_TAGS" placeholder="e.g. Featured, Showcase">
-                            <div class="form-hint">Comma-separated Stash tag names (tag mode only)</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Feature Toggles</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" name="ENABLE_FILTERS" checked style="width: auto;">
-                                    Enable Scene Filters
-                                </label>
-                                <div class="form-hint">Show FILTERS folder in library (uses saved scene filters from Stash)</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" name="ENABLE_IMAGE_RESIZE" checked style="width: auto;">
-                                    Enable Image Resize
-                                </label>
-                                <div class="form-hint">Resize studio logos to fit Infuse tiles better</div>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" name="ENABLE_TAG_FILTERS" style="width: auto;">
-                                    Enable Tag Filters
-                                </label>
-                                <div class="form-hint">Show Tags folder for browsing tags and their scenes</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <input type="checkbox" name="ENABLE_ALL_TAGS" style="width: auto;">
-                                    Enable All Tags
-                                </label>
-                                <div class="form-hint">Show "All Tags" subfolder (may be large in some libraries)</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Pagination</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Default Page Size</label>
-                                <input type="number" class="form-input" name="DEFAULT_PAGE_SIZE" placeholder="50">
-                                <div class="form-hint">Items per page when Infuse doesn't specify a limit</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Max Page Size</label>
-                                <input type="number" class="form-input" name="MAX_PAGE_SIZE" placeholder="200">
-                                <div class="form-hint">Maximum items allowed in a single API request</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Logging</h3>
-                        <div class="form-hint" style="margin-bottom: 1rem; padding: 0.5rem; background: rgba(255,193,7,0.1); border-radius: 4px;">⚠️ Log Directory and Log File changes require a server restart.</div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Log Level</label>
-                                <select class="form-input" name="LOG_LEVEL">
-                                    <option value="DEBUG">DEBUG</option>
-                                    <option value="INFO">INFO</option>
-                                    <option value="WARNING">WARNING</option>
-                                    <option value="ERROR">ERROR</option>
-                                </select>
-                                <div class="form-hint">DEBUG shows all details, INFO shows key events only</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Log Directory</label>
-                                <input type="text" class="form-input" name="LOG_DIR" placeholder="/config">
-                                <div class="form-hint">Directory for log files</div>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Log File</label>
-                                <input type="text" class="form-input" name="LOG_FILE" placeholder="stash_jellyfin_proxy.log">
-                                <div class="form-hint">Log filename</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Max Size (MB)</label>
-                                <input type="number" class="form-input" name="LOG_MAX_SIZE_MB" placeholder="10">
-                                <div class="form-hint">Max file size before rotation</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Backup Count</label>
-                                <input type="number" class="form-input" name="LOG_BACKUP_COUNT" placeholder="3">
-                                <div class="form-hint">Old log files to keep</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3 class="card-title">Security - IP Banning</h3>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label">Ban Threshold</label>
-                                <input type="number" class="form-input" name="BAN_THRESHOLD" placeholder="10">
-                                <div class="form-hint">Failed auth attempts before auto-ban</div>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Ban Window (minutes)</label>
-                                <input type="number" class="form-input" name="BAN_WINDOW_MINUTES" placeholder="15">
-                                <div class="form-hint">Rolling window for counting failures</div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Banned IPs</label>
-                            <textarea class="form-input" name="BANNED_IPS" rows="3" placeholder="e.g. 192.168.1.100, 10.0.0.50" style="resize: vertical;"></textarea>
-                            <div class="form-hint">Comma-separated list of banned IP addresses. Edit to add/remove bans manually.</div>
-                        </div>
-                    </div>
-                    <div id="env-notice" class="env-notice">
-                        <strong>Environment Override:</strong> The following fields are set via environment variables and cannot be changed here: <span></span>
-                    </div>
-                    <div style="display: flex; gap: 1rem; align-items: center; margin-top: 16px;">
-                        <button type="submit" class="btn btn-primary">Save Configuration</button>
-                        <button type="button" id="restart-btn" class="btn" style="background: #dc3545;">Restart Server</button>
-                    </div>
-                    <p id="restart-note" class="hidden" style="color: #ffc107; margin-top: 0.5rem; font-size: 0.9rem;">Note: Changes to bind address or ports require a restart to take effect.</p>
-                </form>
-            </div>
-            <!-- Logs Page -->
-            <div id="page-logs" class="page hidden">
-                <h2 class="page-title">Logs</h2>
-                <div class="card">
-                    <div class="log-controls">
-                        <select id="log-level-filter" class="log-filter">
-                            <option value="">All Levels</option>
-                            <option value="DEBUG">DEBUG</option>
-                            <option value="INFO">INFO</option>
-                            <option value="WARNING">WARNING</option>
-                            <option value="ERROR">ERROR</option>
-                        </select>
-                        <input type="text" id="log-search" class="form-input" placeholder="Search logs..." style="width: 300px;">
-                        <select id="log-line-count" class="log-filter" title="Lines to fetch">
-                            <option value="50">50 lines</option>
-                            <option value="100" selected>100 lines</option>
-                            <option value="250">250 lines</option>
-                            <option value="500">500 lines</option>
-                            <option value="1000">1000 lines</option>
-                        </select>
-                        <span id="log-count" class="log-count">0 entries</span>
-                        <button id="copy-logs" class="btn btn-secondary">Copy</button>
-                        <button id="download-logs" class="btn btn-secondary">Download</button>
-                    </div>
-                    <div id="full-logs" class="log-viewer" style="max-height: 600px;"></div>
-                </div>
-            </div>
-        </main>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo"><span class="hex">⬡</span> SJP</div>
+      <div class="ver" id="brand-version">v7.00</div>
     </div>
-    <script src="/static/app.js"></script>
+    <nav class="nav" id="nav">
+      <div class="nav-item active" data-page="dashboard"><span class="dot"></span>Dashboard</div>
+      <div class="nav-item" data-page="connection"><span class="dot"></span>Connection</div>
+      <div class="nav-item" data-page="libraries"><span class="dot"></span>Libraries</div>
+      <div class="nav-item" data-page="players"><span class="dot"></span>Players</div>
+      <div class="nav-item" data-page="playback"><span class="dot"></span>Playback</div>
+      <div class="nav-item" data-page="search"><span class="dot"></span>Search</div>
+      <div class="nav-item" data-page="system"><span class="dot"></span>System</div>
+      <div class="nav-item" data-page="logs"><span class="dot"></span>Logs</div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-line"><span class="status-dot on" id="sidebar-proxy-dot"></span><span id="sidebar-proxy-label">Proxy</span></div>
+      <div class="status-line"><span class="status-dot ok" id="sidebar-stash-dot"></span><span id="sidebar-stash-label">Stash</span></div>
+      <div class="status-line" style="margin-top: 6px; color: var(--text-faint); font-size: 11.5px;" id="sidebar-uptime">Uptime: —</div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="restart-banner" id="restart-banner">
+      <span class="icon">⚠</span>
+      <div class="banner-body">Some changes require a server restart to take effect.</div>
+      <button class="link-btn" id="restart-now-btn">Restart Now</button>
+    </div>
+
+    <!-- ================ DASHBOARD ================ -->
+    <section class="page active" data-page="dashboard">
+      <div class="page-header">
+        <div class="page-title">Dashboard</div>
+        <div class="page-subtitle">At-a-glance health check and activity monitor</div>
+      </div>
+      <div class="page-content"><em class="section-note" id="dashboard-placeholder">Dashboard — coming in Phase 5B pass 8</em></div>
+    </section>
+
+    <!-- ================ CONNECTION ================ -->
+    <section class="page" data-page="connection">
+      <div class="page-header">
+        <div class="page-title">Connection</div>
+        <div class="page-subtitle">Stash server connection and client credentials</div>
+      </div>
+      <div class="page-content"><em class="section-note">Connection — coming in Phase 5B pass 3</em></div>
+    </section>
+
+    <!-- ================ LIBRARIES ================ -->
+    <section class="page" data-page="libraries">
+      <div class="page-header">
+        <div class="page-title">Libraries</div>
+        <div class="page-subtitle">Tag groups, genre mapping, series detection</div>
+      </div>
+      <div class="page-content"><em class="section-note">Libraries — coming in Phase 5B pass 4</em></div>
+    </section>
+
+    <!-- ================ PLAYERS ================ -->
+    <section class="page" data-page="players">
+      <div class="page-header">
+        <div class="page-title">Players</div>
+        <div class="page-subtitle">Per-client rendering profiles and live User-Agent feed</div>
+      </div>
+      <div class="page-content"><em class="section-note">Players — coming in Phase 5B pass 7</em></div>
+    </section>
+
+    <!-- ================ PLAYBACK ================ -->
+    <section class="page" data-page="playback">
+      <div class="page-header">
+        <div class="page-title">Playback</div>
+        <div class="page-subtitle">Image formatting, sort defaults, Home-tab hero</div>
+      </div>
+      <div class="page-content"><em class="section-note">Playback — coming in Phase 5B pass 5</em></div>
+    </section>
+
+    <!-- ================ SEARCH ================ -->
+    <section class="page" data-page="search">
+      <div class="page-header">
+        <div class="page-title">Search</div>
+        <div class="page-subtitle">Search scope and filter-panel behavior</div>
+      </div>
+      <div class="page-content"><em class="section-note">Search — coming in Phase 5B pass 6</em></div>
+    </section>
+
+    <!-- ================ SYSTEM ================ -->
+    <section class="page" data-page="system">
+      <div class="page-header">
+        <div class="page-title">System</div>
+        <div class="page-subtitle">Server identity, performance, logging, security, server control</div>
+      </div>
+      <div class="page-content"><em class="section-note">System — coming in Phase 5B pass 2</em></div>
+    </section>
+
+    <!-- ================ LOGS ================ -->
+    <section class="page" data-page="logs">
+      <div class="page-header">
+        <div class="page-title">Logs</div>
+        <div class="page-subtitle">Proxy log stream, filterable by level and text</div>
+      </div>
+      <div class="page-content">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Log Viewer</div>
+            <div id="log-count-indicator" style="font-size: 12px; color: var(--text-dim);"></div>
+          </div>
+          <div class="card-body">
+            <div class="log-controls">
+              <div class="log-filter" id="log-level-filter">
+                <div class="chip active" data-level="DEBUG">DEBUG</div>
+                <div class="chip active" data-level="INFO">INFO</div>
+                <div class="chip active" data-level="WARNING">WARNING</div>
+                <div class="chip active" data-level="ERROR">ERROR</div>
+              </div>
+              <input type="text" id="log-search" placeholder="Filter by text…" style="flex: 1; min-width: 200px; max-width: 360px;">
+              <label style="display:flex; gap:6px; align-items:center; font-size:12.5px; color:var(--text-dim);">
+                <input type="checkbox" id="log-autoscroll" checked> Auto-scroll
+              </label>
+              <label style="display:flex; gap:6px; align-items:center; font-size:12.5px; color:var(--text-dim);">
+                <input type="checkbox" id="log-autorefresh" checked> Auto-refresh
+              </label>
+              <select id="log-line-count" class="btn small" title="Lines to fetch">
+                <option value="100">100 lines</option>
+                <option value="250" selected>250 lines</option>
+                <option value="500">500 lines</option>
+                <option value="1000">1000 lines</option>
+              </select>
+              <button class="btn small" id="log-refresh-btn">↻</button>
+              <button class="btn small" id="log-clear-btn">Clear display</button>
+            </div>
+            <div class="log-viewer" id="log-viewer"><em style="color: var(--text-faint);">Loading…</em></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<script src="/static/app.js"></script>
 </body>
 </html>
