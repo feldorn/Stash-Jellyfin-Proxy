@@ -275,6 +275,152 @@ async function saveSection(card) {
 }
 
 /* ============================================================ */
+/* Dashboard tab                                                */
+/* ============================================================ */
+const dashState = {
+  statsInterval: null,
+  streamsInterval: null,
+  logsInterval: null,
+};
+
+function dotSpan(cls) {
+  return `<span class="status-dot ${cls}" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px;"></span>`;
+}
+
+async function renderDashStatus() {
+  try {
+    const s = await apiGet("/api/status");
+    qs("#dash-proxy-status").innerHTML = s.running
+      ? `${dotSpan("on")}Running`
+      : `${dotSpan("err")}Stopped`;
+    qs("#dash-proxy-uptime").textContent = `Uptime: ${formatUptime(s.uptime)}`;
+
+    qs("#dash-stash-status").innerHTML = s.stashConnected
+      ? `${dotSpan("ok")}Connected`
+      : `${dotSpan("err")}Error`;
+    qs("#dash-stash-version").textContent = s.stashVersion || "";
+
+    // Migration banner
+    const banner = qs("#dash-migration-banner");
+    if (s.migrationPerformed && !banner._dismissed) {
+      banner.classList.remove("hide");
+    }
+  } catch {}
+}
+
+async function renderDashLibraryAndUsage() {
+  try {
+    const s = await apiGet("/api/stats");
+    qs("#dash-scene-count").textContent = (s.stash.scenes || 0).toLocaleString();
+    qs("#dash-lib-scenes").textContent = (s.stash.scenes || 0).toLocaleString();
+    qs("#dash-lib-performers").textContent = (s.stash.performers || 0).toLocaleString();
+    qs("#dash-lib-studios").textContent = (s.stash.studios || 0).toLocaleString();
+    qs("#dash-lib-groups").textContent = (s.stash.groups || 0).toLocaleString();
+    qs("#dash-lib-tags").textContent = (s.stash.tags || 0).toLocaleString();
+
+    qs("#dash-streams-today").textContent = s.proxy.streams_today || 0;
+    qs("#dash-streams-total").textContent = s.proxy.total_streams || 0;
+    qs("#dash-auth-ok").textContent = s.proxy.auth_success || 0;
+    qs("#dash-auth-fail").textContent = s.proxy.auth_failed || 0;
+
+    const top = qs("#dash-top-played");
+    const items = s.proxy.top_played || [];
+    if (!items.length) {
+      top.innerHTML = `<div class="field-help">No plays recorded yet.</div>`;
+    } else {
+      top.innerHTML = items.map((it, i) => `
+        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border);">
+          <div style="flex: 1; min-width: 0;">
+            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="color: var(--text-dim); margin-right: 8px;">${i + 1}.</span>${escapeHtml(it.title || it.scene_id)}
+            </div>
+            <div style="color: var(--text-dim); font-size: 12px;">${escapeHtml(it.performer || "—")}</div>
+          </div>
+          <div style="font-weight: 600; margin-left: 12px;">${it.count}</div>
+        </div>
+      `).join("");
+    }
+  } catch {}
+}
+
+async function renderDashStreams() {
+  try {
+    const s = await apiGet("/api/streams");
+    qs("#dash-streams-count").textContent = s.streams.length;
+    const list = qs("#dash-streams-list");
+    if (!s.streams.length) {
+      list.innerHTML = `<div class="field-help">No active streams.</div>`;
+      return;
+    }
+    list.innerHTML = s.streams.map((st) => {
+      const started = st.started ? new Date(st.started * 1000).toLocaleTimeString() : "—";
+      return `
+        <div class="profile-row" style="flex-direction: column; align-items: stretch; gap: 4px;">
+          <div class="profile-name">${escapeHtml(st.title || st.id)}</div>
+          <div style="display: flex; justify-content: space-between; color: var(--text-dim); font-size: 12px;">
+            <span>${escapeHtml(st.performer || "")}</span>
+            <span>Started ${started}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  } catch {}
+}
+
+async function renderDashLogs() {
+  try {
+    const s = await apiGet("/api/logs?limit=20");
+    const pane = qs("#dash-recent-logs");
+    if (!s.entries.length) {
+      pane.textContent = "(no log entries yet)";
+      return;
+    }
+    pane.textContent = s.entries
+      .slice(-20)
+      .map((e) => `${e.timestamp} [${e.level}] ${e.message}`)
+      .join("\n");
+    pane.scrollTop = pane.scrollHeight;
+  } catch {}
+}
+
+window.init_dashboard = async function () {
+  await Promise.all([renderDashStatus(), renderDashLibraryAndUsage(), renderDashStreams(), renderDashLogs()]);
+
+  qs("#dash-streams-card").addEventListener("click", () => {
+    qs("#dash-streams-list")?.scrollIntoView({ behavior: "smooth" });
+  });
+  qs("#dash-reset-stats-btn").addEventListener("click", async () => {
+    if (!confirm("Reset proxy statistics? This clears play counts and auth counters.")) return;
+    try {
+      await apiPost("/api/stats/reset", {});
+      toast("Statistics reset.", "success");
+      await renderDashLibraryAndUsage();
+    } catch (e) {
+      toast(`Reset failed: ${e.message}`, "error");
+    }
+  });
+  qs("#dash-migration-dismiss").addEventListener("click", () => {
+    qs("#dash-migration-banner").classList.add("hide");
+    qs("#dash-migration-banner")._dismissed = true;
+  });
+};
+
+window.show_dashboard = async function () {
+  /* Kick an immediate refresh and re-arm the pollers each time the tab
+     becomes visible. Previous intervals (from a prior visit) are cleared
+     first so we don't accumulate them. */
+  if (dashState.statsInterval) clearInterval(dashState.statsInterval);
+  if (dashState.streamsInterval) clearInterval(dashState.streamsInterval);
+  if (dashState.logsInterval) clearInterval(dashState.logsInterval);
+
+  await Promise.all([renderDashStatus(), renderDashLibraryAndUsage(), renderDashStreams(), renderDashLogs()]);
+
+  dashState.statsInterval   = setInterval(renderDashLibraryAndUsage, 60000);
+  dashState.streamsInterval = setInterval(renderDashStreams, 5000);
+  dashState.logsInterval    = setInterval(renderDashLogs, 10000);
+};
+
+/* ============================================================ */
 /* Players tab                                                  */
 /* ============================================================ */
 const playersState = {

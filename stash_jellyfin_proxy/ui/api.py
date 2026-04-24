@@ -49,6 +49,8 @@ async def ui_api_status(request):
         "stashConnected": runtime.STASH_CONNECTED,
         "stashVersion": runtime.STASH_VERSION,
         "stashUrl": runtime.STASH_URL,
+        "migrationPerformed": bool(getattr(runtime, "MIGRATION_PERFORMED", False)),
+        "migrationLog": list(getattr(runtime, "MIGRATION_LOG", []) or []),
     })
 
 

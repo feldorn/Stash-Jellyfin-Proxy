@@ -46,7 +46,117 @@
         <div class="page-title">Dashboard</div>
         <div class="page-subtitle">At-a-glance health check and activity monitor</div>
       </div>
-      <div class="page-content"><em class="section-note" id="dashboard-placeholder">Dashboard — coming in Phase 5B pass 8</em></div>
+      <div class="page-content" id="dashboard-content">
+
+        <!-- Row 1: Status cards -->
+        <div class="stat-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+          <div class="card stat-card" data-stat="proxy">
+            <div class="card-body">
+              <div class="stat-label">Proxy Status</div>
+              <div class="stat-value" id="dash-proxy-status">—</div>
+              <div class="stat-sub" id="dash-proxy-uptime">Uptime: —</div>
+            </div>
+          </div>
+          <div class="card stat-card" data-stat="stash">
+            <div class="card-body">
+              <div class="stat-label">Stash Connection</div>
+              <div class="stat-value" id="dash-stash-status">—</div>
+              <div class="stat-sub" id="dash-stash-version">&nbsp;</div>
+            </div>
+          </div>
+          <div class="card stat-card" data-stat="streams" style="cursor: pointer;" id="dash-streams-card">
+            <div class="card-body">
+              <div class="stat-label">Active Streams</div>
+              <div class="stat-value" id="dash-streams-count">0</div>
+              <div class="stat-sub">In the last 5 min</div>
+            </div>
+          </div>
+          <div class="card stat-card" data-stat="library">
+            <div class="card-body">
+              <div class="stat-label">Library Size</div>
+              <div class="stat-value" id="dash-scene-count">—</div>
+              <div class="stat-sub">Scenes</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: Active streams + library stats -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Active Streams</div>
+              <div style="color: var(--text-dim); font-size: 12px;">Updates every 5s</div>
+            </div>
+            <div class="card-body" id="dash-streams-list">
+              <div class="field-help">No active streams.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Library Stats</div>
+              <div style="color: var(--text-dim); font-size: 12px;">Refreshes every 60s</div>
+            </div>
+            <div class="card-body">
+              <div class="stat-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">
+                <div><div class="stat-label">Scenes</div><div class="stat-value" style="font-size: 18px;" id="dash-lib-scenes">—</div></div>
+                <div><div class="stat-label">Performers</div><div class="stat-value" style="font-size: 18px;" id="dash-lib-performers">—</div></div>
+                <div><div class="stat-label">Studios</div><div class="stat-value" style="font-size: 18px;" id="dash-lib-studios">—</div></div>
+                <div><div class="stat-label">Groups</div><div class="stat-value" style="font-size: 18px;" id="dash-lib-groups">—</div></div>
+                <div><div class="stat-label">Tags</div><div class="stat-value" style="font-size: 18px;" id="dash-lib-tags">—</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 3: Proxy usage + top played -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Proxy Usage</div>
+              <button class="btn" id="dash-reset-stats-btn" style="font-size: 12px;">Reset</button>
+            </div>
+            <div class="card-body">
+              <div class="stat-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                <div><div class="stat-label">Streams Today</div><div class="stat-value" style="font-size: 18px;" id="dash-streams-today">—</div></div>
+                <div><div class="stat-label">Total Streams</div><div class="stat-value" style="font-size: 18px;" id="dash-streams-total">—</div></div>
+                <div><div class="stat-label">Auth Success</div><div class="stat-value" style="font-size: 18px;" id="dash-auth-ok">—</div></div>
+                <div><div class="stat-label">Auth Failed</div><div class="stat-value" style="font-size: 18px;" id="dash-auth-fail">—</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Top Played</div></div>
+            <div class="card-body" id="dash-top-played">
+              <div class="field-help">No plays recorded yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 4: Migration notice (conditional) -->
+        <div class="card hide" id="dash-migration-banner" style="margin-top: 16px; border-color: var(--accent, #3b82f6);">
+          <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+            <div>
+              <strong>ℹ Config migrated from v1 to v2.</strong>
+              Your original config is backed up at <code>stash_jellyfin_proxy.conf.v1.bak</code>. Review your new settings in <em>Libraries</em>, <em>Players</em>, <em>Playback</em>, and <em>Search</em> tabs.
+            </div>
+            <button class="btn" id="dash-migration-dismiss">Dismiss</button>
+          </div>
+        </div>
+
+        <!-- Row 5: Recent logs -->
+        <div class="card" style="margin-top: 16px;">
+          <div class="card-header">
+            <div class="card-title">Recent Logs</div>
+            <a href="#logs" class="btn" style="font-size: 12px; text-decoration: none;">View All Logs</a>
+          </div>
+          <div class="card-body">
+            <div id="dash-recent-logs" style="font-family: monospace; font-size: 12px; max-height: 240px; overflow-y: auto; white-space: pre-wrap;">
+              Loading…
+            </div>
+          </div>
+        </div>
+
+      </div>
     </section>
 
     <!-- ================ CONNECTION ================ -->
