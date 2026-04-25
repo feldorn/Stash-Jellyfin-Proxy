@@ -1309,6 +1309,38 @@ async def endpoint_items(request):
         else:
             total_count = 0
 
+    elif parent_id == "root-playlists":
+        # Playlists library root → list every child tag of PLAYLIST_PARENT_TAG.
+        from stash_jellyfin_proxy.endpoints.playlists import list_playlists
+        page = await list_playlists(request, start_index=start_index, limit=limit)
+        items.extend(page["Items"])
+        total_count = page["TotalRecordCount"]
+
+    elif parent_id and parent_id.startswith("playlist-"):
+        # Playlist detail → scenes carrying that child tag.
+        from stash_jellyfin_proxy.endpoints.playlists import _strip_playlist_prefix, _is_playlist_tag
+        tag_id = _strip_playlist_prefix(parent_id)
+        if tag_id and await _is_playlist_tag(tag_id):
+            page = (start_index // limit) + 1
+            q = f"""query PlaylistScenes($tid: [ID!], $page: Int!, $per_page: Int!) {{
+                findScenes(
+                    scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
+                    filter: {{page: $page, per_page: $per_page, sort: "updated_at", direction: DESC}}
+                ) {{
+                    count
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = await stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit})
+            data = (res or {}).get("data", {}).get("findScenes", {}) or {}
+            total_count = data.get("count", 0)
+            for scene in data.get("scenes") or []:
+                it = format_jellyfin_item(scene, parent_id=parent_id)
+                it["PlaylistItemId"] = it.get("Id")
+                items.append(it)
+        else:
+            total_count = 0
+
     elif parent_id == "root-scenes":
         # Filter-panel params: Genres, Tags, Years, IsFavorite, IsPlayed,
         # IsUnplayed → scene_filter clause.
@@ -1890,17 +1922,42 @@ async def endpoint_items(request):
 
     elif parent_id == "tags-all":
         folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
-        q = """query FindTags($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {
-            findTags(filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}) {
-                count
-                tags { id name scene_count image_path favorite }
-            }
-        }"""
+        # Hide the playlist parent and its children from the generic Tags
+        # listing — they live in their own /Playlists library and would
+        # otherwise duplicate as plain tag folders.
+        playlist_parent_id = (
+            await get_or_create_tag(runtime.PLAYLIST_PARENT_TAG)
+            if runtime.PLAYLIST_PARENT_TAG else None
+        )
+        if playlist_parent_id:
+            q = """query FindTags($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!, $hidden: [ID!]) {
+                findTags(
+                    tag_filter: {parents: {value: $hidden, modifier: EXCLUDES}},
+                    filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}
+                ) {
+                    count
+                    tags { id name scene_count image_path favorite }
+                }
+            }"""
+            qvars = {"page": (start_index // limit) + 1, "per_page": limit, "sort": folder_sort, "direction": folder_dir, "hidden": [playlist_parent_id]}
+        else:
+            q = """query FindTags($page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {
+                findTags(filter: {page: $page, per_page: $per_page, sort: $sort, direction: $direction}) {
+                    count
+                    tags { id name scene_count image_path favorite }
+                }
+            }"""
+            qvars = {"page": (start_index // limit) + 1, "per_page": limit, "sort": folder_sort, "direction": folder_dir}
         page = (start_index // limit) + 1
-        res = await stash_query(q, {"page": page, "per_page": limit, "sort": folder_sort, "direction": folder_dir})
+        res = await stash_query(q, qvars)
         data = res.get("data", {}).get("findTags", {})
         total_count = data.get("count", 0)
         for t in data.get("tags", []):
+            # Skip the playlist parent tag itself (the EXCLUDES filter only
+            # drops its children, not the parent).
+            if playlist_parent_id and t.get("id") == playlist_parent_id:
+                total_count = max(0, total_count - 1)
+                continue
             tag_item = {
                 "Name": t["name"],
                 "Id": f"tagitem-{t['id']}",
@@ -2649,6 +2706,33 @@ async def endpoint_item_details(request):
             "BackdropImageTags": ["img"],
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": item_id},
         })
+
+    if item_id == "root-playlists":
+        from stash_jellyfin_proxy.endpoints.views import _playlist_count
+        from stash_jellyfin_proxy.mapping.image_policy import playlist_collection_type
+        total_count = await _playlist_count()
+        return JSONResponse({
+            "Name": "Playlists",
+            "SortName": "Playlists",
+            "Id": "root-playlists",
+            "ServerId": runtime.SERVER_ID,
+            "Type": "CollectionFolder",
+            "CollectionType": playlist_collection_type(request),
+            "IsFolder": True,
+            "ImageTags": {},
+            "BackdropImageTags": [],
+            "ChildCount": total_count,
+            "RecursiveItemCount": total_count,
+            "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-playlists"}
+        })
+
+    if item_id.startswith("playlist-"):
+        from stash_jellyfin_proxy.endpoints.playlists import _strip_playlist_prefix, get_playlist_item
+        tag_id = _strip_playlist_prefix(item_id)
+        playlist = await get_playlist_item(request, tag_id) if tag_id else {}
+        if not playlist:
+            return JSONResponse({"error": "Playlist not found"}, status_code=404)
+        return JSONResponse(playlist)
 
     if item_id == "root-scenes":
         # Get actual count

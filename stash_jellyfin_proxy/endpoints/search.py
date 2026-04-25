@@ -100,6 +100,8 @@ def _filter_exclude_set_lower() -> set:
         out.add(runtime.FAVORITE_TAG.strip().lower())
     if runtime.GENRE_PARENT_TAG:
         out.add(runtime.GENRE_PARENT_TAG.strip().lower())
+    if runtime.PLAYLIST_PARENT_TAG:
+        out.add(runtime.PLAYLIST_PARENT_TAG.strip().lower())
     for tg in runtime.TAG_GROUPS or []:
         out.add(tg.strip().lower())
     return out

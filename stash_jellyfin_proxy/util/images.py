@@ -414,6 +414,7 @@ _MENU_ICON_LABELS = {
     "root-series": "Series",
     "root-tag": "Tags",
     "root-tags": "Tags",
+    "root-playlists": "Playlists",
 }
 
 

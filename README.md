@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.0.0**
+**Version 7.1.0**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -22,6 +22,7 @@ Per-client behavior (poster aspect, performer item type, library `CollectionType
 ### Library
 - **Full Stash integration**: Scenes, Performers, Studios, Groups, Tags
 - **Series detection**: studios tagged with `SERIES_TAG` (default `Series`) become a `Shows` library — Swiftfin renders native Series → Season → Episode navigation; other clients see a regular collection of "shows" (configurable per-profile)
+- **Playlists**: full create / rename / add / remove / delete from clients that expose playlist UI (Infuse, Jellyfin web). Backed by a Stash parent tag (`PLAYLIST_PARENT_TAG`, default `Playlists`) — each child tag is one playlist, its tagged scenes are its items. Swiftfin and SenPlayer get a read-only `BoxSet`-shaped view (their UI doesn't render the native Playlist type)
 - **Tag-based libraries** (`TAG_GROUPS`): any Stash tag can become a top-level browsable folder
 - **Saved Filters**: browse your Stash saved filters as folders, with sort parameters translated to GraphQL
 - **Configurable Genres**: three modes for what shows up under "Genres" — every tag (`all_tags`), only descendants of a parent tag (`parent_tag`, default), or the top-N by scene count (`top_n`)
@@ -135,6 +136,7 @@ The full list lives in the conf file and the Web UI; the most common keys:
 | `FAVORITE_TAG` | empty | tag used for scene + group favorites (e.g. `Favorite`) |
 | `SERIES_TAG` | `Series` | studios tagged with this become Series libraries |
 | `SERIES_EPISODE_PATTERNS` | empty | newline-separated regex chain for parsing `S##E##` from titles |
+| `PLAYLIST_PARENT_TAG` | `Playlists` | parent tag whose direct children become Jellyfin playlists. Empty disables the feature |
 | `ENABLE_FILTERS` | `true` | show Saved Filters folder |
 | `ENABLE_TAG_FILTERS` | `false` | show Tags root folder |
 | `ENABLE_ALL_TAGS` | `false` | include "All Tags" subfolder (slow with many tags) |
@@ -268,6 +270,15 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.1.0
+
+**Playlists**
+- New `Playlists` library backed by a configurable parent tag (`PLAYLIST_PARENT_TAG`, default `Playlists`). Each direct child of that tag is one playlist; the scenes carrying that child tag are its items.
+- Full Jellyfin `PlaylistsController` surface: create, rename, add/remove items, delete, list users — every mutation guarded so only tags that are direct children of the configured parent can be touched.
+- Per-client rendering: native `Playlist` type for Infuse and the Jellyfin web client (full create/edit/delete UI); `BoxSet` shape for Swiftfin and SenPlayer (their UI lacks a native Playlist renderer — they can browse and play but not manage). Profile flag `playlist_native` overrides per-client if needed.
+- Playlist tiles render as scene-screenshot composites with the playlist name as label overlay (same look as TAG_GROUPS).
+- The playlist parent tag and its children are auto-hidden from the generic Tags listing, search hints, and per-scene Tags / Genres so the marker tags don't bleed into the rest of the UI.
 
 ### v7.0.0
 

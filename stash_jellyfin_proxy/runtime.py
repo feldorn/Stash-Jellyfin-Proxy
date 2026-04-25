@@ -120,6 +120,12 @@ SERIES_TAG: str = "Series"
 SERIES_EPISODE_PATTERNS: str = ""
 PLAYER_PROFILES: List[Any] = []
 
+# --- Playlists (Phase 7 §9.1) ---
+# Stash tag whose direct children become Jellyfin playlists. Each child
+# tag = one playlist; the scenes carrying that tag = its items. Empty
+# string disables the feature.
+PLAYLIST_PARENT_TAG: str = "Playlists"
+
 # --- Image policy (Phase 3) ---
 POSTER_CROP_ANCHOR: str = "center"
 

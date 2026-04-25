@@ -199,13 +199,9 @@ async def endpoint_user_item_rating(request):
     return JSONResponse({})
 
 
-# --- Collections / playlists / taxonomic lists we don't expose ---
+# --- Collections / taxonomic lists we don't expose ---
 
 async def endpoint_collections(request):
-    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
-
-
-async def endpoint_playlists(request):
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
 

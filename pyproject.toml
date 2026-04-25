@@ -1,6 +1,6 @@
 [project]
 name = "stash-jellyfin-proxy"
-version = "7.0.0"
+version = "7.1.0"
 description = "Proxy that lets Jellyfin clients (Infuse, Findroid, etc.) browse and stream a Stash library."
 readme = "README.md"
 license = { file = "LICENSE" }

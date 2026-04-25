@@ -96,6 +96,7 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
     SERIES_TAG = "Series"
     SERIES_EPISODE_PATTERNS = r"S(\d+)[:\.]?E(\d+), S(\d+)\s+E(\d+), Season\s*(\d+).*?Episode\s*(\d+)"
     PLAYER_PROFILES = []
+    PLAYLIST_PARENT_TAG = "Playlists"
     GENRE_MODE = "parent_tag"
     GENRE_PARENT_TAG = "GENRE"
     GENRE_TOP_N = 25
@@ -216,6 +217,8 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
             SERIES_TAG = cfg.get("series_tag", SERIES_TAG).strip()
         if "series_episode_patterns" in cfg:
             SERIES_EPISODE_PATTERNS = cfg.get("series_episode_patterns", SERIES_EPISODE_PATTERNS)
+        if "playlist_parent_tag" in cfg:
+            PLAYLIST_PARENT_TAG = cfg.get("playlist_parent_tag", PLAYLIST_PARENT_TAG).strip()
         if "genre_mode" in cfg:
             mode = cfg.get("genre_mode", "parent_tag").strip().lower()
             GENRE_MODE = mode if mode in ("all_tags", "parent_tag", "top_n") else "parent_tag"
@@ -462,6 +465,7 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         SERIES_TAG=SERIES_TAG,
         SERIES_EPISODE_PATTERNS=SERIES_EPISODE_PATTERNS,
         PLAYER_PROFILES=PLAYER_PROFILES,
+        PLAYLIST_PARENT_TAG=PLAYLIST_PARENT_TAG,
         GENRE_MODE=GENRE_MODE,
         GENRE_PARENT_TAG=GENRE_PARENT_TAG,
         GENRE_TOP_N=GENRE_TOP_N,

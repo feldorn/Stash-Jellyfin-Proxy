@@ -61,6 +61,7 @@ logger = logging.getLogger("stash-jellyfin-proxy")
 MENU_ICONS = {
     "root-scenes", "root-studios", "root-performers",
     "root-groups", "root-series", "root-tag", "root-tags",
+    "root-playlists",
 }
 
 
@@ -281,6 +282,31 @@ async def endpoint_image(request):
 
     if item_id == "tags-all":
         img_data, content_type = generate_filter_icon("All Tags")
+        return Response(content=img_data, media_type=content_type, headers=_ICON_CACHE_HEADERS)
+
+    if item_id.startswith("playlist-"):
+        # Playlist card: pick a random scene from the playlist, dim it,
+        # overlay the playlist name. Falls back to a text-only filter
+        # icon if the playlist is empty or stash is unreachable.
+        tag_id = item_id[len("playlist-"):]
+        try:
+            tag_res = await stash_query(
+                """query FindTag($id: ID!) { findTag(id: $id) { name } }""",
+                {"id": tag_id},
+            )
+            playlist_name = ((tag_res or {}).get("data") or {}).get("findTag", {}).get("name") or "Playlist"
+        except Exception:
+            playlist_name = "Playlist"
+        scene_id = await _pick_random_scene(
+            "tags: {value: $ids, modifier: INCLUDES}",
+            {"ids": [tag_id]},
+        )
+        if scene_id:
+            shot = await _fetch_scene_screenshot(scene_id)
+            if shot is not None:
+                data, ct = compose_library_card(shot[0], playlist_name)
+                return Response(content=data, media_type=ct, headers=_IMAGE_CACHE_HEADERS)
+        img_data, content_type = generate_filter_icon(playlist_name)
         return Response(content=img_data, media_type=content_type, headers=_ICON_CACHE_HEADERS)
 
     if item_id.startswith("tagitem-"):

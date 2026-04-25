@@ -490,6 +490,7 @@ _P5B_KEYS = [
     ("GENRE_TOP_N",           "GENRE_TOP_N",           "int",  25,           False),
     ("SERIES_TAG",            "SERIES_TAG",            "str",  "Series",     False),
     ("SERIES_EPISODE_PATTERNS","SERIES_EPISODE_PATTERNS","str", "",           True),
+    ("PLAYLIST_PARENT_TAG",   "PLAYLIST_PARENT_TAG",   "str",  "Playlists",  True),
     # --- Playback (pass 5) ---
     ("POSTER_CROP_ANCHOR",    "POSTER_CROP_ANCHOR",    "str",  "center",     False),
     ("SCENES_DEFAULT_SORT",   "SCENES_DEFAULT_SORT",   "str",  "DateCreated",True),

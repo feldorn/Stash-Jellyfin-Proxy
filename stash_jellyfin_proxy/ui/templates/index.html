@@ -328,6 +328,22 @@
           </div>
         </div>
 
+        <!-- Playlists -->
+        <div class="card" data-section="playlists">
+          <div class="card-header"><div class="card-title">Playlists <span class="unsaved-dot hide"></span></div></div>
+          <div class="card-body">
+            <div class="field">
+              <div class="field-label">Playlist Parent Tag</div>
+              <input type="text" data-key="PLAYLIST_PARENT_TAG" placeholder="Playlists">
+              <div class="field-help">Stash tag whose direct children represent Jellyfin playlists. Each child tag becomes one playlist; the scenes carrying that child tag are its items. Created on first playlist creation. Leave blank to disable.</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="save-badge live" title="Applies immediately on save."><span class="sb-dot"></span>Live</span>
+            <button class="btn primary" data-save="playlists">Save</button>
+          </div>
+        </div>
+
         <!-- Series Detection -->
         <div class="card" data-section="series">
           <div class="card-header"><div class="card-title">Series Detection <span class="unsaved-dot hide"></span></div></div>

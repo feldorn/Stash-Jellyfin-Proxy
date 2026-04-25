@@ -7,6 +7,7 @@ from typing import Dict, Optional
 from starlette.responses import JSONResponse
 
 from stash_jellyfin_proxy import runtime
+from stash_jellyfin_proxy.mapping.image_policy import playlist_collection_type
 from stash_jellyfin_proxy.mapping.scene import format_jellyfin_item, is_group_favorite
 from stash_jellyfin_proxy.players.matcher import resolve_from_request
 from stash_jellyfin_proxy.stash.client import stash_query
@@ -45,6 +46,39 @@ def _series_collection_type(request) -> str:
     if profile.name == "swiftfin":
         return "tvshows"
     return "movies"
+
+
+async def _has_playlists() -> bool:
+    """True when the configured PLAYLIST_PARENT_TAG exists in Stash, regardless
+    of whether it has any children yet. Showing the empty Playlists library is
+    fine — it's the only place users can create their first one. Returns False
+    when the feature is disabled (empty config)."""
+    if not runtime.PLAYLIST_PARENT_TAG:
+        return False
+    tag_id = await get_or_create_tag(runtime.PLAYLIST_PARENT_TAG)
+    return bool(tag_id)
+
+
+async def _playlist_count() -> int:
+    """Count of playlists (children of PLAYLIST_PARENT_TAG)."""
+    if not runtime.PLAYLIST_PARENT_TAG:
+        return 0
+    parent_id = await get_or_create_tag(runtime.PLAYLIST_PARENT_TAG)
+    if not parent_id:
+        return 0
+    try:
+        res = await stash_query(
+            """query PlaylistCount($pid: [ID!]) {
+                findTags(tag_filter: {parents: {value: $pid, modifier: INCLUDES}}, filter: {per_page: 1}) {
+                    count
+                }
+            }""",
+            {"pid": [parent_id]},
+        )
+        return int(((res.get("data") or {}).get("findTags") or {}).get("count") or 0)
+    except Exception as e:
+        logger.debug(f"playlist count failed: {e}")
+        return 0
 
 
 async def _has_series_studios() -> bool:
@@ -208,6 +242,8 @@ async def endpoint_user_views(request):
     if await _has_series_studios():
         series_count = await _series_count()
         items.append(_make_library("Series", "root-series", _series_collection_type(request), series_count))
+    if await _has_playlists():
+        items.append(_make_library("Playlists", "root-playlists", playlist_collection_type(request), await _playlist_count()))
     if runtime.ENABLE_TAG_FILTERS:
         items.append(_make_library("Tags", "root-tags", "movies", counts.get("root-tags", 0)))
     for tag_name in sorted(runtime.TAG_GROUPS, key=str.lower):
@@ -241,19 +277,24 @@ async def _series_count() -> int:
 async def endpoint_virtual_folders(request):
     """`GET /Library/VirtualFolders` — same tree as /Views but in
     Jellyfin's admin-facing shape. Infuse uses this."""
+    # Locations is a non-empty list — Infuse skips libraries that report no
+    # paths, leaving its local catalog empty (search, All Movies, playlists
+    # all return nothing). The path is a label only; nothing reads it.
     folders = [
-        {"Name": "Scenes",     "Locations": [], "CollectionType": "movies", "ItemId": "root-scenes"},
-        {"Name": "Studios",    "Locations": [], "CollectionType": "movies", "ItemId": "root-studios"},
-        {"Name": "Performers", "Locations": [], "CollectionType": "movies",  "ItemId": "root-performers"},
-        {"Name": "Groups",     "Locations": [], "CollectionType": "movies", "ItemId": "root-groups"},
+        {"Name": "Scenes",     "Locations": ["/stash/scenes"],     "CollectionType": "movies", "ItemId": "root-scenes"},
+        {"Name": "Studios",    "Locations": ["/stash/studios"],    "CollectionType": "movies", "ItemId": "root-studios"},
+        {"Name": "Performers", "Locations": ["/stash/performers"], "CollectionType": "movies", "ItemId": "root-performers"},
+        {"Name": "Groups",     "Locations": ["/stash/groups"],     "CollectionType": "movies", "ItemId": "root-groups"},
     ]
     if await _has_series_studios():
-        folders.append({"Name": "Series", "Locations": [], "CollectionType": _series_collection_type(request), "ItemId": "root-series"})
+        folders.append({"Name": "Series", "Locations": ["/stash/series"], "CollectionType": _series_collection_type(request), "ItemId": "root-series"})
+    if await _has_playlists():
+        folders.append({"Name": "Playlists", "Locations": ["/stash/playlists"], "CollectionType": playlist_collection_type(request), "ItemId": "root-playlists"})
     if runtime.ENABLE_TAG_FILTERS:
-        folders.append({"Name": "Tags", "Locations": [], "CollectionType": "movies", "ItemId": "root-tags"})
+        folders.append({"Name": "Tags", "Locations": ["/stash/tags"], "CollectionType": "movies", "ItemId": "root-tags"})
     for tag_name in sorted(runtime.TAG_GROUPS, key=str.lower):
         tag_id = f"tag-{tag_name.lower().replace(' ', '-')}"
-        folders.append({"Name": tag_name, "Locations": [], "CollectionType": "movies", "ItemId": tag_id})
+        folders.append({"Name": tag_name, "Locations": [f"/stash/{tag_id}"], "CollectionType": "movies", "ItemId": tag_id})
     return JSONResponse(folders)
 
 

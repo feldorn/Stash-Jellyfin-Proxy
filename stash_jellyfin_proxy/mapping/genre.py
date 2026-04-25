@@ -38,6 +38,13 @@ _warned_missing_parent: Set[str] = set()
 _ALL_TAGS_SENTINEL = object()
 _sync_snapshot = _ALL_TAGS_SENTINEL  # sentinel = "not populated yet"
 
+# Sync-readable lower-cased snapshot of every playlist child tag name
+# (children of PLAYLIST_PARENT_TAG). Used by _system_excludes_lower() so
+# playlist marker tags never appear in a scene's Tags / Genres lists.
+# Refreshed by warm_playlist_tag_names() at request entry.
+_playlist_tag_names_lower: frozenset = frozenset()
+_playlist_tag_names_expires: float = 0.0
+
 
 def _system_excludes_lower() -> Set[str]:
     """Tags that must never appear as genres or in the residual Tags list
@@ -50,6 +57,9 @@ def _system_excludes_lower() -> Set[str]:
         out.add(runtime.FAVORITE_TAG.strip().lower())
     if runtime.GENRE_PARENT_TAG:
         out.add(runtime.GENRE_PARENT_TAG.strip().lower())
+    if runtime.PLAYLIST_PARENT_TAG:
+        out.add(runtime.PLAYLIST_PARENT_TAG.strip().lower())
+    out |= _playlist_tag_names_lower
     for tg in runtime.TAG_GROUPS or []:
         out.add(tg.strip().lower())
     return out
@@ -148,6 +158,9 @@ async def genre_allowed_names() -> Optional[frozenset]:
     # read the current allow-list without needing the keyword arg.
     global _sync_snapshot
     _sync_snapshot = allowed
+    # Same warm-up rhythm: refresh the playlist marker-tag names so the
+    # scene formatter (sync) can strip them from Tags/Genres.
+    await warm_playlist_tag_names()
     return allowed
 
 
@@ -208,7 +221,58 @@ def compute_genres(
 
 def invalidate_allowed_cache() -> None:
     """Clear the mode-allow-list cache (e.g. after config reload)."""
-    global _sync_snapshot
+    global _sync_snapshot, _playlist_tag_names_lower, _playlist_tag_names_expires
     _allowed_cache.clear()
     _warned_missing_parent.clear()
     _sync_snapshot = _ALL_TAGS_SENTINEL
+    _playlist_tag_names_lower = frozenset()
+    _playlist_tag_names_expires = 0.0
+
+
+async def warm_playlist_tag_names() -> None:
+    """Refresh the sync-readable snapshot of playlist child tag names.
+
+    Cached 60s. Called from request handlers that may run scenes through
+    format_jellyfin_item — keeps the playlist marker tags ("test", etc.)
+    out of every scene's Tags/Genres list."""
+    global _playlist_tag_names_lower, _playlist_tag_names_expires
+    parent_name = (runtime.PLAYLIST_PARENT_TAG or "").strip()
+    now = time.monotonic()
+    if not parent_name:
+        _playlist_tag_names_lower = frozenset()
+        _playlist_tag_names_expires = now + 60.0
+        return
+    if now < _playlist_tag_names_expires:
+        return
+    try:
+        from stash_jellyfin_proxy.stash.client import stash_query
+        from stash_jellyfin_proxy.stash.tags import get_or_create_tag
+        parent_id = await get_or_create_tag(parent_name)
+        if not parent_id:
+            _playlist_tag_names_lower = frozenset()
+        else:
+            res = await stash_query(
+                """query PlaylistChildren($pid: [ID!]) {
+                    findTags(
+                        tag_filter: {parents: {value: $pid, modifier: INCLUDES}},
+                        filter: {per_page: -1}
+                    ) { tags { name } }
+                }""",
+                {"pid": [parent_id]},
+            )
+            tags = ((res or {}).get("data") or {}).get("findTags", {}).get("tags") or []
+            _playlist_tag_names_lower = frozenset(
+                (t.get("name") or "").strip().lower() for t in tags if t.get("name")
+            )
+        _playlist_tag_names_expires = now + 60.0
+    except Exception as e:
+        logger.debug(f"warm_playlist_tag_names failed: {e}")
+        _playlist_tag_names_expires = now + 5.0  # short retry on error
+
+
+def invalidate_playlist_tag_names() -> None:
+    """Force the next warm_playlist_tag_names() to re-fetch. Called after
+    playlist create/rename/delete so the cache reflects the new state."""
+    global _playlist_tag_names_lower, _playlist_tag_names_expires
+    _playlist_tag_names_lower = frozenset()
+    _playlist_tag_names_expires = 0.0
