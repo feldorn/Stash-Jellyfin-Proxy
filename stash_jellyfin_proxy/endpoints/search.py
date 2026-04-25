@@ -273,7 +273,18 @@ async def endpoint_persons(request):
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or runtime.DEFAULT_PAGE_SIZE)
     limit = max(1, min(limit, runtime.MAX_PAGE_SIZE))
 
-    search_term = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm")
+    # Distinguish "param absent" (library browse → all performers) from
+    # "param present but empty" (search view with empty text → no matches).
+    # Swiftfin's search view fires /Persons?searchTerm= while a genre is
+    # selected; without this gate the People rail lists every performer
+    # regardless of the active genre filter.
+    has_search_param = any(k.lower() == "searchterm" for k in request.query_params.keys())
+    raw_search = request.query_params.get("searchTerm") or request.query_params.get("SearchTerm") or ""
+    search_term = raw_search.strip()
+
+    if has_search_param and not search_term:
+        return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": start_index})
+
     # Respect search_include_performers only when the call is a search —
     # /Persons is also used for the Persons *library* browse which should
     # never be gated.

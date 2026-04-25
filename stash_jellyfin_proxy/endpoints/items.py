@@ -733,31 +733,82 @@ async def endpoint_items(request):
         else:
             performer_id = person_id
 
-        logger.debug(f"PersonIds filter: fetching scenes for performer {performer_id}")
+        # Swiftfin's performer detail page hardcodes limit=20 on its rail
+        # and never paginates regardless of TotalRecordCount — there's no
+        # "See All" affordance in its UI. Bump the floor to MAX_PAGE_SIZE
+        # (default 200) so users can actually browse most of a performer's
+        # scenes in one shot. Higher start_index (real pagination from
+        # other clients) still works at whatever limit they asked for.
+        if start_index == 0 and limit < runtime.MAX_PAGE_SIZE:
+            limit = runtime.MAX_PAGE_SIZE
 
-        # Get count for this performer
-        count_q = """query CountScenes($pid: [ID!]) {
-            findScenes(scene_filter: {performers: {value: $pid, modifier: INCLUDES}}) { count }
-        }"""
-        count_res = await stash_query(count_q, {"pid": [performer_id]})
-        total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
+        # Swiftfin's performer page fires parallel probes for every
+        # IncludeItemTypes value (Person, BoxSet, Movie, Video, MusicVideo,
+        # Series, Episode). Only emit scenes for Movie/Episode requests —
+        # same pattern as the parent_id=performer- branch (cdd4a04) and the
+        # group/studio branches. Without this gate, every rail would render
+        # the same full scene list labeled as the wrong type.
+        scene_yielding_types = {"movie", "episode"}
+        video_only = (
+            "video" in include_types_lower
+            and not any(t in scene_yielding_types for t in include_types_lower)
+        )
+        wants_scenes = (
+            not include_type_list
+            or any(t in scene_yielding_types for t in include_types_lower)
+        )
+        if video_only or not wants_scenes:
+            logger.debug(
+                f"PersonIds {performer_id}: skipped type filter "
+                f"{include_type_list} (video_only={video_only})"
+            )
+            total_count = 0
+        else:
+            logger.debug(f"PersonIds filter: fetching scenes for performer {performer_id}")
 
-        # Calculate page
-        page = (start_index // limit) + 1
+            count_q = """query CountScenes($pid: [ID!]) {
+                findScenes(scene_filter: {performers: {value: $pid, modifier: INCLUDES}}) { count }
+            }"""
+            count_res = await stash_query(count_q, {"pid": [performer_id]})
+            total_count = count_res.get("data", {}).get("findScenes", {}).get("count", 0)
 
-        q = f"""query FindScenes($pid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
-            findScenes(
-                scene_filter: {{performers: {{value: $pid, modifier: INCLUDES}}}},
-                filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
-            ) {{
-                scenes {{ {scene_fields} }}
-            }}
-        }}"""
-        res = await stash_query(q, {"pid": [performer_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
-        scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
-        logger.debug(f"PersonIds filter: returned {len(scenes)} scenes (page {page}, total {total_count})")
-        for s in scenes:
-            items.append(format_jellyfin_item(s, parent_id=f"person-{performer_id}"))
+            page = (start_index // limit) + 1
+
+            q = f"""query FindScenes($pid: [ID!], $page: Int!, $per_page: Int!, $sort: String!, $direction: SortDirectionEnum!) {{
+                findScenes(
+                    scene_filter: {{performers: {{value: $pid, modifier: INCLUDES}}}},
+                    filter: {{page: $page, per_page: $per_page, sort: $sort, direction: $direction}}
+                ) {{
+                    scenes {{ {scene_fields} }}
+                }}
+            }}"""
+            res = await stash_query(q, {"pid": [performer_id], "page": page, "per_page": limit, "sort": sort_field, "direction": sort_direction})
+            scenes = res.get("data", {}).get("findScenes", {}).get("scenes", [])
+            logger.debug(f"PersonIds filter: returned {len(scenes)} scenes (page {page}, total {total_count})")
+
+            wants_episode_only = (
+                "episode" in include_types_lower
+                and "movie" not in include_types_lower
+                and "video" not in include_types_lower
+            )
+            wants_movie_only = (
+                ("movie" in include_types_lower or "video" in include_types_lower)
+                and "episode" not in include_types_lower
+            )
+            for s in scenes:
+                from stash_jellyfin_proxy.mapping.scene import is_series_scene
+                is_ep = is_series_scene(s)
+                if wants_episode_only and not is_ep:
+                    continue
+                if wants_movie_only and is_ep:
+                    continue
+                items.append(format_jellyfin_item(s, parent_id=f"person-{performer_id}"))
+            if (wants_episode_only or wants_movie_only) and len(items) < len(scenes):
+                # See note on the parallel ParentId=performer- branch above:
+                # only override total_count when this page's filter actually
+                # dropped scenes, so pagination stays correct for performers
+                # whose scenes are all one type (the common case).
+                total_count = 0 if not items else int(total_count * len(items) / max(len(scenes), 1))
 
     elif search_term:
         # Handle search from Infuse/Swiftfin - query Stash with the search term
@@ -766,11 +817,24 @@ async def endpoint_items(request):
 
         logger.info(f"Search: '{clean_search}' (types={include_type_list})")
 
+        # Swiftfin's search fires parallel rails for IncludeItemTypes=Movie
+        # and IncludeItemTypes=Video. Our scenes render as Type=Movie +
+        # MediaType=Video, so both queries match and the user sees a
+        # duplicate row. Suppress Video-only (no Movie/Episode) the same
+        # way the performer / group / studio branches do.
+        scene_yielding_types = {"movie", "episode"}
+        video_only = (
+            "video" in include_types_lower
+            and not any(t in scene_yielding_types for t in include_types_lower)
+        )
+
         # Only search for scenes if Movie/Video type is requested (or no type filter)
         # Skip for Series-only or Episode-only requests since Stash only has movie-type content.
         # Also honour runtime.SEARCH_INCLUDE_SCENES — users can disable scene
         # hits globally even when the client requests them.
-        if not has_movie_type:
+        if video_only:
+            logger.debug(f"Search '{clean_search}': skipped Video-only (dupes the Movie rail)")
+        elif not has_movie_type:
             logger.debug(f"Search skipped - requested types {include_type_list} don't include Movie/Video")
         elif not runtime.SEARCH_INCLUDE_SCENES:
             logger.debug("Search scenes skipped (search_include_scenes=false)")
@@ -1438,7 +1502,14 @@ async def endpoint_items(request):
                 if wants_movie_only and is_ep:
                     continue
                 items.append(format_jellyfin_item(s, parent_id=parent_id))
-            total_count = len(items) if (wants_episode_only or wants_movie_only) else total_count
+            if (wants_episode_only or wants_movie_only) and len(items) < len(scenes):
+                # Series/Movie filter dropped some scenes on this page. Scale the
+                # raw Stash count by the page hit rate so pagination still spans
+                # the right range; collapse to 0 when everything was filtered.
+                # When nothing was dropped (the common case — performers without
+                # any Series/Movie mix) keep the unfiltered total so Swiftfin
+                # paginates past the first page instead of stopping at `limit`.
+                total_count = 0 if not items else int(total_count * len(items) / max(len(scenes), 1))
 
     elif parent_id == "root-performers":
         folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
@@ -1562,7 +1633,14 @@ async def endpoint_items(request):
                 if wants_movie_only and is_ep:
                     continue
                 items.append(format_jellyfin_item(s, parent_id=parent_id))
-            total_count = len(items) if (wants_episode_only or wants_movie_only) else total_count
+            if (wants_episode_only or wants_movie_only) and len(items) < len(scenes):
+                # Series/Movie filter dropped some scenes on this page. Scale the
+                # raw Stash count by the page hit rate so pagination still spans
+                # the right range; collapse to 0 when everything was filtered.
+                # When nothing was dropped (the common case — performers without
+                # any Series/Movie mix) keep the unfiltered total so Swiftfin
+                # paginates past the first page instead of stopping at `limit`.
+                total_count = 0 if not items else int(total_count * len(items) / max(len(scenes), 1))
 
     elif parent_id == "root-groups":
         folder_sort, folder_dir = get_stash_sort_params(request, context="folders")
@@ -1698,7 +1776,14 @@ async def endpoint_items(request):
                 if wants_movie_only and is_ep:
                     continue
                 items.append(format_jellyfin_item(s, parent_id=parent_id))
-            total_count = len(items) if (wants_episode_only or wants_movie_only) else total_count
+            if (wants_episode_only or wants_movie_only) and len(items) < len(scenes):
+                # Series/Movie filter dropped some scenes on this page. Scale the
+                # raw Stash count by the page hit rate so pagination still spans
+                # the right range; collapse to 0 when everything was filtered.
+                # When nothing was dropped (the common case — performers without
+                # any Series/Movie mix) keep the unfiltered total so Swiftfin
+                # paginates past the first page instead of stopping at `limit`.
+                total_count = 0 if not items else int(total_count * len(items) / max(len(scenes), 1))
 
     elif parent_id == "root-tags":
         # Tags folder: show Favorites, All Tags (if enabled), and saved tag filters
@@ -2048,12 +2133,19 @@ async def endpoint_items(request):
                     "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": is_group_favorite(m), "Played": False, "Key": f"group-{m['id']}"}
                 })
         elif video_requested:
-            # Jellyfin Web's Favorites tab queries separately for each type
-            # (Movie, Video, Episode, …) and renders a rail per hit. Our scenes
-            # are typed Movie, so a bare Video-only favorites query would
-            # duplicate them into a "Videos" rail next to "Movies". Skip.
-            if filter_favorites and "video" in include_types_lower and "movie" not in include_types_lower:
-                logger.debug("Video-only favorites query suppressed to avoid Movies/Videos duplication")
+            # Our scenes render as Type=Movie + MediaType=Video. Swiftfin
+            # and Jellyfin Web both fire parallel rail probes per
+            # IncludeItemTypes value, so any Video-only request
+            # (favorites, genre-filtered, text-searched, plain browse)
+            # duplicates whatever the Movie rail already returned.
+            # Suppress Video-only globally — Movie covers it.
+            video_only_type = (
+                "video" in include_types_lower
+                and "movie" not in include_types_lower
+                and "episode" not in include_types_lower
+            )
+            if video_only_type:
+                logger.debug("Global Video-only query suppressed (dupes Movie rail)")
                 total_count = 0
             # Video type (or no type filter) → return Scenes
             else:
