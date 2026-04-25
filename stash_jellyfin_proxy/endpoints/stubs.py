@@ -205,6 +205,18 @@ async def endpoint_collections(request):
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
 
+async def endpoint_media_folders(request):
+    """`GET /Library/MediaFolders` — admin-side library list. We expose
+    libraries via `/Library/VirtualFolders` already; this is the older
+    alias the JF web client probes."""
+    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
+
+
+async def endpoint_livetv_channels(request):
+    """`GET /LiveTv/Channels` — Live TV catalog. We don't model Live TV."""
+    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
+
+
 async def endpoint_artists(request):
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
 
@@ -281,5 +293,12 @@ async def endpoint_favicon(request):
 
 async def catch_all(request):
     """Log unhandled routes and return an empty-paginated fallback."""
-    logger.warning(f"UNHANDLED ENDPOINT: {request.method} {request.url.path} - Query: {dict(request.query_params)}")
+    path = request.url.path
+    # JF web client occasionally renders an item card before its Id resolves
+    # and emits `/Items//` or `/Users/<id>/Items//`. The double-slash isn't
+    # routable; treat it as a quiet 400 instead of a noisy UNHANDLED warning.
+    if "/Items//" in path:
+        logger.debug(f"Empty item id: {request.method} {path}")
+        return JSONResponse({"error": "Empty item id"}, status_code=400)
+    logger.warning(f"UNHANDLED ENDPOINT: {request.method} {path} - Query: {dict(request.query_params)}")
     return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})

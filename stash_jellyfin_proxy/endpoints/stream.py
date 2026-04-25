@@ -1,9 +1,9 @@
 """Video stream, download, and subtitle proxy endpoints.
 
 `endpoint_stream` is the hot path — it forwards Range requests byte-for-byte
-from Stash to the client via StreamingResponse. Stash's 416 Requested Range
-Not Satisfiable bubbles up as a 500 here today; that's a known cosmetic
-issue that should be passed through as a real 416 when we do a cleanup pass.
+from Stash to the client via StreamingResponse. Upstream 416 (range past
+EOF) is passed through as a real 416 with `Content-Range: bytes */<size>`
+so seek-past-end recovers cleanly instead of stalling on a 500.
 
 `endpoint_download` is the same transfer but with a Content-Disposition
 attachment header pointing at the original filename.
@@ -48,6 +48,17 @@ async def endpoint_stream(request):
             await response.aclose()
             logger.error(f"Got HTML response instead of video from {stash_stream_url}")
             return JSONResponse({"error": "Authentication failed"}, status_code=401)
+
+        # 416 = client requested a range past EOF. Pass it through so the
+        # client can recover (it's a normal end-of-stream / over-seek
+        # condition, not an error). Forward Content-Range if Stash sent one.
+        if response.status_code == 416:
+            range_header = response.headers.get("content-range", "")
+            await response.aclose()
+            return Response(
+                status_code=416,
+                headers={"Content-Range": range_header} if range_header else {},
+            )
 
         response.raise_for_status()
 

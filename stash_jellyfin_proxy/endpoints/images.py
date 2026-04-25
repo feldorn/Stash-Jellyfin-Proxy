@@ -562,8 +562,19 @@ async def endpoint_image(request):
                 )
                 gql_data = gql_res.get("data", {}).get("findGroup") if gql_res else None
                 front_image_path = gql_data.get("front_image_path") if gql_data else None
+                # Stash returns front_image_path as an absolute URL with its
+                # own ?t=… cache buster. If `default=true` is in there, Stash
+                # already told us it has no real artwork — short-circuit to
+                # the local placeholder instead of refetching another SVG.
+                if front_image_path and "default=true" in front_image_path:
+                    img_data, ct = generate_placeholder_icon("group")
+                    return Response(content=img_data, media_type=ct, headers=_IMAGE_CACHE_HEADERS)
                 if front_image_path:
-                    gql_img_url = f"{runtime.STASH_URL}{front_image_path}?t={int(time.time())}"
+                    gql_img_url = (
+                        front_image_path
+                        if front_image_path.startswith(("http://", "https://"))
+                        else f"{runtime.STASH_URL}{front_image_path}"
+                    )
                     logger.debug(f"GraphQL fallback: fetching from {gql_img_url}")
                     data, content_type, _ = await fetch_from_stash(gql_img_url, extra_headers=image_headers, timeout=30)
                     if not (data and len(data) > 1000 and content_type != "image/svg+xml"):
