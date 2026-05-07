@@ -324,10 +324,29 @@ async def endpoint_item_image_logo(request):
 
 
 async def endpoint_item_images_list(request):
-    """`GET /Items/{item_id}/Images` — image-types summary. Roku polls this
-    to decide which image types to request. Return an empty list; the
-    Primary/Backdrop/Thumb endpoints still serve their tiles directly."""
-    return JSONResponse([])
+    """`GET /Items/{item_id}/Images` — image-types summary. Roku reads this
+    to populate the detail-page poster + backdrop slots; an empty list
+    appears to crash the Roku Jellyfin app on the detail screen, so always
+    advertise Primary + Backdrop pointing at the corresponding endpoints
+    that already serve the scene screenshot. Width/Height are unknown
+    upstream without a Stash round-trip; the spec lets us omit them."""
+    item_id = request.path_params.get("item_id", "")
+    if not item_id:
+        return JSONResponse([])
+    return JSONResponse([
+        {
+            "ImageIndex": 0,
+            "ImageTag": f"p{item_id}",
+            "ImageType": "Primary",
+            "Path": f"Items/{item_id}/Images/Primary",
+        },
+        {
+            "ImageIndex": 0,
+            "ImageTag": f"b{item_id}",
+            "ImageType": "Backdrop",
+            "Path": f"Items/{item_id}/Images/Backdrop",
+        },
+    ])
 
 
 async def endpoint_items_suggestions(request):
