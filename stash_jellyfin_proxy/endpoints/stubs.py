@@ -254,6 +254,91 @@ async def endpoint_client_log(request):
     return Response(status_code=204)
 
 
+# --- Roku-specific stubs ---
+#
+# The Roku Jellyfin app probes a wider Jellyfin surface than the iOS-only
+# clients do. These return shape-correct stubs so Roku stops 500ing on the
+# unhandled paths and the UNHANDLED ENDPOINT log spam goes away.
+
+async def endpoint_system_configuration_encoding(request):
+    """`GET /System/Configuration/Encoding` — server transcoder config probe.
+    Roku reads this on connect to decide whether to ask for transcoded
+    streams. We don't transcode; advertise a hardware-disabled, direct-play-
+    only profile so the client commits to direct play."""
+    return JSONResponse({
+        "EncodingThreadCount": 0,
+        "TranscodingTempPath": "",
+        "FallbackFontPath": "",
+        "EnableFallbackFont": False,
+        "EnableAudioVbr": False,
+        "DownMixAudioBoost": 2.0,
+        "DownMixStereoAlgorithm": "None",
+        "MaxMuxingQueueSize": 2048,
+        "EnableThrottling": False,
+        "ThrottleDelaySeconds": 180,
+        "EnableSegmentDeletion": True,
+        "SegmentKeepSeconds": 720,
+        "HardwareAccelerationType": "none",
+        "EncoderAppPath": "",
+        "EncoderAppPathDisplay": "",
+        "VaapiDevice": "",
+        "QsvDevice": "",
+        "EnableTonemapping": False,
+        "EnableVppTonemapping": False,
+        "EnableVideoToolboxTonemapping": False,
+        "TonemappingAlgorithm": "bt2390",
+        "TonemappingMode": "auto",
+        "TonemappingRange": "auto",
+        "TonemappingDesat": 0,
+        "TonemappingPeak": 100,
+        "TonemappingParam": 0,
+        "VppTonemappingBrightness": 16,
+        "VppTonemappingContrast": 1,
+        "H264Crf": 23,
+        "H265Crf": 28,
+        "EncoderPreset": "auto",
+        "DeinterlaceDoubleRate": False,
+        "DeinterlaceMethod": "yadif",
+        "EnableDecodingColorDepth10Hevc": True,
+        "EnableDecodingColorDepth10Vp9": True,
+        "EnableDecodingColorDepth10HevcRext": False,
+        "EnableDecodingColorDepth12HevcRext": False,
+        "EnableEnhancedNvdecDecoder": False,
+        "PreferSystemNativeHwDecoder": True,
+        "EnableIntelLowPowerH264HwEncoder": False,
+        "EnableIntelLowPowerHevcHwEncoder": False,
+        "EnableHardwareEncoding": False,
+        "AllowHevcEncoding": False,
+        "AllowAv1Encoding": False,
+        "EnableSubtitleExtraction": False,
+        "HardwareDecodingCodecs": [],
+        "AllowOnDemandMetadataBasedKeyframeExtractionForExtensions": [],
+    })
+
+
+async def endpoint_item_image_logo(request):
+    """`GET|HEAD /Items/{item_id}/Images/Logo[/{index}]` — clear-background
+    logo art. Stash has no concept of a logo; respond 404 quietly so the
+    Roku client falls back to text titles instead of blocking the rail."""
+    return Response(status_code=404)
+
+
+async def endpoint_item_images_list(request):
+    """`GET /Items/{item_id}/Images` — image-types summary. Roku polls this
+    to decide which image types to request. Return an empty list; the
+    Primary/Backdrop/Thumb endpoints still serve their tiles directly."""
+    return JSONResponse([])
+
+
+async def endpoint_items_suggestions(request):
+    """`GET /Items/Suggestions` — Streamyfin / Roku 'Recommended for you'
+    rail. Without this explicit route the path gets matched by
+    `/Items/{item_id}` with item_id="Suggestions", which the GraphQL layer
+    then tries to `Atoi`. Returning an empty paginated list is correct shape
+    and a no-op for users."""
+    return JSONResponse({"Items": [], "TotalRecordCount": 0, "StartIndex": 0})
+
+
 # --- Favicon (proxied from Stash) ---
 
 _favicon_cache = None
