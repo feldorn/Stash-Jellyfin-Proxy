@@ -32,7 +32,9 @@ async def endpoint_stream(request):
     numeric_id = get_numeric_id(item_id)
     stash_stream_url = f"{runtime.STASH_URL}/scene/{numeric_id}/stream"
 
-    logger.debug(f"Proxying stream for {item_id} from {stash_stream_url}")
+    ua = request.headers.get("user-agent", "")[:80]
+    range_hdr = request.headers.get("range", "")
+    logger.info(f"🎞 Stream request: item={item_id} range={range_hdr!r} ua={ua!r}")
 
     extra_headers = {}
     if "range" in request.headers:

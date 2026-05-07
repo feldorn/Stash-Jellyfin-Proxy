@@ -42,8 +42,11 @@ async def endpoint_playback_info(request):
     """`POST|GET /Items/{item_id}/PlaybackInfo` — return MediaSources +
     MediaStreams for the requested scene."""
     item_id = request.path_params.get("item_id")
+    ua = request.headers.get("user-agent", "")[:80]
+    logger.info(f"🎬 PlaybackInfo requested: item={item_id} ua={ua!r}")
 
     if not item_id or not item_id.startswith("scene-"):
+        logger.warning(f"🎬 PlaybackInfo: empty/non-scene id ({item_id!r}); returning stub")
         return JSONResponse(_empty_source(item_id))
 
     numeric_id = item_id.replace("scene-", "")
@@ -147,7 +150,12 @@ async def endpoint_playback_info(request):
             "DeliveryUrl": f"Subtitles/{idx + 1}/0/Stream.{caption_type}",
         })
 
-    logger.debug(f"PlaybackInfo for {item_id}: {len(captions)} subtitles")
+    logger.info(
+        f"🎬 PlaybackInfo response: item={item_id} container={container} "
+        f"video_codec={video_codec} audio_codec={effective_audio_codec} "
+        f"resolution={vid_width}x{vid_height} bitrate={bit_rate} "
+        f"size={file_size} duration={duration:.1f}s subs={len(captions)}"
+    )
 
     runtime_ticks = int(duration * 10000000) if duration else 0
     media_source = {
