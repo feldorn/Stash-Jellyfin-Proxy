@@ -255,6 +255,25 @@
     outline: none;
     border-color: var(--accent);
   }
+  /* Password input + reveal (eyeball) toggle */
+  .pw-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .pw-wrap input { flex: 1; }
+  .pw-reveal {
+    flex: 0 0 auto;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 0 11px;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .pw-reveal:hover { color: var(--text); border-color: var(--accent); }
   textarea {
     min-height: 90px;
     font-family: "SF Mono", Menlo, monospace;

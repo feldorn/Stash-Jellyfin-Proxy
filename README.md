@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.1.7**
+**Version 7.2.0**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,22 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.2.0
+
+New "Connect a Player" surface on the dashboard and a configurable public address, so the credentials and server URL a player needs are visible in one place instead of scattered across the config.
+
+**Connect a Player**
+- Dashboard header button opens a "Connect a Player" modal showing the server address, username, and password, each with a copy button. The password is masked with an eyeball reveal toggle and re-masks when the modal closes. Surfaced as an occasional-use popup rather than an always-on dashboard card.
+
+**Public URL**
+- New `PUBLIC_URL` config key (Connection → Public Address, live — no restart) for the externally-reachable Jellyfin API address. The proxy can't auto-detect this — its own IP is an internal Docker address and, behind a reverse proxy like SWAG, the public host/scheme/port live in the proxy — so the Connect card shows the server address only once `PUBLIC_URL` is set, with a prompt otherwise. No misleading auto-guessed address.
+
+**Secret reveal**
+- API Key and Client Password fields on the Connection tab gain an eyeball reveal. Since the form leaves secret inputs blank so "blank = unchanged" holds on save, revealing lazily fetches the real value from a new allowlisted `GET /api/config/reveal` endpoint and hiding clears it again — typing a new value keeps the edit.
+
+**Fixes**
+- Download Config now works behind a reverse proxy: replaced the top-level `window.location` navigation (which SWAG can intercept and which dropped the same-origin context) with a credentialed `fetch` → Blob download that parses the filename from `Content-Disposition`.
 
 ### v7.1.7
 

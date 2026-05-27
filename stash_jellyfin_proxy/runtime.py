@@ -35,6 +35,11 @@ PROXY_PORT: int = 8096
 UI_PORT: int = 8097
 SERVER_NAME: str = "Stash Media Server"
 SERVER_ID: str = ""
+# Externally-reachable base URL for the Jellyfin API, shown on the dashboard
+# "Connect a Player" card. Set this when the proxy sits behind a reverse proxy
+# (e.g. SWAG) where the public hostname/scheme/port differ from the bind. Empty
+# → the UI falls back to the browser's host + PROXY_PORT.
+PUBLIC_URL: str = ""
 
 # --- Client auth ---
 SJS_USER: str = ""

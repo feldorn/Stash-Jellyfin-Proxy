@@ -42,9 +42,12 @@
 
     <!-- ================ DASHBOARD ================ -->
     <section class="page active" data-page="dashboard">
-      <div class="page-header">
-        <div class="page-title">Dashboard</div>
-        <div class="page-subtitle">At-a-glance health check and activity monitor</div>
+      <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">At-a-glance health check and activity monitor</div>
+        </div>
+        <button class="btn" id="dash-connect-open">Connect a Player</button>
       </div>
       <div class="page-content" id="dashboard-content">
 
@@ -202,7 +205,10 @@
             </div>
             <div class="field">
               <div class="field-label">API Key</div>
-              <input type="password" data-key="STASH_API_KEY" autocomplete="off" placeholder="(unchanged)">
+              <div class="pw-wrap">
+                <input type="password" data-key="STASH_API_KEY" autocomplete="off" placeholder="(unchanged)">
+                <button type="button" class="pw-reveal" title="Show/hide API key" aria-label="Show/hide API key">👁</button>
+              </div>
               <div class="field-help">From Stash → Settings → Security → API Key. Required for images to load. Leave blank to keep the current value.</div>
             </div>
             <div class="field-row">
@@ -245,6 +251,24 @@
           </div>
         </div>
 
+        <!-- Public Address (reverse proxy) -->
+        <div class="card" data-section="public-url">
+          <div class="card-header">
+            <div class="card-title">Public Address <span class="unsaved-dot hide"></span></div>
+          </div>
+          <div class="card-body">
+            <div class="field">
+              <div class="field-label">Public URL</div>
+              <input type="text" data-key="PUBLIC_URL" autocomplete="off" placeholder="https://stash-sjs.example.com">
+              <div class="field-help">The address players use to reach the <strong>Jellyfin API</strong> from outside — e.g. <code>https://stash-sjs.example.com</code> or <code>http://192.168.0.200:8096</code>. Include the scheme; omit the port if the reverse proxy serves it on 443/80. The proxy can't auto-detect this (its own IP is an internal Docker address), so the Dashboard's <em>Connect a Player</em> card shows the server address only once this is set.</div>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="save-badge live" title="Applied immediately on save."><span class="sb-dot"></span>Live</span>
+            <button class="btn primary" data-save="public-url">Save</button>
+          </div>
+        </div>
+
         <!-- Client Credentials -->
         <div class="card" data-section="credentials">
           <div class="card-header">
@@ -258,7 +282,10 @@
             </div>
             <div class="field">
               <div class="field-label">Password</div>
-              <input type="password" data-key="SJS_PASSWORD" autocomplete="new-password" placeholder="(unchanged)">
+              <div class="pw-wrap">
+                <input type="password" data-key="SJS_PASSWORD" autocomplete="new-password" placeholder="(unchanged)">
+                <button type="button" class="pw-reveal" title="Show/hide password" aria-label="Show/hide password">👁</button>
+              </div>
               <div class="field-help">Leave blank to keep the current password.</div>
             </div>
           </div>
@@ -444,6 +471,44 @@
     </section>
 
     <!-- Profile Editor Modal -->
+    <div id="connect-modal" class="modal-backdrop">
+      <div class="modal">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+          <div>Connect a Player</div>
+          <button class="icon-btn" id="connect-modal-close" aria-label="Close" style="font-size: 20px; line-height: 1;">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="field-help" style="margin-bottom: 14px;">Add this server in Infuse, Swiftfin, or SenPlayer, then sign in with the username and password below.</div>
+
+          <div class="field-label" style="margin-bottom: 4px;">Server address</div>
+          <div id="dash-connect-url-row" style="display: flex; gap: 8px; align-items: stretch; margin-bottom: 16px;">
+            <code id="dash-connect-url" style="font-size: 15px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; flex: 1; overflow-x: auto; white-space: nowrap; line-height: 1.6;">—</code>
+            <button class="btn" id="dash-connect-copy" title="Copy server address to clipboard">Copy</button>
+          </div>
+          <div id="dash-connect-url-unset" class="field-help hide" style="margin-bottom: 16px; padding: 8px 12px; background: var(--surface-2); border: 1px dashed var(--border); border-radius: 6px;">
+            Not configured. Set a <strong>Public URL</strong> under <em>Connection → Public Address</em> to show the address players should use to reach this proxy.
+          </div>
+
+          <div class="field-label" style="margin-bottom: 4px;">Username</div>
+          <div style="display: flex; gap: 8px; align-items: stretch; margin-bottom: 16px;">
+            <code id="dash-connect-user" style="font-size: 15px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; flex: 1; overflow-x: auto; white-space: nowrap; line-height: 1.6;">—</code>
+            <button class="btn" id="dash-connect-user-copy" title="Copy username to clipboard">Copy</button>
+          </div>
+
+          <div class="field-label" style="margin-bottom: 4px;">Password</div>
+          <div style="display: flex; gap: 8px; align-items: stretch;">
+            <code id="dash-connect-pass" data-revealed="0" style="font-size: 15px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; flex: 1; overflow-x: auto; white-space: nowrap; line-height: 1.6;">—</code>
+            <button class="btn" id="dash-connect-pass-reveal" title="Show/hide password" style="min-width: 40px;">👁</button>
+            <button class="btn" id="dash-connect-pass-copy" title="Copy password to clipboard">Copy</button>
+          </div>
+          <div class="field-help" id="dash-connect-note" style="margin-top: 12px;"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" id="connect-modal-done">Done</button>
+        </div>
+      </div>
+    </div>
+
     <div id="profile-editor-modal" class="modal-backdrop">
       <div class="modal">
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">

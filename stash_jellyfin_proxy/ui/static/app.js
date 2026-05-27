@@ -50,6 +50,30 @@ function toast(msg, kind = "") {
   }
 }
 
+/* Copy text to the clipboard with a fallback for non-secure (http://) LAN
+   access, where navigator.clipboard is unavailable. */
+async function copyText(text, successMsg = "Copied to clipboard.") {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(successMsg, "success");
+  } catch (err) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      toast(successMsg, "success");
+    } catch (_) {
+      toast(`Copy failed: ${err.message}`, "error");
+    } finally {
+      document.body.removeChild(ta);
+    }
+  }
+}
+
 function formatUptime(sec) {
   sec = Math.max(0, Math.floor(sec || 0));
   const d = Math.floor(sec / 86400);
@@ -300,6 +324,45 @@ async function renderDashStatus() {
       : `${dotSpan("err")}Error`;
     qs("#dash-stash-version").textContent = s.stashVersion || "";
 
+    // Player connection address. Only shown when PUBLIC_URL is configured —
+    // the server cannot reliably know its externally-reachable address (its
+    // own IP is an internal Docker address; the public host/scheme/port live
+    // in the reverse proxy), so we don't guess. Unset → show a prompt instead.
+    const connectEl = qs("#dash-connect-url");
+    if (connectEl) {
+      const publicUrl = (s.publicUrl || "").trim().replace(/\/+$/, "");
+      const urlRow = qs("#dash-connect-url-row");
+      const urlUnset = qs("#dash-connect-url-unset");
+      if (publicUrl) {
+        connectEl.textContent = publicUrl;
+        connectEl.dataset.url = publicUrl;
+        urlRow?.classList.remove("hide");
+        urlUnset?.classList.add("hide");
+      } else {
+        connectEl.dataset.url = "";
+        urlRow?.classList.add("hide");
+        urlUnset?.classList.remove("hide");
+      }
+      const note = qs("#dash-connect-note");
+      if (note) note.innerHTML = "";
+    }
+
+    // Connect-card credentials. The real values come from /api/status so the
+    // password can be revealed; it stays masked until the user clicks the eye.
+    const userEl = qs("#dash-connect-user");
+    if (userEl) {
+      userEl.textContent = s.sjsUser || "(not set)";
+      userEl.dataset.value = s.sjsUser || "";
+    }
+    const passEl = qs("#dash-connect-pass");
+    if (passEl) {
+      passEl.dataset.value = s.sjsPassword || "";
+      const revealed = passEl.dataset.revealed === "1";
+      passEl.textContent = s.sjsPassword
+        ? (revealed ? s.sjsPassword : "•".repeat(Math.min(s.sjsPassword.length, 16)))
+        : "(not set)";
+    }
+
     // Migration banner
     const banner = qs("#dash-migration-banner");
     if (s.migrationPerformed && !banner._dismissed) {
@@ -424,6 +487,53 @@ window.init_dashboard = async function () {
   qs("#dash-migration-dismiss").addEventListener("click", () => {
     qs("#dash-migration-banner").classList.add("hide");
     qs("#dash-migration-banner")._dismissed = true;
+  });
+
+  // Connect-a-Player modal: open from the header button, refresh contents on
+  // open (a freshly-set PUBLIC_URL or password shows without a page reload).
+  const connectModal = qs("#connect-modal");
+  const closeConnectModal = () => {
+    connectModal?.classList.remove("open");
+    // Re-mask the password when the modal closes.
+    const passEl = qs("#dash-connect-pass");
+    if (passEl && passEl.dataset.revealed === "1") {
+      passEl.dataset.revealed = "0";
+      const v = passEl.dataset.value || "";
+      passEl.textContent = v ? "•".repeat(Math.min(v.length, 16)) : "(not set)";
+    }
+  };
+  qs("#dash-connect-open")?.addEventListener("click", async () => {
+    await renderDashStatus();
+    connectModal?.classList.add("open");
+  });
+  qs("#connect-modal-close")?.addEventListener("click", closeConnectModal);
+  qs("#connect-modal-done")?.addEventListener("click", closeConnectModal);
+  connectModal?.addEventListener("click", (e) => {
+    if (e.target.id === "connect-modal") closeConnectModal();   // click-outside
+  });
+
+  // Connect-a-Player: copy buttons + password reveal toggle.
+  qs("#dash-connect-copy")?.addEventListener("click", () => {
+    const el = qs("#dash-connect-url");
+    copyText(el.dataset.url || el.textContent, "Server address copied to clipboard.");
+  });
+  qs("#dash-connect-user-copy")?.addEventListener("click", () => {
+    const v = qs("#dash-connect-user").dataset.value;
+    if (!v) return toast("No username set.", "warning");
+    copyText(v, "Username copied to clipboard.");
+  });
+  qs("#dash-connect-pass-copy")?.addEventListener("click", () => {
+    const v = qs("#dash-connect-pass").dataset.value;
+    if (!v) return toast("No password set.", "warning");
+    copyText(v, "Password copied to clipboard.");
+  });
+  qs("#dash-connect-pass-reveal")?.addEventListener("click", () => {
+    const passEl = qs("#dash-connect-pass");
+    const v = passEl.dataset.value || "";
+    if (!v) return;
+    const revealed = passEl.dataset.revealed === "1";
+    passEl.dataset.revealed = revealed ? "0" : "1";
+    passEl.textContent = revealed ? "•".repeat(Math.min(v.length, 16)) : v;
   });
 };
 
@@ -789,8 +899,34 @@ window.init_system = async function () {
     }
   });
 
-  qs("#sys-downloadconfig-btn").addEventListener("click", () => {
-    window.location.href = "/api/config/download";
+  qs("#sys-downloadconfig-btn").addEventListener("click", async () => {
+    /* Fetch with credentials and save via a Blob rather than navigating the
+       top-level window — a top-level GET can be intercepted/redirected by a
+       reverse proxy (SWAG) and doesn't carry the same-origin context our other
+       API calls rely on. */
+    try {
+      const r = await fetch("/api/config/download", { credentials: "same-origin" });
+      if (!r.ok) {
+        let msg = `HTTP ${r.status}`;
+        try { const j = await r.json(); if (j && j.error) msg = j.error; } catch {}
+        throw new Error(msg);
+      }
+      const disposition = r.headers.get("Content-Disposition") || "";
+      const m = disposition.match(/filename="?([^"]+)"?/);
+      const filename = (m && m[1]) || "stash_jellyfin_proxy.conf";
+      const blob = await r.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(objUrl);
+      toast(`Downloaded ${filename}.`, "success");
+    } catch (e) {
+      toast(`Download failed: ${e.message}`, "error");
+    }
   });
 };
 
@@ -886,26 +1022,7 @@ window.init_logs = function () {
     const text = filtered
       .map((e) => `${e.timestamp || ""} [${(e.level || "INFO").toUpperCase()}] ${e.message || ""}`)
       .join("\n");
-    try {
-      await navigator.clipboard.writeText(text);
-      toast(`Copied ${filtered.length} log lines to clipboard.`, "success");
-    } catch (err) {
-      /* Fallback for non-secure contexts / old browsers. */
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.top = "-1000px";
-      document.body.appendChild(ta);
-      ta.select();
-      try {
-        document.execCommand("copy");
-        toast(`Copied ${filtered.length} log lines to clipboard.`, "success");
-      } catch (_) {
-        toast(`Copy failed: ${err.message}`, "error");
-      } finally {
-        document.body.removeChild(ta);
-      }
-    }
+    copyText(text, `Copied ${filtered.length} log lines to clipboard.`);
   });
   qs("#log-clear-btn").addEventListener("click", () => {
     qs("#log-viewer").innerHTML = "";
@@ -931,4 +1048,51 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(pollStatus, 10000);
   qs("#restart-now-btn").addEventListener("click", doRestart);
   loadConfig().catch((e) => toast(`Config load failed: ${e.message}`, "error"));
+
+  // Reveal (eyeball) toggle for password inputs wrapped in .pw-wrap.
+  // Delegated so it covers any current or future .pw-reveal button.
+  // The config form leaves secret inputs blank (so "blank = unchanged" holds
+  // on save), so revealing lazily fetches the real value from the server and
+  // hiding clears it again — unless the user has typed a new value.
+  const REVEALABLE = new Set(["STASH_API_KEY", "SJS_PASSWORD"]);
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".pw-reveal");
+    if (!btn) return;
+    const input = btn.parentElement.querySelector("input");
+    if (!input) return;
+    const revealing = input.type === "password";
+    if (revealing) {
+      const key = input.dataset.key;
+      if (!input.value && REVEALABLE.has(key)) {
+        try {
+          const r = await apiGet(`/api/config/reveal?key=${encodeURIComponent(key)}`);
+          if (r && r.value) {
+            input.value = r.value;
+            input.dataset.secretInjected = "1";  // server-supplied, clear on hide
+          } else {
+            toast(`No ${key === "SJS_PASSWORD" ? "password" : "API key"} is set.`, "warning");
+          }
+        } catch (err) {
+          toast(`Could not reveal value: ${err.message}`, "error");
+          return;
+        }
+      }
+      input.type = "text";
+      btn.textContent = "🙈";
+    } else {
+      input.type = "password";
+      btn.textContent = "👁";
+      // Drop the server-supplied value so the field stays "unchanged" on save.
+      // If the user edited it (input event clears the flag), keep what they typed.
+      if (input.dataset.secretInjected === "1") {
+        input.value = "";
+        delete input.dataset.secretInjected;
+      }
+    }
+  });
+  // A user edit promotes the injected secret to a real pending change.
+  document.addEventListener("input", (e) => {
+    const el = e.target;
+    if (el.matches && el.matches(".pw-wrap input")) delete el.dataset.secretInjected;
+  });
 });
