@@ -50,6 +50,15 @@ async def ui_api_status(request):
         "stashConnected": runtime.STASH_CONNECTED,
         "stashVersion": runtime.STASH_VERSION,
         "stashUrl": runtime.STASH_URL,
+        # Externally-reachable Jellyfin API URL for the "Connect a Player" card.
+        # Empty unless set (e.g. behind a SWAG reverse proxy) — the UI then
+        # falls back to the browser host + proxyPort.
+        "publicUrl": runtime.PUBLIC_URL,
+        # Credentials for the dashboard "Connect a Player" card. Returned in
+        # the clear (masked client-side behind a reveal toggle) so the user can
+        # see exactly what to type into Infuse/Swiftfin/SenPlayer.
+        "sjsUser": runtime.SJS_USER,
+        "sjsPassword": runtime.SJS_PASSWORD,
         "migrationPerformed": bool(getattr(runtime, "MIGRATION_PERFORMED", False)),
         "migrationLog": list(getattr(runtime, "MIGRATION_LOG", []) or []),
         "configWritable": bool(getattr(runtime, "CONFIG_WRITABLE", True)),
@@ -197,6 +206,24 @@ async def ui_api_download_config(request):
         media_type="text/plain",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# Secrets the Web UI may reveal on demand (eyeball toggle). The config GET
+# masks these; the form leaves password inputs blank so "blank = unchanged"
+# on save holds. The reveal toggle fetches the real value only when clicked.
+_REVEALABLE_SECRETS = {
+    "STASH_API_KEY": "STASH_API_KEY",
+    "SJS_PASSWORD": "SJS_PASSWORD",
+}
+
+
+async def ui_api_reveal_secret(request):
+    """Return the real value of an allowlisted secret for the reveal toggle."""
+    key = request.query_params.get("key", "")
+    attr = _REVEALABLE_SECRETS.get(key)
+    if not attr:
+        return JSONResponse({"error": "unknown or non-revealable key"}, status_code=400)
+    return JSONResponse({"key": key, "value": getattr(runtime, attr, "") or ""})
 
 
 async def ui_api_stash_test(request):
@@ -488,6 +515,8 @@ from stash_jellyfin_proxy.config.helpers import normalize_path
 # pre-P5B key. This table extends that with P5B pass 4-6 keys (Libraries,
 # Playback, Search) without duplicating boilerplate.
 _P5B_KEYS = [
+    # --- Connection ---
+    ("PUBLIC_URL",            "PUBLIC_URL",            "str",  "",           True),
     # --- Libraries (pass 4) ---
     ("GENRE_MODE",            "GENRE_MODE",            "str",  "parent_tag", False),
     ("GENRE_PARENT_TAG",      "GENRE_PARENT_TAG",      "str",  "GENRE",      False),

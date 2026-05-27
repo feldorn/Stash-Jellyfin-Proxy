@@ -72,6 +72,7 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
     BANNER_TAGS = []
     SERVER_NAME = "Stash Media Server"
     SERVER_ID = ""
+    PUBLIC_URL = ""
     JELLYFIN_VERSION = "10.11.0"
     DEFAULT_PAGE_SIZE = 50
     MAX_PAGE_SIZE = 200
@@ -170,6 +171,7 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
             BANNER_TAGS = [t.strip() for t in banner_tags_str.split(",") if t.strip()]
         SERVER_NAME = cfg.get("SERVER_NAME", SERVER_NAME)
         SERVER_ID = cfg.get("SERVER_ID", SERVER_ID)
+        PUBLIC_URL = cfg.get("PUBLIC_URL", PUBLIC_URL).strip().rstrip("/")
         JELLYFIN_VERSION = cfg.get("JELLYFIN_VERSION", JELLYFIN_VERSION).strip() or JELLYFIN_VERSION
         if "DEFAULT_PAGE_SIZE" in cfg:
             DEFAULT_PAGE_SIZE = int(cfg.get("DEFAULT_PAGE_SIZE", DEFAULT_PAGE_SIZE))
@@ -494,6 +496,7 @@ def run_bootstrap(config_file: str, local_config_file: str) -> None:
         UI_PORT=UI_PORT,
         SERVER_NAME=SERVER_NAME,
         SERVER_ID=SERVER_ID,
+        PUBLIC_URL=PUBLIC_URL,
         SJS_USER=SJS_USER,
         SJS_PASSWORD=SJS_PASSWORD,
         ACCESS_TOKEN=ACCESS_TOKEN,
