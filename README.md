@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.0**
+**Version 7.3.1**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,12 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.1
+
+Closes a gap from v7.3.0: existing v2 installs upgrading to v7.3.0 wouldn't see the new `[player.roku]` profile in their config or the Players tab, because `V2_DEFAULT_PLAYERS` is only consulted during the one-time v1→v2 migration that those installs already ran. Any later release adding a default profile would be invisible to them.
+
+- **Startup heal for missing default player profiles.** After the schema-migration short-circuit (config already at `CONFIG_VERSION = 2`), check `V2_DEFAULT_PLAYERS` for any sections missing from the user's config and append them. Idempotent, additive-only — never modifies or removes existing sections, so a hand-customized `[player.roku]` survives untouched. No-op when the config is read-only (logs the issue and continues). Treats `V2_DEFAULT_PLAYERS` as a living "every install should have" list rather than a frozen v1→v2 snapshot.
 
 ### v7.3.0
 
