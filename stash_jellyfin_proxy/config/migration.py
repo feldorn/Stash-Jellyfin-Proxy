@@ -179,6 +179,32 @@ def run_config_migration(path, flat, defined, sections):
         current = 1
 
     if current >= CURRENT_CONFIG_VERSION:
+        # Heal: bring older v2 configs up to the current V2_DEFAULT_PLAYERS
+        # list. The v1->v2 writer below runs once per install; a later
+        # release that adds a default profile (e.g. v7.3.0 adding
+        # [player.roku]) would otherwise never reach existing v2 installs.
+        # Append any missing default sections — idempotent, additive-only,
+        # never touches existing sections or flat keys.
+        if os.path.isfile(path):
+            missing = [(name, body) for name, body in V2_DEFAULT_PLAYERS
+                       if name not in sections]
+            if missing:
+                try:
+                    with open(path, "a") as f:
+                        f.write("\n# ==== Default profiles added in a later release ====\n")
+                        for name, body in missing:
+                            f.write(f"[{name}]\n")
+                            for k, v in body:
+                                f.write(f"{k} = {v}\n")
+                            f.write("\n")
+                            log.append(f"healed: added missing default profile [{name}]")
+                            print(f"  [heal] added missing default profile [{name}]")
+                    new_flat, _new_defined, new_sections = load_config(path)
+                    return new_flat, new_sections, False, log
+                except OSError as e:
+                    # Read-only config (mounted RO, no perm) — log and carry on
+                    # rather than fail boot. User can add via the Players tab.
+                    print(f"  [heal] could not append missing defaults to {path}: {e}")
         return flat, sections, False, log
 
     if not os.path.isfile(path):
