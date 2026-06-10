@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.2.0**
+**Version 7.3.0**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,21 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.0
+
+Roku Jellyfin app support plus a path-matching bug that affected any client sending fully-lowercase URLs. All four commits authored by [@arsfeld](https://github.com/arsfeld) and pulled in from his fork.
+
+**Roku support**
+- New `[player.roku]` profile (landscape posters, BoxSet performer type) — only added on fresh installs / v1→v2 migration; existing v2 installs need to add it via the Players tab.
+- Four new endpoint stubs the Roku app probes that the iOS-only clients don't: `/System/Configuration/Encoding` (advertises direct-play-only, no transcoding), `/Items/{id}/Images/Logo[/{index}]` (404 quietly — Stash has no logo concept), `/Items/{id}/Images` (advertises Primary + Backdrop; an empty list crashes the Roku app on the detail screen), and an explicit `/Items/Suggestions` route (previously matched `/Items/{item_id}` with `item_id="Suggestions"` and got shipped to Stash GraphQL as a numeric id).
+
+**Path normalization (affects all clients)**
+- `CaseInsensitivePathMiddleware` previously only ran template matching when the request path differed from its lowercase form, so any client sending fully-lowercase paths (`/items/scene-11/images`) silently bypassed both the static map and template matcher and fell through to `catch_all`. Roku does this; other clients may too. Now always runs template matching on static-map miss.
+- Trailing-slash fallback: `/items/?…` now matches the registered `/Items` route. Routes explicitly registered with a trailing slash (`/Playlists/`) still resolve via the first lookup, so the fallback can't shadow them.
+
+**Playback diagnostics**
+- `PlaybackInfo` entry, `PlaybackInfo` response (with container/codec/resolution/bitrate/duration/sub-count), and stream-endpoint entry promoted from DEBUG to INFO. Production INFO logs now show a three-line trace of every playback attempt instead of a silent gap between client navigation and the existing `▶ Stream started` marker. Useful for diagnosing Roku/Streamyfin direct-play-vs-transcode failures.
 
 ### v7.2.0
 

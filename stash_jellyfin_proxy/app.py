@@ -57,6 +57,10 @@ from stash_jellyfin_proxy.endpoints.stubs import (
     endpoint_bitrate_test,
     endpoint_media_segments, endpoint_danmu, endpoint_client_log,
     endpoint_favicon,
+    endpoint_system_configuration_encoding,
+    endpoint_item_image_logo,
+    endpoint_item_images_list,
+    endpoint_items_suggestions,
     catch_all,
 )
 from stash_jellyfin_proxy.endpoints.playlists import (
@@ -186,6 +190,9 @@ routes = [
     Route("/Items/Counts", endpoint_items_counts),
     Route("/Items/Latest", endpoint_latest_items),
     Route("/Items/Filters", endpoint_items_filters),
+    # Must register before `/Items/{item_id}` below — otherwise "Suggestions"
+    # is matched as item_id and shipped to Stash GraphQL as a numeric id.
+    Route("/Items/Suggestions", endpoint_items_suggestions),
     Route("/Items/{item_id}/Download", endpoint_download),
     Route("/Items/{item_id}/PlaybackInfo", endpoint_playback_info, methods=["GET", "POST"]),
     Route("/Items/{item_id}/Similar", endpoint_similar),
@@ -205,6 +212,7 @@ routes = [
     Route("/Items/{item_id}/Ancestors", endpoint_ancestors),
     Route("/Users/{user_id}/Items/{item_id}/Ancestors", endpoint_ancestors),
     Route("/System/Endpoint", endpoint_system_endpoint),
+    Route("/System/Configuration/Encoding", endpoint_system_configuration_encoding),
     Route("/Users", endpoint_users_list),
     Route("/Sessions", endpoint_sessions_list),
     Route("/System/Info/Storage", endpoint_system_info_storage),
@@ -234,6 +242,9 @@ routes = [
     Route("/Items/{item_id}/Images/Thumb", endpoint_image),
     Route("/Items/{item_id}/Images/Backdrop", endpoint_image),
     Route("/Items/{item_id}/Images/Backdrop/{index}", endpoint_image),
+    Route("/Items/{item_id}/Images/Logo", endpoint_item_image_logo, methods=["GET", "HEAD"]),
+    Route("/Items/{item_id}/Images/Logo/{index}", endpoint_item_image_logo, methods=["GET", "HEAD"]),
+    Route("/Items/{item_id}/Images", endpoint_item_images_list),
     Route("/PlaybackInfo", endpoint_playback_info, methods=["POST", "GET"]),
     Route("/Sessions/Playing", endpoint_sessions, methods=["POST"]),
     Route("/Sessions/Playing/Progress", endpoint_sessions, methods=["POST"]),

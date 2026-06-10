@@ -74,6 +74,14 @@ V2_DEFAULT_PLAYERS = [
         ("performer_type", "BoxSet"),
         ("poster_format", "portrait"),
     ]),
+    # Roku Jellyfin app reports UA like "Roku/DVP-15.1 (15.1.4.3334-30)".
+    # Landscape posters render better on a TV; BoxSet performer type since
+    # Roku's UI doesn't render Person specially.
+    ("player.roku", [
+        ("user_agent_match", "Roku"),
+        ("performer_type", "BoxSet"),
+        ("poster_format", "landscape"),
+    ]),
     ("player.default", [
         ("performer_type", "BoxSet"),
         ("poster_format", "portrait"),

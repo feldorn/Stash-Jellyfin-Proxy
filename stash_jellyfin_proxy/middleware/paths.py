@@ -46,12 +46,30 @@ class CaseInsensitivePathMiddleware:
             path = scope.get("path", "")
             path_lower = path.lower()
 
-            if path_lower in self._static_map:
-                scope = dict(scope, path=self._static_map[path_lower])
-            elif path_lower != path:
-                req_segments = path.split("/")
+            # Try the request path as-is first. Some routes are registered
+            # with an explicit trailing slash (e.g. `/Playlists/`), so we
+            # must not pre-strip before this lookup.
+            rewritten = self._static_map.get(path_lower)
+
+            # Fallback: drop a trailing slash and retry. Roku's Jellyfin
+            # client appends `/` on a few collection paths (`/items/?...`).
+            if rewritten is None and len(path_lower) > 1 and path_lower.endswith("/"):
+                rewritten = self._static_map.get(path_lower[:-1])
+
+            if rewritten is not None:
+                scope = dict(scope, path=rewritten)
+            else:
+                # Always try template matching — even for fully-lowercase
+                # paths. Original middleware only fired when path differed
+                # from its lowercase form; that missed Roku requests like
+                # `/items/scene-11/images` where my new
+                # `/Items/{item_id}/Images` route would otherwise never see
+                # the request.
+                lookup_path = path
+                if len(lookup_path) > 1 and lookup_path.endswith("/"):
+                    lookup_path = lookup_path[:-1]
+                req_segments = lookup_path.split("/")
                 req_count = len(req_segments)
-                matched = False
                 for template, original in self._templates:
                     if len(template) != req_count:
                         continue
@@ -70,9 +88,6 @@ class CaseInsensitivePathMiddleware:
                             else:
                                 rebuilt.append(t_seg)
                         scope = dict(scope, path="/".join(rebuilt))
-                        matched = True
                         break
-                if not matched:
-                    scope = dict(scope, path=path)
 
         await self.app(scope, receive, send)
