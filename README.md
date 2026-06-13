@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.1**
+**Version 7.3.2**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,17 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.2
+
+Fixes issue [#24](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/24) — `UnicodeDecodeError` on Windows native runs (Docker users were never affected). Reported by @stashcollection14 with the exact one-line fix.
+
+**Root cause**
+- Python's `Path.read_text()` and `open(path, 'r')` default to the platform's preferred encoding when none is supplied. On Linux/macOS that's UTF-8; on Windows it's `cp1252`, which can't decode the eyeball emojis (👁 / 🙈) the v7.2.0 dashboard template introduced for the Connect-a-Player password reveal. The proxy crashed at module import on Windows with `'charmap' codec can't decode byte 0x81`.
+
+**Fix**
+- Added `encoding='utf-8'` to every text-mode file open/read/write in the production code: the dashboard template (the reported site), config file reads and writes (loader, writer, helpers, migration, the v7.3.1 heal-append, dashboard config saver, banned-IPs writer), the log-tail reader, the stats JSON, and the auth debug dump. The same latent bug lived in 16 places; the reporter just happened to hit the one that crashes at import. Anything that reads or writes user-content text now decodes/encodes UTF-8 explicitly regardless of platform.
+- Regression test: `tests/unit/test_encoding.py` locks that `index.html` contains bytes that `cp1252` can't decode, so removing the explicit `encoding='utf-8'` from `ui/api.py` would re-introduce the crash on Windows and fail CI.
 
 ### v7.3.1
 

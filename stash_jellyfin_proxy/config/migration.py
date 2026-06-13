@@ -160,7 +160,7 @@ def _write_v2_config(path, existing_flat, existing_sections, preexisting_keys):
             lines.append(f"{k} = {v}")
         lines.append("")
 
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
     return changes
 
@@ -190,7 +190,7 @@ def run_config_migration(path, flat, defined, sections):
                        if name not in sections]
             if missing:
                 try:
-                    with open(path, "a") as f:
+                    with open(path, "a", encoding="utf-8") as f:
                         f.write("\n# ==== Default profiles added in a later release ====\n")
                         for name, body in missing:
                             f.write(f"[{name}]\n")
