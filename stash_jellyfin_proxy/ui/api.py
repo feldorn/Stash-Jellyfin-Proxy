@@ -26,7 +26,7 @@ logger = logging.getLogger("stash-jellyfin-proxy")
 # Load the Web UI shell HTML once at import time — same lifetime as the
 # previous inline WEB_UI_HTML triple-quoted string.
 _TEMPLATE_PATH = Path(__file__).parent / "templates" / "index.html"
-_WEB_UI_HTML = _TEMPLATE_PATH.read_text() if _TEMPLATE_PATH.is_file() else ""
+_WEB_UI_HTML = _TEMPLATE_PATH.read_text(encoding="utf-8") if _TEMPLATE_PATH.is_file() else ""
 
 
 async def ui_index(request):
@@ -76,7 +76,7 @@ async def ui_api_logs(request):
     log_path = os.path.join(runtime.LOG_DIR, runtime.LOG_FILE) if runtime.LOG_DIR else runtime.LOG_FILE
     if os.path.isfile(log_path):
         try:
-            with open(log_path, 'r') as f:
+            with open(log_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
                 for line in lines[-limit:]:
                     line = line.strip()
@@ -196,7 +196,7 @@ async def ui_api_download_config(request):
     if not path or not os.path.isfile(path):
         return JSONResponse({"error": "config file not found"}, status_code=404)
     try:
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = f.read()
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -329,7 +329,7 @@ def _rewrite_player_sections(updated_sections):
     path = runtime.CONFIG_FILE
     if not path or not os.path.isfile(path):
         raise RuntimeError("CONFIG_FILE is not set or does not exist")
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     out = []
@@ -378,7 +378,7 @@ def _rewrite_player_sections(updated_sections):
     else:
         out[first_player_idx:first_player_idx] = block
 
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.writelines(out)
 
     # Mirror into the in-memory sections dict and reload profiles.
@@ -693,7 +693,7 @@ async def ui_api_config(request):
             existing_values = {}  # Currently active (uncommented) values
             all_keys_in_file = set()  # Track all keys in file (commented or not)
             if os.path.isfile(runtime.CONFIG_FILE):
-                with open(runtime.CONFIG_FILE, 'r') as f:
+                with open(runtime.CONFIG_FILE, 'r', encoding='utf-8') as f:
                     raw_lines = f.readlines()
                 config_keys_set = set(config_keys)
                 current_section = None
@@ -927,7 +927,7 @@ async def ui_api_config(request):
             # misplaced-key pre-pass above) before writing so the file
             # doesn't grow extra blanks every save.
             from stash_jellyfin_proxy.config.helpers import collapse_blank_runs
-            with open(runtime.CONFIG_FILE, 'w') as f:
+            with open(runtime.CONFIG_FILE, 'w', encoding='utf-8') as f:
                 f.writelines(collapse_blank_runs(new_lines))
 
             # Apply configuration changes immediately (where safe to do so)

@@ -120,7 +120,7 @@ async def endpoint_authenticate_by_name(request: Request):
         try:
             cf = runtime.CONFIG_FILE
             debug_path = os.path.join(os.path.dirname(cf) if cf else "/config", "auth_debug.json")
-            with open(debug_path, "w") as f:
+            with open(debug_path, "w", encoding="utf-8") as f:
                 f.write(auth_json)
             logger.debug(f"Full auth response written to {debug_path}")
         except Exception as e:

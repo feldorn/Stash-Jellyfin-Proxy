@@ -118,13 +118,13 @@ def save_config_value(config_file: str, key: str, value: str, comment: str = Non
     profile block would be invisible to bootstrap on the next load.
     """
     if not os.path.isfile(config_file):
-        with open(config_file, 'w') as f:
+        with open(config_file, 'w', encoding='utf-8') as f:
             if comment:
                 f.write(f'# {comment}\n')
             f.write(f'{key} = {value}\n')
         return True
 
-    with open(config_file, 'r') as f:
+    with open(config_file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
     # Strip every existing line for this key (active or commented),
@@ -158,7 +158,7 @@ def save_config_value(config_file: str, key: str, value: str, comment: str = Non
         cleaned[insertion_idx:insertion_idx] = new_block
 
     cleaned = collapse_blank_runs(cleaned)
-    with open(config_file, 'w') as f:
+    with open(config_file, 'w', encoding='utf-8') as f:
         f.writelines(cleaned)
     return True
 

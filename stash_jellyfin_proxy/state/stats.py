@@ -56,7 +56,7 @@ def load_proxy_stats() -> None:
     if not os.path.isfile(path):
         return
     try:
-        with open(path, 'r') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             loaded = json.load(f)
         for key in _proxy_stats:
             if key in loaded:
@@ -71,7 +71,7 @@ def save_proxy_stats() -> None:
     global _stats_dirty, _stats_last_save
     path = _stats_file()
     try:
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             json.dump(_proxy_stats, f, indent=2)
         _stats_dirty = False
         _stats_last_save = time.time()
