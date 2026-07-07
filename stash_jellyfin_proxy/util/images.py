@@ -231,9 +231,35 @@ _FONT_PATHS = (
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
 )
 
+# Preferred when a label contains CJK / non-Latin glyphs that DejaVu can't
+# render (issue #25: tag-group covers showed tofu boxes for Chinese tag
+# names). Noto Sans CJK ships full Latin coverage too, so it's safe to use
+# whenever the label needs it — no per-run switching or fallback fusion.
+_CJK_FONT_PATHS = (
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Bold.otf",
+    # macOS ships CJK by default too, in case anyone runs the proxy natively.
+    "/System/Library/Fonts/PingFang.ttc",
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+)
 
-def _find_font_path():
-    for p in _FONT_PATHS:
+
+def _needs_cjk_font(text: str) -> bool:
+    """True if `text` contains any CJK / non-Latin character DejaVu can't
+    render. We check the full BMP range above Basic Latin's neighborhood
+    (0x2E80 ~ start of CJK Radicals Supplement), which covers Chinese,
+    Japanese, Korean, and full/halfwidth forms — the set that actually
+    reports as tofu."""
+    return any(ord(c) >= 0x2E80 for c in text)
+
+
+def _find_font_path(text: str = ""):
+    """Return the first font file that exists on disk. When `text`
+    contains CJK glyphs, prefer the CJK font list; otherwise use the
+    Latin default so existing Latin-only covers render unchanged."""
+    candidates = _CJK_FONT_PATHS + _FONT_PATHS if _needs_cjk_font(text) else _FONT_PATHS
+    for p in candidates:
         if os.path.exists(p):
             return p
     return None
@@ -254,7 +280,7 @@ def _draw_centered_label(img, text: str, max_chars_per_line: int = 16,
 
     PADDING = 30
     max_text_width = width - (PADDING * 2)
-    font_path_found = _find_font_path()
+    font_path_found = _find_font_path(text)
 
     # Word-wrap using character count as a rough guide.
     words = text.split()

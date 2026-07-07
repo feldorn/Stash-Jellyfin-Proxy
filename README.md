@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.2**
+**Version 7.3.3**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,17 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.3
+
+Two of the three issues from [#25](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/25) (reported by @tanlidoushen). The third — Hills Lite "Continue Watching" — is still under investigation pending a log excerpt from the reporter.
+
+**GraphQL alias notices no longer log as warnings** (#25 issue 1a)
+- Stash's `errors` array in GraphQL responses mixes real errors with informational notices — e.g., `"name 'SERIES' is used as alias for '系列'"` when a config name resolves via a Stash alias rather than a primary name. The proxy was logging the entire array at `WARNING`, so users with non-English primary tag names saw spurious noise on every lookup. Notices matching `is used as alias for` now log at `DEBUG`; real errors still log at `WARNING`.
+
+**CJK glyphs on generated library covers** (#25 issue 1b)
+- The tag-group virtual-library cover generator (`util/images.py`) uses PIL with DejaVu Sans Bold, which lacks CJK glyphs — Chinese/Japanese/Korean tag names rendered as tofu boxes (`[ ] [ ]`) on the cover art. Added a CJK-capable font path list preferred whenever the label contains any character in the CJK / halfwidth-fullwidth range (codepoint ≥ 0x2E80). Latin-only labels continue to use DejaVu, so existing covers are visually unchanged.
+- **Dockerfile:** added `fonts-noto-cjk` so the Noto Sans CJK Bold TTC is available inside the container. Native (non-Docker) installs need to install a CJK font themselves; the picker will find Noto CJK, PingFang, or Hiragino Sans GB automatically at the standard system paths.
 
 ### v7.3.2
 
