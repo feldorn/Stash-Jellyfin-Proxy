@@ -114,8 +114,24 @@ async def stash_query(query: str, variables: Dict[str, Any] = None, retries: int
             resp.raise_for_status()
             result = resp.json()
             if "errors" in result and result["errors"]:
-                error_msgs = [e.get("message", str(e)) for e in result["errors"]]
-                logger.warning(f"GraphQL errors in response: {error_msgs}")
+                # Stash's "errors" array mixes real GraphQL errors with
+                # informational notices (e.g. "name 'SERIES' is used as
+                # alias for '系列'" when a lookup name resolves via a
+                # tag alias). Split the two so notices don't spam the
+                # log at WARNING severity — they're expected behavior
+                # for users whose primary tag names differ from the
+                # config keys the proxy uses.
+                notices, real_errors = [], []
+                for e in result["errors"]:
+                    msg = e.get("message", str(e))
+                    if "is used as alias for" in msg:
+                        notices.append(msg)
+                    else:
+                        real_errors.append(msg)
+                if real_errors:
+                    logger.warning(f"GraphQL errors in response: {real_errors}")
+                if notices:
+                    logger.debug(f"GraphQL notices in response: {notices}")
             return result
         except httpx.TimeoutException as e:
             last_error = e

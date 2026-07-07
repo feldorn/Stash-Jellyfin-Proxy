@@ -21,4 +21,4 @@ truth; see its docstring).
 # Single source of truth for the package version. Keep in sync with
 # pyproject.toml `[project].version`. The startup banner, dashboard
 # API, and HTML brand badge all read this constant.
-__version__ = "7.3.2"
+__version__ = "7.3.3"
