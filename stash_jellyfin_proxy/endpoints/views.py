@@ -809,6 +809,14 @@ async def endpoint_sessions(request):
                         pass
 
                 played_percentage = (position_seconds / duration_seconds * 100) if duration_seconds > 0 else 0
+                # Issue #25 part 2: a session that stopped past the "brief tap"
+                # threshold is a real play and must be recorded in Stash's
+                # play_history — otherwise the scene never bumps to the top of
+                # sort-by-last-played and Play Count/History stay empty when
+                # the user only watched part of a scene. 30s eats accidental
+                # clicks / stray seeks; anything longer counts.
+                MIN_PLAY_SECONDS = 30
+                watched_meaningfully = position_seconds >= MIN_PLAY_SECONDS
 
                 if played_percentage > 90:
                     await stash_query("""mutation SceneAddPlay($id: ID!) { sceneAddPlay(id: $id) { count } }""", {"id": numeric_id})
@@ -818,11 +826,19 @@ async def endpoint_sessions(request):
                     )
                     logger.info(f"▶ Auto-marked played: {item_id} ({played_percentage:.0f}% watched)")
                 else:
+                    if watched_meaningfully:
+                        await stash_query(
+                            """mutation SceneAddPlay($id: ID!) { sceneAddPlay(id: $id) { count } }""",
+                            {"id": numeric_id},
+                        )
                     await stash_query(
                         """mutation SceneSaveActivity($id: ID!, $resume_time: Float) { sceneSaveActivity(id: $id, resume_time: $resume_time) }""",
                         {"id": numeric_id, "resume_time": position_seconds},
                     )
-                    logger.info(f"⏸ Saved resume position: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%)")
+                    if watched_meaningfully:
+                        logger.info(f"⏸ Saved resume + recorded play: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%)")
+                    else:
+                        logger.info(f"⏸ Saved resume position: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%)")
             except Exception as e:
                 logger.error(f"Error updating play status for {item_id}: {e}")
 
