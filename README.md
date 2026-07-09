@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.3**
+**Version 7.3.4**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,16 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.4
+
+Closes [#25](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/25) part 2 — partial-play sessions weren't being recorded in Stash's `play_history`. Reporter @tanlidoushen watched to 21% of a scene from Hills Lite, exited, and expected the scene to appear at the top of `?sortby=last_played_at&sortdir=desc`. The resume position was saved correctly, but `play_count` never incremented and no play_history entry was written — so Stash didn't know a play had happened.
+
+**Root cause.** `endpoints/views.py` on `Sessions/Playing/Stopped` only called `sceneAddPlay` when the user watched >90%. Anything less was treated as pure "in progress" — resume position saved, no play recorded. Under this policy, a user who watched half a scene and exited had no evidence of the session in Stash's history.
+
+**Fix.** Any session that stops past a 30-second position threshold now records a play via `sceneAddPlay` (which increments `play_count`, adds a `play_history` entry, and bumps `last_played_at`). Sessions under 30s still just save resume position — 30s is the "brief tap" threshold below which we assume an accidental click or stray seek, not a real watch. Existing >90% auto-mark behavior is unchanged (still records the play and clears the resume position).
+
+**Behavior change to be aware of.** Every existing Infuse / Swiftfin / SenPlayer / Roku user will start seeing partial-watch sessions appear in Stash's play history and reflected in `last_played_at`. That matches how Stash's own web UI, Plex, Trakt, and most media systems track "you watched this" — but if you'd been relying on "only completed watches count," this is the release that changes it.
 
 ### v7.3.3
 
