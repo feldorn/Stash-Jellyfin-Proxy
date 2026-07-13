@@ -2,6 +2,7 @@
 Next Up, Latest, Resume, and the Sessions scrobble receiver."""
 import hashlib
 import logging
+import time
 from typing import Dict, Optional
 
 from starlette.responses import JSONResponse
@@ -767,11 +768,40 @@ async def endpoint_user_items_resume(request):
 
 # --- Scrobble receiver ---
 
+# Stash's `sceneSaveActivity(playDuration: Float)` ADDS the provided value
+# to the scene's play_duration (it's not a replace). Issue #26: the proxy
+# was never sending playDuration, so play_count and last_played_at updated
+# but the "total play duration" column in Stash stayed at zero.
+#
+# The right metric to send is wall-clock time elapsed since the last event
+# on the same stream — it naturally handles seeks (unchanged by them) and
+# handles pauses on well-behaved clients (they stop sending Progress
+# events, so no delta accrues). A per-event cap defends against long
+# client-side stalls that would otherwise inflate the count.
+_PLAY_DURATION_MAX_DELTA_SECONDS = 60.0
+
+
+def _consume_watched_delta(item_id: str) -> float:
+    """Wall-clock seconds since the last recorded event on this stream.
+    Also updates `last_progress_time` on the tracked stream so the next
+    call sees a fresh baseline. Returns 0 when there is no live stream
+    record (e.g., a Stopped fired without a prior Stream request)."""
+    stream = _streams._active_streams.get(item_id)
+    if not stream:
+        return 0.0
+    now = time.time()
+    last = stream.get("last_progress_time") or stream.get("started") or now
+    delta = min(max(now - last, 0.0), _PLAY_DURATION_MAX_DELTA_SECONDS)
+    stream["last_progress_time"] = now
+    return delta
+
+
 async def endpoint_sessions(request):
     """`POST /Sessions/Playing[/Progress|/Stopped]` — scrobble receiver.
-    Writes resume_time to Stash on Progress; on Stopped, either auto-marks
-    played (>90%) or saves final resume position, then clears the stream
-    from _active_streams."""
+    Writes resume_time and accumulates playDuration on Progress; on
+    Stopped, either auto-marks played (>90%) or saves final resume
+    position + records a play (>30s), then clears the stream from
+    _active_streams."""
     path = request.url.path
 
     try:
@@ -782,18 +812,29 @@ async def endpoint_sessions(request):
     item_id = body.get("ItemId", "")
     position_ticks = body.get("PositionTicks", 0)
     position_seconds = position_ticks / 10000000.0 if position_ticks else 0
+    _SAVE_ACTIVITY = """mutation SceneSaveActivity($id: ID!, $resume_time: Float, $playDuration: Float) {
+        sceneSaveActivity(id: $id, resume_time: $resume_time, playDuration: $playDuration)
+    }"""
+    _ADD_PLAY = """mutation SceneAddPlay($id: ID!) { sceneAddPlay(id: $id) { count } }"""
 
     if "/Progress" in path and item_id.startswith("scene-"):
         numeric_id = item_id.replace("scene-", "")
+        watched_delta = _consume_watched_delta(item_id)
         try:
-            q = """mutation SceneSaveActivity($id: ID!, $resume_time: Float) { sceneSaveActivity(id: $id, resume_time: $resume_time) }"""
-            await stash_query(q, {"id": numeric_id, "resume_time": position_seconds})
+            await stash_query(_SAVE_ACTIVITY, {
+                "id": numeric_id,
+                "resume_time": position_seconds,
+                "playDuration": watched_delta,
+            })
         except Exception as e:
             logger.debug(f"Error saving resume position for {item_id}: {e}")
 
     elif "/Stopped" in path:
         if item_id.startswith("scene-"):
             numeric_id = item_id.replace("scene-", "")
+            # Capture the final delta BEFORE mark_stream_stopped removes the
+            # tracking entry further down.
+            watched_delta = _consume_watched_delta(item_id)
             try:
                 duration_ticks = body.get("RunTimeTicks") or body.get("NowPlayingItem", {}).get("RunTimeTicks", 0)
                 duration_seconds = duration_ticks / 10000000.0 if duration_ticks else 0
@@ -819,26 +860,25 @@ async def endpoint_sessions(request):
                 watched_meaningfully = position_seconds >= MIN_PLAY_SECONDS
 
                 if played_percentage > 90:
-                    await stash_query("""mutation SceneAddPlay($id: ID!) { sceneAddPlay(id: $id) { count } }""", {"id": numeric_id})
-                    await stash_query(
-                        """mutation SceneSaveActivity($id: ID!, $resume_time: Float) { sceneSaveActivity(id: $id, resume_time: $resume_time) }""",
-                        {"id": numeric_id, "resume_time": 0},
-                    )
-                    logger.info(f"▶ Auto-marked played: {item_id} ({played_percentage:.0f}% watched)")
+                    await stash_query(_ADD_PLAY, {"id": numeric_id})
+                    await stash_query(_SAVE_ACTIVITY, {
+                        "id": numeric_id,
+                        "resume_time": 0,
+                        "playDuration": watched_delta,
+                    })
+                    logger.info(f"▶ Auto-marked played: {item_id} ({played_percentage:.0f}% watched, +{watched_delta:.0f}s duration)")
                 else:
                     if watched_meaningfully:
-                        await stash_query(
-                            """mutation SceneAddPlay($id: ID!) { sceneAddPlay(id: $id) { count } }""",
-                            {"id": numeric_id},
-                        )
-                    await stash_query(
-                        """mutation SceneSaveActivity($id: ID!, $resume_time: Float) { sceneSaveActivity(id: $id, resume_time: $resume_time) }""",
-                        {"id": numeric_id, "resume_time": position_seconds},
-                    )
+                        await stash_query(_ADD_PLAY, {"id": numeric_id})
+                    await stash_query(_SAVE_ACTIVITY, {
+                        "id": numeric_id,
+                        "resume_time": position_seconds,
+                        "playDuration": watched_delta,
+                    })
                     if watched_meaningfully:
-                        logger.info(f"⏸ Saved resume + recorded play: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%)")
+                        logger.info(f"⏸ Saved resume + recorded play: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%, +{watched_delta:.0f}s duration)")
                     else:
-                        logger.info(f"⏸ Saved resume position: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%)")
+                        logger.info(f"⏸ Saved resume position: {item_id} at {position_seconds:.0f}s ({played_percentage:.0f}%, +{watched_delta:.0f}s duration)")
             except Exception as e:
                 logger.error(f"Error updating play status for {item_id}: {e}")
 

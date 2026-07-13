@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.4**
+**Version 7.3.5**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,20 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.5
+
+Closes [#26](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/26) (@stashcollection14) — Stash's per-scene "total play duration" column stayed at zero because the proxy was never sending the `playDuration` argument on `sceneSaveActivity`. Play count and progress updated correctly (fixed in v7.3.4); duration did not.
+
+**Root cause.** Stash's `sceneSaveActivity(id, resume_time, playDuration)` mutation *accumulates* the `playDuration` argument into the scene's total. Our three call sites in `endpoints/views.py` (Progress, Stopped >90%, Stopped ≤90%) only passed `resume_time`, so play_duration was never touched.
+
+**Fix.** All three call sites now send `playDuration = wall-clock seconds elapsed since the last event on this stream`. The delta comes from a small helper (`_consume_watched_delta`) that reads `last_progress_time` off the tracked `_active_streams` record, updates it, and returns the delta capped at 60 seconds per event. Using wall-clock time (not position delta) means the count is unaffected by seeking, and is naturally correct through pauses on well-behaved clients (they stop firing Progress events while paused, so no time accrues). The 60-second per-event cap defends against long client-side stalls or delayed Progress events that would otherwise inflate the count.
+
+Log lines on each event now include the delta added so it's easy to spot-check in the log:
+```
+⏸ Saved resume + recorded play: scene-3814 at 1570s (21%, +14s duration)
+▶ Auto-marked played: scene-3814 (100% watched, +8s duration)
+```
 
 ### v7.3.4
 
