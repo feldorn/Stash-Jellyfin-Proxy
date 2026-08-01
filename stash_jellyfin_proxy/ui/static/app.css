@@ -262,7 +262,8 @@
     align-items: stretch;
   }
   .pw-wrap input { flex: 1; }
-  .pw-reveal {
+  .pw-reveal,
+  .pw-copy {
     flex: 0 0 auto;
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -273,7 +274,8 @@
     font-size: 15px;
     line-height: 1;
   }
-  .pw-reveal:hover { color: var(--text); border-color: var(--accent); }
+  .pw-reveal:hover,
+  .pw-copy:hover { color: var(--text); border-color: var(--accent); }
   textarea {
     min-height: 90px;
     font-family: "SF Mono", Menlo, monospace;

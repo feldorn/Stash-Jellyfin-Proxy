@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.5**
+**Version 7.3.6**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,12 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.6
+
+Small quality-of-life addition on the **Connection** tab: copy buttons (⧉) next to the four fields you'd type into a Jellyfin-compatible player during setup — **API Key**, **Public URL**, **Username**, and **Password**. Same idea and same helpers as the Connect-a-Player modal on the Dashboard (which was, and remains, the fastest way to grab all three at once), but useful for anyone who lands on the Connection tab first and doesn't want to select-and-copy from an `<input>` on a touch device.
+
+Masked fields (Password, API Key) fetch the real value via the existing `/api/config/reveal` endpoint before copying, so the clipboard carries the actual secret rather than asterisks or blank. Reuses the `.pw-wrap` / `.pw-reveal` styling and `copyText()` clipboard helper introduced in v7.2.0.
 
 ### v7.3.5
 
