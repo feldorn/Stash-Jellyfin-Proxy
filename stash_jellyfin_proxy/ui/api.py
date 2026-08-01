@@ -28,11 +28,6 @@ logger = logging.getLogger("stash-jellyfin-proxy")
 _TEMPLATE_PATH = Path(__file__).parent / "templates" / "index.html"
 _WEB_UI_HTML = _TEMPLATE_PATH.read_text(encoding="utf-8") if _TEMPLATE_PATH.is_file() else ""
 
-# Self-contained clipboard diagnostic page — used to iterate on iPad / Safari
-# clipboard behavior without touching the main UI. Served at /diag/clipboard.
-_CLIPBOARD_DIAG_PATH = Path(__file__).parent / "templates" / "clipboard_diag.html"
-_CLIPBOARD_DIAG_HTML = _CLIPBOARD_DIAG_PATH.read_text(encoding="utf-8") if _CLIPBOARD_DIAG_PATH.is_file() else ""
-
 
 async def ui_index(request):
     """Serve the Web UI shell."""
@@ -45,35 +40,6 @@ async def ui_index(request):
             .replace("{{SERVER_NAME}}", runtime.SERVER_NAME)
             .replace("{{ASSET_V}}", asset_v))
     return Response(html, media_type="text/html")
-
-
-async def ui_clipboard_diag(request):
-    """Standalone clipboard diagnostic page (no dependencies on app.js).
-    Each button tries a different copy technique; result is logged on-page
-    so we can iterate on iPad where DevTools isn't available."""
-    return Response(_CLIPBOARD_DIAG_HTML, media_type="text/html")
-
-
-async def ui_clipboard_diag_report(request):
-    """Receive a JSON report from the clipboard diagnostic page and log it
-    at INFO so the maintainer can read it via `docker logs`. Fields:
-    env, log, payload, paste_matched, paste_value_length."""
-    if request.method != "POST":
-        return JSONResponse({"error": "POST only"}, status_code=405)
-    try:
-        data = await request.json()
-    except Exception:
-        return JSONResponse({"error": "invalid JSON"}, status_code=400)
-    logger.info("=== CLIPBOARD DIAG REPORT ===")
-    logger.info(f"paste_matched: {data.get('paste_matched')}  paste_value_length: {data.get('paste_value_length')}  payload: {data.get('payload')}")
-    logger.info("-- env --")
-    for line in str(data.get("env") or "").splitlines():
-        logger.info(f"  {line}")
-    logger.info("-- log --")
-    for line in str(data.get("log") or "").splitlines():
-        logger.info(f"  {line}")
-    logger.info("=== END REPORT ===")
-    return JSONResponse({"ok": True})
 
 
 async def ui_api_status(request):
