@@ -1095,4 +1095,42 @@ document.addEventListener("DOMContentLoaded", () => {
     const el = e.target;
     if (el.matches && el.matches(".pw-wrap input")) delete el.dataset.secretInjected;
   });
+
+  // Copy button next to config-form fields (Public URL, Username, Password,
+  // API Key). Mobile users can't easily select-and-copy from an <input>; this
+  // is the same idea as the Connect-a-Player modal, at the settings-page
+  // fields themselves. For password inputs (masked in the DOM), lazily fetch
+  // the real value via the reveal endpoint so the copy carries the actual
+  // secret rather than an empty string or asterisks.
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".pw-copy");
+    if (!btn) return;
+    const input = btn.parentElement.querySelector("input");
+    if (!input) return;
+    const key = input.dataset.key;
+    const labels = {
+      STASH_API_KEY: "API key",
+      SJS_PASSWORD: "Password",
+      SJS_USER: "Username",
+      PUBLIC_URL: "Server address",
+    };
+    const label = labels[key] || "Value";
+
+    // For masked/blank secret inputs, fetch the real value first.
+    let value = input.value;
+    if (!value && REVEALABLE.has(key)) {
+      try {
+        const r = await apiGet(`/api/config/reveal?key=${encodeURIComponent(key)}`);
+        value = (r && r.value) || "";
+      } catch (err) {
+        toast(`Could not copy ${label}: ${err.message}`, "error");
+        return;
+      }
+    }
+    if (!value) {
+      toast(`No ${label} is set.`, "warning");
+      return;
+    }
+    copyText(value, `${label} copied to clipboard.`);
+  });
 });

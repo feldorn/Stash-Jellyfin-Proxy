@@ -208,6 +208,7 @@
               <div class="pw-wrap">
                 <input type="password" data-key="STASH_API_KEY" autocomplete="off" placeholder="(unchanged)">
                 <button type="button" class="pw-reveal" title="Show/hide API key" aria-label="Show/hide API key">👁</button>
+                <button type="button" class="pw-copy" title="Copy API key to clipboard" aria-label="Copy API key">⧉</button>
               </div>
               <div class="field-help">From Stash → Settings → Security → API Key. Required for images to load. Leave blank to keep the current value.</div>
             </div>
@@ -259,7 +260,10 @@
           <div class="card-body">
             <div class="field">
               <div class="field-label">Public URL</div>
-              <input type="text" data-key="PUBLIC_URL" autocomplete="off" placeholder="https://stash-sjs.example.com">
+              <div class="pw-wrap">
+                <input type="text" data-key="PUBLIC_URL" autocomplete="off" placeholder="https://stash-sjs.example.com">
+                <button type="button" class="pw-copy" title="Copy Public URL to clipboard" aria-label="Copy Public URL">⧉</button>
+              </div>
               <div class="field-help">The address players use to reach the <strong>Jellyfin API</strong> from outside — e.g. <code>https://stash-sjs.example.com</code> or <code>http://192.168.0.200:8096</code>. Include the scheme; omit the port if the reverse proxy serves it on 443/80. The proxy can't auto-detect this (its own IP is an internal Docker address), so the Dashboard's <em>Connect a Player</em> card shows the server address only once this is set.</div>
             </div>
           </div>
@@ -277,7 +281,10 @@
           <div class="card-body">
             <div class="field">
               <div class="field-label">Username</div>
-              <input type="text" data-key="SJS_USER" autocomplete="off">
+              <div class="pw-wrap">
+                <input type="text" data-key="SJS_USER" autocomplete="off">
+                <button type="button" class="pw-copy" title="Copy username to clipboard" aria-label="Copy username">⧉</button>
+              </div>
               <div class="field-help">The username Jellyfin clients use to connect to this proxy.</div>
             </div>
             <div class="field">
@@ -285,6 +292,7 @@
               <div class="pw-wrap">
                 <input type="password" data-key="SJS_PASSWORD" autocomplete="new-password" placeholder="(unchanged)">
                 <button type="button" class="pw-reveal" title="Show/hide password" aria-label="Show/hide password">👁</button>
+                <button type="button" class="pw-copy" title="Copy password to clipboard" aria-label="Copy password">⧉</button>
               </div>
               <div class="field-help">Leave blank to keep the current password.</div>
             </div>
