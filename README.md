@@ -284,9 +284,6 @@ Reported by a user testing v7.3.6 on iPad Brave: the new copy buttons didn't do 
 - Copy buttons flash `✓` for 700 ms on tap, so mobile users get immediate visual feedback that their click was received even if the clipboard operation itself fails.
 - `copyText`'s `execCommand` fallback now correctly treats a `false` return as failure (was silently toasting "success" when the copy didn't actually happen).
 
-**Diagnostic page** (staying in the tree as an internal tool).
-- New route `/diag/clipboard` — a self-contained page that tests six different copy techniques (async writeText, classic execCommand, iOS textarea, iOS input, contenteditable+Range, ClipboardItem) and reads back via `navigator.clipboard.readText`. Reports environment, per-attempt results, and paste verification to the container log via a "Send results to server" button. Useful for the next time a browser-specific clipboard weirdness comes up — we can iterate without touching the main UI.
-
 ### v7.3.6
 
 Small quality-of-life addition on the **Connection** tab: copy buttons (⧉) next to the four fields you'd type into a Jellyfin-compatible player during setup — **API Key**, **Public URL**, **Username**, and **Password**. Same idea and same helpers as the Connect-a-Player modal on the Dashboard (which was, and remains, the fastest way to grab all three at once), but useful for anyone who lands on the Connection tab first and doesn't want to select-and-copy from an `<input>` on a touch device.
