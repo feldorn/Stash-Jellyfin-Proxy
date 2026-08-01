@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.6**
+**Version 7.3.7**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,22 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.7
+
+Reported by a user testing v7.3.6 on iPad Brave: the new copy buttons didn't do anything. After a lot of red herrings, the actual bug turned out to be **static-asset caching** — the browser was executing a pre-v7.3.6 `app.js` from cache and never saw the new `.pw-copy` handler at all. The v7.3.6 code was fine.
+
+**Cache-bust static assets on every release AND every restart.**
+- `index.html` now references `/static/app.js?v={{ASSET_V}}` and `/static/app.css?v={{ASSET_V}}`. The template substitution injects `<__version__>-<PROXY_START_TIME>`, so any release change or restart forces browsers to fetch fresh. iOS Safari (and Chromium browsers wrapping WebKit on iPad — including Brave) are aggressive about static-asset caching to the point that hard-reload doesn't reliably evict; a query-string change is the reliable fix.
+
+**Defensive clipboard improvements** — from iterating on the reported bug before the cache angle was clear.
+- `copyText()` now detects iOS/iPad (`/iP(hone|ad|od)/` on `navigator.platform` OR touch-capable "Mac" which is how iPad reports itself in desktop-site mode) and takes an iOS-friendly path directly: `<textarea readonly>` + `focus` + `select` + `setSelectionRange(0, len)` + `document.execCommand("copy")`. The `setSelectionRange` after `.select()` is the specific step iOS Safari needs.
+- New `copyLazy(getText, msg)` helper for cases where the value is fetched asynchronously (masked field reveal on the Connection tab). On non-iOS Chromium it uses `ClipboardItem({"text/plain": Promise<Blob>})` + `navigator.clipboard.write` — the correct pattern for preserving transient user activation across an `await`. Awaiting before `writeText` drops the user gesture in Chrome/Brave/Edge and gets rejected as `NotAllowedError`.
+- Copy buttons flash `✓` for 700 ms on tap, so mobile users get immediate visual feedback that their click was received even if the clipboard operation itself fails.
+- `copyText`'s `execCommand` fallback now correctly treats a `false` return as failure (was silently toasting "success" when the copy didn't actually happen).
+
+**Diagnostic page** (staying in the tree as an internal tool).
+- New route `/diag/clipboard` — a self-contained page that tests six different copy techniques (async writeText, classic execCommand, iOS textarea, iOS input, contenteditable+Range, ClipboardItem) and reads back via `navigator.clipboard.readText`. Reports environment, per-attempt results, and paste verification to the container log via a "Send results to server" button. Useful for the next time a browser-specific clipboard weirdness comes up — we can iterate without touching the main UI.
 
 ### v7.3.6
 

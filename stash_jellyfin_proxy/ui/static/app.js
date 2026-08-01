@@ -50,27 +50,143 @@ function toast(msg, kind = "") {
   }
 }
 
-/* Copy text to the clipboard with a fallback for non-secure (http://) LAN
-   access, where navigator.clipboard is unavailable. */
-async function copyText(text, successMsg = "Copied to clipboard.") {
+/* Clipboard helpers.
+
+   iOS Safari (and Brave / any browser on iPad, since they all wrap WebKit)
+   is notoriously unreliable with `navigator.clipboard.writeText()` — it can
+   silently hang without resolving OR rejecting, so no fallback ever fires.
+   We detect iOS and go straight to the textarea+execCommand path there,
+   with the exact quirks iOS needs: `readonly` (no keyboard), font-size 16px
+   (no zoom), and `setSelectionRange` after `.select()` (Safari's .select()
+   doesn't actually select on its own). This is the same pattern clipboard.js
+   uses and is known to work across every iOS version that still gets
+   updates.
+
+   On desktop, we prefer the modern async clipboard API and only fall back
+   to the textarea trick when that fails (non-secure context, permission
+   denied, or old browsers). */
+
+const _IS_IOS =
+  /iP(hone|ad|od)/.test(navigator.platform) ||
+  (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 1);
+
+function _copyViaTextarea(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "absolute";
+  ta.style.left = "-9999px";
+  ta.style.top = "0";
+  ta.style.fontSize = "16px"; // Prevents iOS from auto-zooming to the input.
+  document.body.appendChild(ta);
+
+  const sel = document.getSelection();
+  const savedRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+  ta.focus();
+  ta.select();
+  // iOS quirk: .select() on a textarea does NOT actually select the content.
+  // setSelectionRange is required to make execCommand("copy") work.
+  try { ta.setSelectionRange(0, text.length); } catch (_) { /* ignore */ }
+
+  let ok = false;
   try {
-    await navigator.clipboard.writeText(text);
-    toast(successMsg, "success");
-  } catch (err) {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.top = "-1000px";
-    document.body.appendChild(ta);
-    ta.select();
-    try {
-      document.execCommand("copy");
+    ok = document.execCommand("copy");
+  } catch (_) {
+    ok = false;
+  }
+
+  document.body.removeChild(ta);
+  if (savedRange && sel) {
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+  }
+  return ok;
+}
+
+/* Immediate visual feedback for a copy click — swap the button label to ✓
+   for a moment. Confirms to the user that the click was received even if
+   the actual clipboard operation fails silently (iPad WebKit sometimes
+   drops the writeText promise on the floor). Restores the original label
+   whether copy succeeds or not. */
+function flashCopyButton(btn) {
+  if (!btn || btn._copyFlashing) return;
+  btn._copyFlashing = true;
+  const original = btn.textContent;
+  btn.textContent = "✓";
+  setTimeout(() => {
+    btn.textContent = original;
+    btn._copyFlashing = false;
+  }, 700);
+}
+
+async function copyText(text, successMsg = "Copied to clipboard.") {
+  if (text == null || text === "") {
+    toast("Nothing to copy.", "warning");
+    return;
+  }
+  // iPad: skip the async API entirely — it can silently hang under WebKit.
+  if (_IS_IOS) {
+    if (_copyViaTextarea(String(text))) {
       toast(successMsg, "success");
-    } catch (_) {
-      toast(`Copy failed: ${err.message}`, "error");
-    } finally {
-      document.body.removeChild(ta);
+    } else {
+      toast("Copy failed — please long-press the field and pick Copy.", "error");
     }
+    return;
+  }
+  // Desktop: prefer the modern async API, textarea as fallback.
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(String(text));
+      toast(successMsg, "success");
+      return;
+    } catch (err) {
+      console.warn("clipboard.writeText failed, falling back to textarea:", err);
+    }
+  }
+  if (_copyViaTextarea(String(text))) {
+    toast(successMsg, "success");
+  } else {
+    toast("Copy failed — please select the value and copy manually.", "error");
+  }
+}
+
+/* Copy the eventual value of a Promise while preserving the user-activation
+   context of the click that started us. On non-iOS Chromium (Chrome/Edge/
+   desktop Brave), navigator.clipboard.writeText requires the write to happen
+   synchronously with the user gesture — awaiting a fetch first loses that
+   activation. `ClipboardItem` accepts `Promise<Blob>` in its dictionary and
+   navigator.clipboard.write holds activation open until the promise resolves.
+   On iOS, we take a different route entirely: fetch first (fast — the
+   /api/config/reveal endpoint is local), then hand off to copyText which
+   uses the iOS-friendly textarea path. */
+async function copyLazy(getText, successMsg = "Copied to clipboard.") {
+  if (!_IS_IOS && navigator.clipboard && typeof window.ClipboardItem === "function") {
+    try {
+      const item = new ClipboardItem({
+        "text/plain": Promise.resolve(getText()).then((t) => {
+          if (t == null || t === "") throw new Error("empty value");
+          return new Blob([String(t)], { type: "text/plain" });
+        }),
+      });
+      await navigator.clipboard.write([item]);
+      toast(successMsg, "success");
+      return;
+    } catch (err) {
+      console.warn("clipboard.write(ClipboardItem) failed, falling back:", err);
+      // fall through
+    }
+  }
+  try {
+    const text = await getText();
+    if (!text) {
+      toast("Nothing to copy.", "warning");
+      return;
+    }
+    await copyText(text, successMsg);
+  } catch (err) {
+    console.error("copyLazy failed:", err);
+    toast(`Copy failed: ${err.message || "clipboard unavailable"}`, "error");
   }
 }
 
@@ -513,16 +629,19 @@ window.init_dashboard = async function () {
   });
 
   // Connect-a-Player: copy buttons + password reveal toggle.
-  qs("#dash-connect-copy")?.addEventListener("click", () => {
+  qs("#dash-connect-copy")?.addEventListener("click", (e) => {
+    flashCopyButton(e.currentTarget);
     const el = qs("#dash-connect-url");
     copyText(el.dataset.url || el.textContent, "Server address copied to clipboard.");
   });
-  qs("#dash-connect-user-copy")?.addEventListener("click", () => {
+  qs("#dash-connect-user-copy")?.addEventListener("click", (e) => {
+    flashCopyButton(e.currentTarget);
     const v = qs("#dash-connect-user").dataset.value;
     if (!v) return toast("No username set.", "warning");
     copyText(v, "Username copied to clipboard.");
   });
-  qs("#dash-connect-pass-copy")?.addEventListener("click", () => {
+  qs("#dash-connect-pass-copy")?.addEventListener("click", (e) => {
+    flashCopyButton(e.currentTarget);
     const v = qs("#dash-connect-pass").dataset.value;
     if (!v) return toast("No password set.", "warning");
     copyText(v, "Password copied to clipboard.");
@@ -1097,14 +1216,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Copy button next to config-form fields (Public URL, Username, Password,
-  // API Key). Mobile users can't easily select-and-copy from an <input>; this
-  // is the same idea as the Connect-a-Player modal, at the settings-page
-  // fields themselves. For password inputs (masked in the DOM), lazily fetch
-  // the real value via the reveal endpoint so the copy carries the actual
-  // secret rather than an empty string or asterisks.
-  document.addEventListener("click", async (e) => {
+  // API Key). Same idea as the Connect-a-Player modal, at the settings page.
+  // For masked fields (Password, API Key), the value has to be fetched from
+  // /api/config/reveal. On non-iOS Chromium, awaiting that between the click
+  // and the clipboard write loses user activation, so copyLazy uses
+  // ClipboardItem + Promise<Blob> to keep the write on the same user gesture.
+  // On iOS, the async clipboard is unreliable regardless, so copyText detects
+  // that and uses a textarea+execCommand fallback.
+  document.addEventListener("click", (e) => {
     const btn = e.target.closest(".pw-copy");
     if (!btn) return;
+    flashCopyButton(btn);
     const input = btn.parentElement.querySelector("input");
     if (!input) return;
     const key = input.dataset.key;
@@ -1115,22 +1237,22 @@ document.addEventListener("DOMContentLoaded", () => {
       PUBLIC_URL: "Server address",
     };
     const label = labels[key] || "Value";
+    const successMsg = `${label} copied to clipboard.`;
 
-    // For masked/blank secret inputs, fetch the real value first.
-    let value = input.value;
-    if (!value && REVEALABLE.has(key)) {
-      try {
-        const r = await apiGet(`/api/config/reveal?key=${encodeURIComponent(key)}`);
-        value = (r && r.value) || "";
-      } catch (err) {
-        toast(`Could not copy ${label}: ${err.message}`, "error");
-        return;
-      }
-    }
-    if (!value) {
-      toast(`No ${label} is set.`, "warning");
+    // Plain-text field with a value already in the DOM — copy synchronously,
+    // which is the simplest and most-permissive path.
+    if (input.value) {
+      copyText(input.value, successMsg);
       return;
     }
-    copyText(value, `${label} copied to clipboard.`);
+    // Masked/blank secret field — via /api/config/reveal.
+    if (REVEALABLE.has(key)) {
+      copyLazy(async () => {
+        const r = await apiGet(`/api/config/reveal?key=${encodeURIComponent(key)}`);
+        return (r && r.value) || "";
+      }, successMsg);
+      return;
+    }
+    toast(`No ${label} is set.`, "warning");
   });
 });

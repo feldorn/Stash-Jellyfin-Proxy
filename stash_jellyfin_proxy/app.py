@@ -112,6 +112,8 @@ from stash_jellyfin_proxy.ui.api import (
     ui_api_clear_cache,
     ui_api_download_config,
     ui_api_reveal_secret,
+    ui_clipboard_diag,
+    ui_clipboard_diag_report,
     ui_api_stash_test,
     ui_api_players_ua_log,
     ui_api_players_profiles,
@@ -298,6 +300,8 @@ app = Starlette(
 _UI_STATIC_DIR = Path(__file__).parent / "ui" / "static"
 ui_routes = [
     Route("/", ui_index),
+    Route("/diag/clipboard", ui_clipboard_diag),
+    Route("/diag/clipboard/report", ui_clipboard_diag_report, methods=["POST"]),
     # app.css + app.js extracted from the embedded HTML (Phase 5A).
     Mount("/static", app=StaticFiles(directory=str(_UI_STATIC_DIR)), name="ui-static"),
     Route("/api/status", ui_api_status),
