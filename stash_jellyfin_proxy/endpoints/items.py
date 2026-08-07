@@ -662,8 +662,19 @@ async def endpoint_items(request):
     await genre_allowed_names()
 
     user_id = request.path_params.get("user_id")
-    # Handle both ParentId and parentId (Infuse uses lowercase)
+    # ParentId (canonicalized by CaseInsensitivePathMiddleware from every
+    # client casing). Also accept a bare StudioIds — some clients (Roku)
+    # filter by that alone rather than nesting the studio into ParentId —
+    # by mapping StudioIds=N to ParentId=studio-N. StudioIds may be a
+    # comma-separated list; we take the first (the studio- branch is
+    # single-studio anyway). Issue #27.
     parent_id = request.query_params.get("ParentId") or request.query_params.get("parentId")
+    if not parent_id:
+        studio_ids = request.query_params.get("StudioIds")
+        if studio_ids:
+            first_studio = studio_ids.split(",")[0].strip()
+            if first_studio:
+                parent_id = f"studio-{first_studio}"
     ids = request.query_params.get("Ids") or request.query_params.get("ids")
 
     # Pagination parameters with validation

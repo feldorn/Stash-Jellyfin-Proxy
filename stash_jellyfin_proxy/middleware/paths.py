@@ -1,15 +1,77 @@
-"""Case-insensitive path normalization middleware.
+"""Case-insensitive request-normalization middleware.
 
-Jellyfin clients disagree on casing for route segments (Android caps
-`/Users`, Swiftfin caps `/UserItems`, Infuse sometimes lower-cases). The
-framework route table is case-sensitive. This middleware normalizes every
-incoming request path back to the registered route's casing so handlers
-see consistent paths regardless of client conventions.
+Jellyfin clients disagree on casing for both route segments and query
+parameters. Android caps `/Users`, Swiftfin caps `/UserItems`, Infuse
+sometimes lower-cases paths, and the Roku Jellyfin channel lower-cases
+ALL query parameter names (`parentid=`, `startindex=`, `personids=`).
+The framework route table and our handlers both read canonical spellings,
+so this middleware normalizes:
 
-Dynamic segments (`{user_id}`, `{item_id}`) are matched as wildcards and
-preserve their original request value; only the static segments get
-rewritten to the route's casing.
+  1. `scope["path"]` — every incoming request path is rewritten back to
+     the registered route's casing. Dynamic segments (`{user_id}`,
+     `{item_id}`) are matched as wildcards and preserve their original
+     request value; only static segments get canonical casing.
+
+  2. `scope["query_string"]` — parameter *names* whose lowercase form
+     matches a known canonical spelling are rewritten. Parameter values
+     are left untouched. Unknown parameters are passed through unchanged.
+     Handlers can now read `.get("ParentId")` and get a hit from any
+     client casing.
+
+Fixes issue #16 (Infuse lowercase paths) + issue #27 (Roku lowercase
+query parameters, credit @madlens95).
 """
+
+from urllib.parse import parse_qsl, urlencode
+
+
+# Canonical spellings for the query-parameter names read by the proxy's
+# handlers. Any incoming param whose lowercase form matches a key here gets
+# rewritten to the value before handlers see it — so `parentid`, `parentId`,
+# and `ParentId` all reach `.get("ParentId")`. Add a new entry when adding
+# an endpoint that reads a new query parameter.
+_CANON_PARAMS = {
+    "parentid":         "ParentId",
+    "startindex":       "StartIndex",
+    "limit":            "Limit",
+    "ids":              "Ids",
+    "personids":        "PersonIds",
+    "studioids":        "StudioIds",
+    "searchterm":       "SearchTerm",
+    "sortby":           "SortBy",
+    "sortorder":        "SortOrder",
+    "seasonid":         "SeasonId",
+    "entryids":         "EntryIds",
+    "filters":          "Filters",
+    "name":             "Name",
+    "includeitemtypes": "IncludeItemTypes",
+}
+
+
+def _normalize_query_string(qs: bytes) -> bytes:
+    """Return `qs` with any parameter name whose lowercase form is in
+    _CANON_PARAMS rewritten to its canonical spelling. Returns the input
+    unchanged when no rewriting is needed so the middleware can skip the
+    scope-copy in the common case."""
+    if not qs:
+        return qs
+    try:
+        # latin-1 is safe for query strings — they're URL-encoded ASCII.
+        pairs = parse_qsl(qs.decode("latin-1"), keep_blank_values=True)
+    except Exception:
+        return qs
+    rewrote = False
+    canon_pairs = []
+    for k, v in pairs:
+        canon = _CANON_PARAMS.get(k.lower())
+        if canon and canon != k:
+            canon_pairs.append((canon, v))
+            rewrote = True
+        else:
+            canon_pairs.append((k, v))
+    if not rewrote:
+        return qs
+    return urlencode(canon_pairs).encode("latin-1")
 
 
 class CaseInsensitivePathMiddleware:
@@ -43,6 +105,14 @@ class CaseInsensitivePathMiddleware:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
+            # Query-string normalization first. Cheap and independent of path
+            # matching — even if the path is fine, a Roku request needs its
+            # parentid= rewritten to ParentId= before the handler reads it.
+            qs = scope.get("query_string", b"")
+            new_qs = _normalize_query_string(qs)
+            if new_qs is not qs:
+                scope = dict(scope, query_string=new_qs)
+
             path = scope.get("path", "")
             path_lower = path.lower()
 

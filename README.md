@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.7**
+**Version 7.3.8**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,20 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.8
+
+Closes [#27](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/27) — Roku Studios / Performers tiles were empty because the Roku Jellyfin channel sends **fully-lowercase query parameter names** (`parentid=`, `startindex=`, `personids=`), and the handlers in `endpoints/items.py` only read the mixed-case and camelCase spellings. Report and root-cause analysis by @madlens95 — including the confirmed local fix and a proposal to normalize query strings in middleware alongside the path normalization already there.
+
+**One layer below the path fix from v7.3.0.** `CaseInsensitivePathMiddleware` (which arsfeld shipped in v7.3.0 for lowercase paths) only rewrote `scope["path"]`. `scope["query_string"]` was left alone, so `/items/` → `/Items` normalized fine but the `parentid=studio-5` in the query kept its lowercase spelling and `.get("ParentId") or .get("parentId")` fell to None.
+
+**Fix — query-string normalization in the same middleware.** New `_normalize_query_string` helper parses the query string, matches each parameter name's lowercase form against a canonical spelling map (`{"parentid": "ParentId", "startindex": "StartIndex", …}`), and rewrites when it finds a hit. Unknown parameters pass through unchanged; the identity-check fast path skips the parse+encode when the query is already canonical. Every existing `.get("ParentId") or .get("parentId")` chain in the codebase now works for **all** client casings — Infuse camelCase, Swiftfin PascalCase, Roku lowercase — without touching the handlers. New endpoints just read the canonical spelling and get every client for free.
+
+Affected parameters (all now normalized): `ParentId`, `StartIndex`, `Limit`, `Ids`, `PersonIds`, `SearchTerm`, `SortBy`, `SortOrder`, `SeasonId`, `EntryIds`, `Filters`, `Name`, `IncludeItemTypes`, and (new) `StudioIds`.
+
+**Also (per the reporter's side-observation):** `endpoints/items.py` now handles a bare `StudioIds` query parameter by mapping it to `ParentId=studio-N`, so a client that filters studios via `StudioIds` alone (rather than nesting the studio into `ParentId`) reaches the same code path. Comma-separated values take the first entry to match the single-studio semantics of the existing `studio-` branch.
+
+**Tests.** 14 new tests in `tests/unit/test_middleware_paths.py` cover both the pre-existing path normalization (regression) and the new query normalization: lowercase → canonical, mixed-case → canonical, canonical is a no-op, unknown params pass through, empty QS is a no-op, values aren't touched, and end-to-end path + QS in the same request.
 
 ### v7.3.7
 
