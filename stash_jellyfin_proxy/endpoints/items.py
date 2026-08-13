@@ -458,6 +458,21 @@ def _parse_filter_params(request):
     genres = _multi("Genres", "genres")
     tags = _multi("Tags", "tags")
     years = _multi("Years", "years")
+
+    # GenreIds resolution: newer Jellyfin SDK clients (Yamby) echo the
+    # `genre-<id>` shape emitted by endpoint_genres rather than sending the
+    # genre name. Look up each id in the cache endpoint_genres populates on
+    # every /Genres response and append the resolved name to `genres`, so
+    # the existing tag-name filter path takes over. Unresolved ids (cache
+    # miss) drop silently — the client is expected to have called /Genres
+    # before tapping a genre, which every genre-aware client does. Issue #28.
+    from stash_jellyfin_proxy.endpoints.search import _GENRE_ID_NAMES
+    for raw_id in _multi("GenreIds", "genreIds"):
+        if raw_id.startswith("genre-"):
+            name = _GENRE_ID_NAMES.get(raw_id)
+            if name and name not in genres:
+                genres.append(name)
+
     return genres, tags, years
 
 
@@ -720,7 +735,12 @@ async def endpoint_items(request):
     total_count = 0
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type } stash_ids { stash_id }"
+    # Tag ids fetched alongside names so mapping/scene.format_jellyfin_item
+    # can emit `GenreItems` (NameGuidPair[]) — issue #28 bug 3. Studio and
+    # parent-studio tags get ids too for symmetry (harmless, small extra
+    # payload). The scene's own top-level `tags { name id }` is the one
+    # actually consumed by GenreItems.
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name id } parent_studio { id name tags { name id } } } tags { name id } performers { name id image_path } captions { language_code caption_type } stash_ids { stash_id }"
 
     if ids:
         # Specific items requested
@@ -2034,7 +2054,12 @@ async def endpoint_items(request):
                     tags { id name }
                 }
             }"""
-            tag_res = await stash_query(tag_query, {"filter": {"q": tag_name}})
+            # per_page: -1 so a short/common tag name (e.g. "POV") isn't
+            # sorted off the default 25-item page by longer tags that also
+            # contain it as substring ("Anal POV", "Doggy POV", …), which
+            # made the subsequent exact match fall through to "not found".
+            # Issue #28.
+            tag_res = await stash_query(tag_query, {"filter": {"q": tag_name, "per_page": -1}})
             tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
 
             # Find exact match (case-insensitive)
@@ -2557,7 +2582,12 @@ async def endpoint_item_details(request):
     item_id = request.path_params.get("item_id")
 
     # Full scene fields for queries (include performer image_path for People images, captions for subtitles)
-    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name } parent_studio { id name tags { name } } } tags { name } performers { name id image_path } captions { language_code caption_type } stash_ids { stash_id }"
+    # Tag ids fetched alongside names so mapping/scene.format_jellyfin_item
+    # can emit `GenreItems` (NameGuidPair[]) — issue #28 bug 3. Studio and
+    # parent-studio tags get ids too for symmetry (harmless, small extra
+    # payload). The scene's own top-level `tags { name id }` is the one
+    # actually consumed by GenreItems.
+    scene_fields = "id title code date details play_count resume_time last_played_at files { path basename duration size video_codec audio_codec width height frame_rate bit_rate } studio { id name tags { name id } parent_studio { id name tags { name id } } } tags { name id } performers { name id image_path } captions { language_code caption_type } stash_ids { stash_id }"
 
     # Handle special folder IDs - return the folder ITSELF (not children)
 
@@ -3058,7 +3088,12 @@ async def endpoint_item_details(request):
                     tags { id name scene_count }
                 }
             }"""
-            tag_res = await stash_query(tag_query, {"filter": {"q": tag_name}})
+            # per_page: -1 so a short/common tag name (e.g. "POV") isn't
+            # sorted off the default 25-item page by longer tags that also
+            # contain it as substring ("Anal POV", "Doggy POV", …), which
+            # made the subsequent exact match fall through to "not found".
+            # Issue #28.
+            tag_res = await stash_query(tag_query, {"filter": {"q": tag_name, "per_page": -1}})
             tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
 
             # Find exact match

@@ -203,6 +203,18 @@ def format_jellyfin_item(
         item["Genres"] = genres
         item["Tags"] = residual
 
+        # GenreItems: NameGuidPair[] shape used by newer Jellyfin SDK
+        # clients (Yamby) to render the scene detail-page genre row.
+        # Legacy clients (Infuse, Swiftfin) read `Genres`; SDK clients
+        # read this. The `genre-<id>` shape matches endpoint_genres so a
+        # tap on a genre round-trips through the GenreIds resolver in
+        # endpoints/items._parse_filter_params. Issue #28 bug 3.
+        tag_id_by_name = {t.get("name"): t.get("id") for t in tags if t.get("id")}
+        item["GenreItems"] = [
+            {"Name": g, "Id": f"genre-{tag_id_by_name[g]}"}
+            for g in genres if g in tag_id_by_name
+        ]
+
     if performers:
         people_list = []
         for p in performers:
