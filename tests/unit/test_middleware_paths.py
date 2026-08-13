@@ -153,6 +153,30 @@ def test_qs_values_are_not_touched():
     assert "SearchTerm=Case-Sensitive_Value.mp4" in out
 
 
+def test_qs_genreids_canonicalized_from_lowercase():
+    """Issue #28 bug 2 — Yamby sends GenreIds. When a lowercase-param
+    client (or an older Yamby version) sends `genreids=`, the middleware
+    must rewrite to `GenreIds` so _parse_filter_params.get('GenreIds')
+    hits."""
+    qs = b"genreids=genre-42,genre-17"
+    out = _normalize_query_string(qs).decode("latin-1")
+    # Comma is percent-encoded to %2C in urlencode output — that's fine
+    # since query_params.getlist splits on the reconstituted value.
+    assert "GenreIds=" in out
+    assert "genre-42" in out
+    assert "genre-17" in out
+
+
+def test_qs_genres_tags_years_canonicalized():
+    """Issue #28 side effect — canonical map now covers the tag/genre
+    filter params too. Fully-lowercase Roku-style clients hit them."""
+    qs = b"genres=POV&tags=Anal&years=2024"
+    out = _normalize_query_string(qs).decode("latin-1")
+    assert "Genres=POV" in out
+    assert "Tags=Anal" in out
+    assert "Years=2024" in out
+
+
 def test_scope_query_string_is_rewritten_end_to_end():
     """Through the full ASGI middleware, not just the helper — confirms
     the scope handoff wires up correctly."""

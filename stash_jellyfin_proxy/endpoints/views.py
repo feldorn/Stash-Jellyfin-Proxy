@@ -604,7 +604,10 @@ async def endpoint_latest_items(request):
             tag_query = """query FindTags($filter: FindFilterType!) {
                 findTags(filter: $filter) { tags { id name } }
             }"""
-            tag_res = await stash_query(tag_query, {"filter": {"q": tag_name}})
+            # per_page: -1 — a short common name would otherwise be sorted
+            # off the default 25-item page by longer tags containing it as
+            # substring. See same fix in endpoints/items.py; issue #28.
+            tag_res = await stash_query(tag_query, {"filter": {"q": tag_name, "per_page": -1}})
             tags = tag_res.get("data", {}).get("findTags", {}).get("tags", [])
             tag_id = None
             for t in tags:

@@ -45,6 +45,11 @@ _CANON_PARAMS = {
     "filters":          "Filters",
     "name":             "Name",
     "includeitemtypes": "IncludeItemTypes",
+    # Genre-related — added alongside issue #28 GenreIds resolution.
+    "genres":           "Genres",
+    "genreids":         "GenreIds",
+    "tags":             "Tags",
+    "years":            "Years",
 }
 
 

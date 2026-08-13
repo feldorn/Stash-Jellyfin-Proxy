@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.8**
+**Version 7.3.9**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,29 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.9
+
+Closes [#28](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/28) — three related tag/genre bugs, all reported and root-caused by @tanlidoushen with confirmed local fixes.
+
+**Bug 1 — `TAG_GROUPS` folder empty for a short/common tag name (e.g. `POV`).**
+The tag lookup in `endpoints/items.py` (two sites) and `endpoints/views.py` used Stash's `findTags(filter: {q: <name>})` with the default `per_page: 25`. When a short tag name is a substring of many longer tags (`POV` inside "Anal POV", "Doggy POV", …), the exact-match tag can be sorted off the first page. The subsequent `.lower() == .lower()` check then fails → "Tag not found" → empty folder. Added `per_page: -1` to those three call sites to match the pattern already used in `search.py`/`playlists.py`.
+
+**Bug 2 — `GenreIds` filter silently ignored (Yamby Android app).**
+`endpoint_genres` emits genre items with `Id: "genre-<stash-tag-id>"`. `_parse_filter_params` in `endpoints/items.py` read `Genres` / `Tags` / `Years` (name-based) but not `GenreIds` (id-based), so when Yamby echoed the id back on a tap, the parameter was silently dropped and the full library came back unfiltered. Now:
+
+- `endpoints/search.py` maintains a module-level `_GENRE_ID_NAMES` dict (`"genre-<id>" → name`), populated by `endpoint_genres` on every `/Genres` response (both the parent-filtered and library-wide branches).
+- `_parse_filter_params` reads `GenreIds`, looks each id up in that dict, and appends the resolved name to `genres` — so the existing tag-name filter path takes over. Unresolved ids drop silently (the client is expected to call `/Genres` before tapping a genre, which every SDK client does).
+
+**Bug 3 — Scene detail page has no genre section (Yamby, other Jellyfin SDK clients).**
+Two gaps in `mapping/scene.format_jellyfin_item`:
+
+- The `_SCENE_FIELDS` GraphQL fragments (two identical sites in `items.py`) fetched `tags { name }` without `id` — no id was available to attach even if the mapping code wanted it. Now fetches `tags { name id }` — extended to `studio.tags` and `parent_studio.tags` for symmetry (harmless small payload bump).
+- The item dict emitted `Genres: string[]` (legacy, used by Infuse/Swiftfin) but never `GenreItems: NameGuidPair[]` (used by the current Jellyfin SDK to render the detail-page genre row). Now emits `GenreItems` with `Id: "genre-<tag-id>"` matching the shape `endpoint_genres` produces, so tapping a genre round-trips through the Bug 2 `GenreIds` resolver.
+
+**Middleware canonical map extended.** Added `genreids`, `genres`, `tags`, `years` alongside issue #27's map so a fully-lowercase client (Roku-style) hits the same `.get("GenreIds") / .get("Genres")` reads.
+
+**Tests.** 6 new: 4 in `tests/unit/test_scene_mapping.py` for `GenreItems` emission (shape, missing-id handling, empty-tag case, order preservation) and 2 in `tests/unit/test_middleware_paths.py` for the new canonical map entries. 128 passing total.
 
 ### v7.3.8
 

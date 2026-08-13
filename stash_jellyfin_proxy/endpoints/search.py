@@ -16,6 +16,15 @@ from stash_jellyfin_proxy.stash.query_helpers import get_stash_sort_params, scen
 logger = logging.getLogger("stash-jellyfin-proxy")
 
 
+# Cache of "genre-<stash-tag-id>" -> tag name, populated by endpoint_genres
+# on every response. `_parse_filter_params` in endpoints/items.py reads this
+# to resolve incoming GenreIds params (e.g. the Yamby Android client sends
+# GenreIds=genre-42 rather than Genres=<name>). Refilled every time a client
+# requests /Genres, which every genre-aware client does before showing the
+# picker — so a filter click always finds a fresh entry. Issue #28.
+_GENRE_ID_NAMES: dict = {}
+
+
 async def endpoint_items_counts(request):
     """`GET /Items/Counts` — aggregate counts by Jellyfin item type."""
     try:
@@ -239,6 +248,10 @@ async def endpoint_genres(request):
             for s in scenes:
                 for t in s.get("tags", []):
                     seen[t["id"]] = t["name"]
+            # Populate the id->name cache for GenreIds resolution — see
+            # _GENRE_ID_NAMES docstring and _parse_filter_params in items.py.
+            for tid, name in seen.items():
+                _GENRE_ID_NAMES[f"genre-{tid}"] = name
             items = [
                 {"Name": name, "Id": f"genre-{tid}", "ServerId": runtime.SERVER_ID,
                  "Type": "Genre",
@@ -253,6 +266,8 @@ async def endpoint_genres(request):
             }}"""
             res = await stash_query(q)
             tags = res.get("data", {}).get("findTags", {}).get("tags", [])
+            for t in tags:
+                _GENRE_ID_NAMES[f"genre-{t['id']}"] = t["name"]
             items = [
                 {"Name": t["name"], "Id": f"genre-{t['id']}", "ServerId": runtime.SERVER_ID,
                  "Type": "Genre",
