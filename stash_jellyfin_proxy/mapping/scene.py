@@ -264,6 +264,27 @@ def format_jellyfin_item(
             video_stream["Width"] = vid_width
             video_stream["Height"] = vid_height
             video_stream["AspectRatio"] = f"{vid_width}:{vid_height}"
+            # DisplayTitle in the Jellyfin convention `{resolution} {CODEC}`
+            # (e.g. "1080p H264"). The audio stream already sets this;
+            # without it here, Jellyfin SDK clients (Yamby) render a blank
+            # video chip in the detail-page header — the media-info panel
+            # at the bottom is unaffected because it reads Width/Height
+            # directly. Issue #28 followup.
+            if vid_height >= 2160:
+                res_label = "4K"
+            elif vid_height >= 1440:
+                res_label = "2K"
+            elif vid_height >= 1080:
+                res_label = "1080p"
+            elif vid_height >= 720:
+                res_label = "720p"
+            elif vid_height >= 480:
+                res_label = "SD"
+            else:
+                res_label = f"{vid_height}p"
+            display = f"{res_label} {(video_codec or '').upper()}".strip()
+            video_stream["DisplayTitle"] = display
+            video_stream["Title"] = display
         if bit_rate:
             video_stream["BitRate"] = bit_rate
         if frame_rate:
