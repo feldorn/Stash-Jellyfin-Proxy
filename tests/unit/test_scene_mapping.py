@@ -100,3 +100,64 @@ def test_genre_items_preserves_alphabetical_order_of_genres():
     item = format_jellyfin_item(scene)
     names = [g["Name"] for g in item["GenreItems"]]
     assert names == item["Genres"]  # same order
+
+
+# --- issue #28 followup: video stream DisplayTitle ---
+#
+# Jellyfin SDK clients (Yamby) render the detail-page header video chip
+# from MediaStreams[0].DisplayTitle. The audio stream already sets it;
+# the video stream did not, so the chip rendered blank. The label follows
+# the Jellyfin convention: `{resolution bucket} {CODEC}`.
+
+def _scene_with_dims(width, height, codec="h264"):
+    """Scene payload that exercises the video-stream construction path."""
+    return {
+        "id": "1",
+        "title": "T",
+        "files": [{
+            "path": "/x.mp4",
+            "duration": 100.0,
+            "width": width,
+            "height": height,
+            "video_codec": codec,
+            "audio_codec": "aac",
+            "size": 0,
+        }],
+        "tags": [],
+        "performers": [],
+        "studio": None,
+    }
+
+
+def test_video_stream_display_title_1080p():
+    item = format_jellyfin_item(_scene_with_dims(1920, 1080, "h264"))
+    video = item["MediaStreams"][0]
+    assert video["Type"] == "Video"
+    assert video["DisplayTitle"] == "1080p H264"
+    assert video["Title"] == "1080p H264"
+
+
+def test_video_stream_display_title_4k():
+    item = format_jellyfin_item(_scene_with_dims(3840, 2160, "hevc"))
+    assert item["MediaStreams"][0]["DisplayTitle"] == "4K HEVC"
+
+
+def test_video_stream_display_title_720p():
+    item = format_jellyfin_item(_scene_with_dims(1280, 720, "h264"))
+    assert item["MediaStreams"][0]["DisplayTitle"] == "720p H264"
+
+
+def test_video_stream_display_title_sd_and_odd_heights():
+    """480 → SD; smaller heights fall through to `{h}p`."""
+    assert format_jellyfin_item(_scene_with_dims(720, 480, "mpeg4"))["MediaStreams"][0]["DisplayTitle"] == "SD MPEG4"
+    assert format_jellyfin_item(_scene_with_dims(640, 360, "vp9"))["MediaStreams"][0]["DisplayTitle"] == "360p VP9"
+
+
+def test_video_stream_display_title_absent_when_no_dimensions():
+    """No width/height in the file record → we don't invent a resolution
+    label. Chip renders blank rather than lie about the media."""
+    scene = _scene_with_dims(0, 0)
+    item = format_jellyfin_item(scene)
+    video = item["MediaStreams"][0]
+    assert "DisplayTitle" not in video
+    assert "Title" not in video

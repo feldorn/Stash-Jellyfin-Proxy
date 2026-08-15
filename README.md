@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.9**
+**Version 7.3.10**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -270,6 +270,16 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.3.10
+
+Fourth report from @tanlidoushen on [#28](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/28) that I initially missed and closed the issue without addressing — the video-stream chip on Yamby's scene detail-page header rendered blank while the audio chip showed fine.
+
+**Root cause.** `mapping/scene.format_jellyfin_item` built the audio `MediaStream` with a `DisplayTitle` (e.g. `"AAC - Stereo"`) but the video stream had no `DisplayTitle` at all. Jellyfin SDK clients render the detail-header stream chips from `MediaStreams[].DisplayTitle`, so a missing value renders as blank. The media-info panel at the bottom of the page uses `Width` / `Height` / `Codec` directly, which is why that panel was unaffected.
+
+**Fix.** When width/height are known, the video stream now gets both `DisplayTitle` and `Title` in the Jellyfin convention `{resolution bucket} {CODEC}` — `"4K H264"`, `"1080p HEVC"`, `"720p H264"`, `"SD MPEG4"`, or `"{h}p {CODEC}"` for unusual heights. When dimensions aren't known, no label is invented (chip stays blank rather than lie about the media). Reporter-verified code, applied as suggested.
+
+**Tests.** 5 new in `tests/unit/test_scene_mapping.py` covering each resolution bucket and the no-dimensions fallback. 133 passing.
 
 ### v7.3.9
 
