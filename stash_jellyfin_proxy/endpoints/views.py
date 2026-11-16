@@ -813,6 +813,15 @@ async def endpoint_sessions(request):
         body = {}
 
     item_id = body.get("ItemId", "")
+    # Issue #29: record the client-built queue so we can see what each
+    # player reports (Jellyfin clients own the queue; the server only echoes it).
+    if "/Progress" not in path:
+        logger.debug(
+            f"Session report {path} item={item_id} "
+            f"PlaylistItemId={body.get('PlaylistItemId')!r} "
+            f"NowPlayingQueue={[q.get('Id') for q in body.get('NowPlayingQueue') or [] if isinstance(q, dict)]} "
+            f"keys={sorted(body.keys())}"
+        )
     position_ticks = body.get("PositionTicks", 0)
     position_seconds = position_ticks / 10000000.0 if position_ticks else 0
     _SAVE_ACTIVITY = """mutation SceneSaveActivity($id: ID!, $resume_time: Float, $playDuration: Float) {
