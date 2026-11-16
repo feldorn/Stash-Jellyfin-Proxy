@@ -13,7 +13,7 @@ Full Jellyfin PlaylistsController surface:
   - GET    /Playlists/{id}/Items                   → list scenes
   - POST   /Playlists/{id}/Items                   → attach
   - DELETE /Playlists/{id}/Items                   → detach
-  - POST   /Playlists/{id}/Items/{itemId}/Move/{n} → reorder (no-op; tags unordered)
+  - POST   /Playlists/{id}/Items/{itemId}/Move/{n} → reorder (persisted in state/playlist_order)
   - GET    /Playlists/{id}/Users                   → single-user stub
   - GET    /Playlists/{id}/Users/{userId}          → single-user stub
   - POST   /Playlists/{id}/Users/{userId}          → accept (single-user proxy)
@@ -33,6 +33,7 @@ from stash_jellyfin_proxy.mapping.image_policy import playlist_item_type
 from stash_jellyfin_proxy.mapping.scene import format_jellyfin_item
 from stash_jellyfin_proxy.stash.client import stash_query
 from stash_jellyfin_proxy.stash.tags import get_or_create_tag
+from stash_jellyfin_proxy.state import playlist_order
 
 logger = logging.getLogger("stash-jellyfin-proxy")
 
@@ -145,6 +146,23 @@ async def _create_playlist_tag(name: str, parent_id: str) -> str:
     return tag.get("id") if tag else ""
 
 
+async def ordered_playlist_scenes(tag_id: str, fields: str = "id") -> list:
+    """Every scene carrying the playlist tag, in persisted playlist order.
+
+    Playlists are small, so we pull the whole membership in one query and
+    order/page in Python — Stash can't sort by an external ordering."""
+    q = f"""query PlaylistScenes($tid: [ID!]) {{
+        findScenes(
+            scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
+            filter: {{per_page: -1, sort: "id", direction: ASC}}
+        ) {{ scenes {{ {fields} }} }}
+    }}"""
+    res = await stash_query(q, {"tid": [tag_id]})
+    scenes = (((res or {}).get("data") or {}).get("findScenes") or {}).get("scenes") or []
+    by_id = {str(s["id"]): s for s in scenes if s.get("id") is not None}
+    return [by_id[sid] for sid in playlist_order.apply_order(tag_id, by_id.keys())]
+
+
 async def endpoint_create_playlist(request):
     """`POST /Playlists?name=X&ids=...&userId=...` — create a new playlist
     (child tag of PLAYLIST_PARENT_TAG) and attach the given scenes to it."""
@@ -170,6 +188,7 @@ async def endpoint_create_playlist(request):
         scene_ids = _split_csv_ids(ids_raw)
         for sid in scene_ids:
             await _attach_tag(sid, tag_id)
+        playlist_order.append(tag_id, scene_ids)
 
         invalidate_playlist_tag_names()
         playlist_guid = f"playlist-{tag_id}"
@@ -192,6 +211,7 @@ async def endpoint_playlist_add_items(request):
     try:
         for sid in scene_ids:
             await _attach_tag(sid, tag_id)
+        playlist_order.append(tag_id, scene_ids)
         logger.info(f"♬ Added {len(scene_ids)} scenes to playlist-{tag_id}")
         return JSONResponse({})
     except Exception as e:
@@ -221,6 +241,7 @@ async def endpoint_playlist_remove_items(request):
     try:
         for sid in scene_ids:
             await _detach_tag(sid, tag_id)
+        playlist_order.remove(tag_id, scene_ids)
         logger.info(f"♬ Removed {len(scene_ids)} scenes from playlist-{tag_id}")
         return JSONResponse({})
     except Exception as e:
@@ -238,25 +259,14 @@ async def endpoint_playlist_items(request):
     start_index = max(0, int(request.query_params.get("startIndex") or request.query_params.get("StartIndex") or 0))
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or runtime.DEFAULT_PAGE_SIZE)
     limit = max(1, min(limit, runtime.MAX_PAGE_SIZE))
-    page = (start_index // limit) + 1
 
     try:
         # Warm genre cache so format_jellyfin_item's sync genre split works.
         from stash_jellyfin_proxy.mapping.genre import genre_allowed_names
         await genre_allowed_names()
 
-        q = f"""query PlaylistScenes($tid: [ID!], $page: Int!, $per_page: Int!) {{
-            findScenes(
-                scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
-                filter: {{page: $page, per_page: $per_page, sort: "updated_at", direction: DESC}}
-            ) {{
-                count
-                scenes {{ {_SCENE_FIELDS} }}
-            }}
-        }}"""
-        res = await stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit})
-        data = (res or {}).get("data", {}).get("findScenes", {}) or {}
-        scenes = data.get("scenes") or []
+        all_scenes = await ordered_playlist_scenes(tag_id, _SCENE_FIELDS)
+        scenes = all_scenes[start_index:start_index + limit]
         items = []
         for s in scenes:
             it = format_jellyfin_item(s)
@@ -270,7 +280,7 @@ async def endpoint_playlist_items(request):
             items.append(it)
         return JSONResponse({
             "Items": items,
-            "TotalRecordCount": data.get("count", len(items)),
+            "TotalRecordCount": len(all_scenes),
             "StartIndex": start_index,
         })
     except Exception as e:
@@ -339,16 +349,7 @@ async def endpoint_get_playlist(request):
     if not tag_id or not await _is_playlist_tag(tag_id):
         return JSONResponse({"error": "Not a playlist"}, status_code=404)
     try:
-        res = await stash_query(
-            """query PlaylistMeta($tid: [ID!]) {
-                findScenes(
-                    scene_filter: {tags: {value: $tid, modifier: INCLUDES}},
-                    filter: {per_page: -1, sort: "updated_at", direction: DESC}
-                ) { scenes { id } }
-            }""",
-            {"tid": [tag_id]},
-        )
-        scenes = ((res or {}).get("data") or {}).get("findScenes", {}).get("scenes") or []
+        scenes = await ordered_playlist_scenes(tag_id)
         return JSONResponse({
             "OpenAccess": False,
             "Shares": [],
@@ -408,6 +409,7 @@ async def endpoint_delete_playlist(request):
             {"input": {"id": tag_id}},
         )
         invalidate_playlist_tag_names()
+        playlist_order.forget(tag_id)
         logger.info(f"♬ Deleted playlist-{tag_id}")
         return Response(status_code=204)
     except Exception as e:
@@ -418,17 +420,31 @@ async def endpoint_delete_playlist(request):
 async def endpoint_playlist_move_item(request):
     """`POST /Playlists/{id}/Items/{itemId}/Move/{newIndex}` — reorder.
 
-    Stash tags have no inherent ordering on their attached scenes, so we
-    accept the request and return 204. Clients that care about order
-    (mostly desktop Jellyfin web; Infuse doesn't expose drag-reorder)
-    will see the next /Items fetch return scenes in updated_at order
-    rather than user-defined order."""
+    Stash tags are unordered, so the order lives in state/playlist_order
+    (playlist_order.json beside the config). itemId is the PlaylistItemId,
+    which for us is the scene id (a tag attaches to a scene at most once)."""
     pid = request.path_params.get("playlist_id", "")
     tag_id = _strip_playlist_prefix(pid)
     if not tag_id or not await _is_playlist_tag(tag_id):
         return JSONResponse({"error": "Not a playlist"}, status_code=404)
-    logger.debug(f"♬ Move ignored on playlist-{tag_id} (tags are unordered)")
-    return Response(status_code=204)
+
+    item_ids = _split_csv_ids(request.path_params.get("item_id", ""))
+    try:
+        new_index = int(request.path_params.get("new_index", ""))
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "Invalid index"}, status_code=400)
+    if len(item_ids) != 1 or new_index < 0:
+        return JSONResponse({"error": "Invalid item or index"}, status_code=400)
+
+    try:
+        members = [s["id"] for s in await ordered_playlist_scenes(tag_id)]
+        if not playlist_order.move(tag_id, members, item_ids[0], new_index):
+            return JSONResponse({"error": "Item not in playlist"}, status_code=404)
+        logger.info(f"♬ Moved scene-{item_ids[0]} to index {new_index} in playlist-{tag_id}")
+        return Response(status_code=204)
+    except Exception as e:
+        logger.error(f"POST /Playlists/{pid}/Items/.../Move error: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 def _stub_user_record() -> dict:

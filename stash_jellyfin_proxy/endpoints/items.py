@@ -1349,23 +1349,15 @@ async def endpoint_items(request):
 
     elif parent_id and parent_id.startswith("playlist-"):
         # Playlist detail → scenes carrying that child tag.
-        from stash_jellyfin_proxy.endpoints.playlists import _strip_playlist_prefix, _is_playlist_tag
+        from stash_jellyfin_proxy.endpoints.playlists import (
+            _strip_playlist_prefix, _is_playlist_tag, ordered_playlist_scenes,
+        )
         tag_id = _strip_playlist_prefix(parent_id)
         if tag_id and await _is_playlist_tag(tag_id):
-            page = (start_index // limit) + 1
-            q = f"""query PlaylistScenes($tid: [ID!], $page: Int!, $per_page: Int!) {{
-                findScenes(
-                    scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
-                    filter: {{page: $page, per_page: $per_page, sort: "updated_at", direction: DESC}}
-                ) {{
-                    count
-                    scenes {{ {scene_fields} }}
-                }}
-            }}"""
-            res = await stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit})
-            data = (res or {}).get("data", {}).get("findScenes", {}) or {}
-            total_count = data.get("count", 0)
-            for scene in data.get("scenes") or []:
+            # Persisted playlist order (state/playlist_order), paged in Python.
+            all_scenes = await ordered_playlist_scenes(tag_id, scene_fields)
+            total_count = len(all_scenes)
+            for scene in all_scenes[start_index:start_index + limit]:
                 it = format_jellyfin_item(scene, parent_id=parent_id)
                 it["PlaylistItemId"] = it.get("Id")
                 items.append(it)
