@@ -307,8 +307,26 @@ def _profile_dict(p):
         "userAgentMatch": getattr(p, "user_agent_match", ""),
         "performerType": getattr(p, "performer_type", "BoxSet"),
         "posterFormat": getattr(p, "poster_format", "landscape"),
+        "playlistMode": _playlist_mode(p),
         "isDefault": p.name == "default",
     }
+
+
+# Web UI "Playlist Display" ↔ the two profile keys.
+#   native → Playlist type (Infuse, jellyfin-web)
+#   folder → BoxSet compat folder (Swiftfin)
+#   series → Series/Season/Episodes so Next/Previous work (SenPlayer, #29)
+_PLAYLIST_MODES = {
+    "native": {"playlist_native": "true", "playlist_as_series": "false"},
+    "folder": {"playlist_native": "false", "playlist_as_series": "false"},
+    "series": {"playlist_native": "false", "playlist_as_series": "true"},
+}
+
+
+def _playlist_mode(p) -> str:
+    if getattr(p, "playlist_as_series", False):
+        return "series"
+    return "native" if getattr(p, "playlist_native", True) else "folder"
 
 
 async def ui_api_players_profiles(request):
@@ -375,7 +393,8 @@ def _rewrite_player_sections(updated_sections):
     for section in names:
         block.append(f"[{section}]\n")
         body = updated_sections[section]
-        for key in ("user_agent_match", "performer_type", "poster_format"):
+        for key in ("user_agent_match", "performer_type", "poster_format",
+                    "playlist_native", "playlist_as_series"):
             if key in body and body[key] != "":
                 block.append(f"{key} = {body[key]}\n")
         block.append("\n")
@@ -426,11 +445,17 @@ async def ui_api_players_save_profile(request):
     # Compose the new section set: existing + this one (overwritten).
     current_sections = runtime.config_sections or {}
     updated = {k: dict(v) for k, v in current_sections.items() if k.startswith("player.")}
-    updated[f"player.{name}"] = {
+    # Merge over the existing body so keys this form doesn't send survive.
+    section = dict(updated.get(f"player.{name}", {}))
+    section.update({
         "user_agent_match": ua_match if name != "default" else "",
         "performer_type": perf_type,
         "poster_format": poster,
-    }
+    })
+    mode = str(body.get("playlistMode", "")).strip()
+    if mode in _PLAYLIST_MODES:
+        section.update(_PLAYLIST_MODES[mode])
+    updated[f"player.{name}"] = section
     try:
         await asyncio.to_thread(_rewrite_player_sections, updated)
     except Exception as e:

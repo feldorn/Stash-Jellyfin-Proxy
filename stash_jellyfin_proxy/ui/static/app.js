@@ -735,7 +735,7 @@ async function renderProfileList() {
           <div class="profile-name">[${escapeHtml(p.name)}]</div>
           <div style="color: var(--text-dim); font-size: 12px;">
             ${p.isDefault ? "— default —" : `match: ${escapeHtml(p.userAgentMatch || "(empty)")}`}
-            · ${escapeHtml(p.performerType)} · ${escapeHtml(p.posterFormat)}
+            · ${escapeHtml(p.performerType)} · ${escapeHtml(p.posterFormat)} · playlists: ${escapeHtml(p.playlistMode || "native")}
           </div>
         </div>
         <div class="profile-actions">
@@ -771,6 +771,9 @@ function openProfileEditor(name) {
   const poster = existing ? existing.posterFormat : "landscape";
   qsa('input[name=profile-poster]').forEach((r) => r.checked = r.value === poster);
 
+  const plMode = existing ? (existing.playlistMode || "native") : "native";
+  qsa('input[name=profile-playlist]').forEach((r) => r.checked = r.value === plMode);
+
   modal.classList.add("open");
 }
 
@@ -784,6 +787,7 @@ async function saveProfileEditor() {
   const ua = qs("#profile-editor-ua").value.trim();
   const perfRadio = qs('input[name=profile-perf]:checked');
   const posterRadio = qs('input[name=profile-poster]:checked');
+  const playlistRadio = qs('input[name=profile-playlist]:checked');
   if (!name || !/^[a-z0-9_]+$/.test(name)) {
     toast("Profile name must be lowercase letters/digits/underscore", "error");
     return;
@@ -794,6 +798,7 @@ async function saveProfileEditor() {
       userAgentMatch: ua,
       performerType: perfRadio ? perfRadio.value : "BoxSet",
       posterFormat: posterRadio ? posterRadio.value : "landscape",
+      playlistMode: playlistRadio ? playlistRadio.value : "native",
     });
     toast(`Profile ${name} saved.`, "success");
     closeProfileEditor();

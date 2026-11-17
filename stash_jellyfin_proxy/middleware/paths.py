@@ -41,6 +41,7 @@ _CANON_PARAMS = {
     "sortby":           "SortBy",
     "sortorder":        "SortOrder",
     "seasonid":         "SeasonId",
+    "seriesid":         "SeriesId",
     "entryids":         "EntryIds",
     "filters":          "Filters",
     "name":             "Name",

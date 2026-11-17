@@ -68,7 +68,10 @@ def resolve_profile(user_agent: str) -> Profile:
 
     with _lock:
         cached = _ua_cache.get(ua)
-        if cached is not None:
+        # Only trust the cached match while it belongs to the current profile
+        # list — a Web UI edit rebuilds PLAYER_PROFILES with new objects, and
+        # a stale entry would keep serving the pre-edit profile until restart.
+        if cached is not None and any(cached is p for p in profiles):
             # Update last_seen without re-logging; cheap in-memory bump.
             entry = _ua_log.get(ua)
             if entry is not None:

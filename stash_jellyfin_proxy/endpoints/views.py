@@ -331,6 +331,10 @@ async def endpoint_shows_nextup(request):
     await _warm_genre_snapshot()
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
 
+    # Playlist-as-Series (issue #29): no NextUp semantics for a playlist.
+    if (request.query_params.get("SeriesId") or request.query_params.get("seriesId") or "").startswith("playlist-"):
+        return JSONResponse({"Items": [], "TotalRecordCount": 0})
+
     now = _time.monotonic()
     if _NEXTUP_CACHE["payload"] is not None and _NEXTUP_CACHE["expires"] > now:
         cached = _NEXTUP_CACHE["payload"]
@@ -433,6 +437,13 @@ async def endpoint_shows_seasons(request):
     ParentIndexNumber (from title regex patterns). Scenes whose titles
     don't parse land in Season 0 ("Specials")."""
     series_id = request.path_params.get("series_id", "")
+    if series_id.startswith("playlist-"):
+        from stash_jellyfin_proxy.endpoints.playlists import (
+            _strip_playlist_prefix, playlist_series_seasons,
+        )
+        tag_id = _strip_playlist_prefix(series_id)
+        return JSONResponse(await playlist_series_seasons(tag_id) if tag_id
+                            else {"Items": [], "TotalRecordCount": 0})
     if not series_id.startswith("series-"):
         return JSONResponse({"Items": [], "TotalRecordCount": 0})
     studio_id = series_id.replace("series-", "")
@@ -509,6 +520,15 @@ async def endpoint_shows_episodes(request):
     series_id = ""
     studio_id = ""
     want_season: Optional[int] = None
+
+    if path_id.startswith(("playlist-", "plseason-")):
+        from stash_jellyfin_proxy.endpoints.playlists import (
+            _strip_playlist_prefix, plseason_tag_id, playlist_series_episodes,
+        )
+        tag_id = (plseason_tag_id(path_id) if path_id.startswith("plseason-")
+                  else _strip_playlist_prefix(path_id))
+        return JSONResponse(await playlist_series_episodes(tag_id) if tag_id
+                            else {"Items": [], "TotalRecordCount": 0})
 
     if path_id.startswith("series-"):
         series_id = path_id

@@ -2759,6 +2759,14 @@ async def endpoint_item_details(request):
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-playlists"}
         })
 
+    if item_id.startswith("plseason-"):
+        from stash_jellyfin_proxy.endpoints.playlists import plseason_tag_id, playlist_season_item
+        tag_id = plseason_tag_id(item_id)
+        season = await playlist_season_item(tag_id) if tag_id else {}
+        if not season:
+            return JSONResponse({"error": "Item not found"}, status_code=404)
+        return JSONResponse(season)
+
     if item_id.startswith("playlist-"):
         from stash_jellyfin_proxy.endpoints.playlists import _strip_playlist_prefix, get_playlist_item
         tag_id = _strip_playlist_prefix(item_id)

@@ -550,6 +550,15 @@
               <label><input type="radio" name="profile-poster" value="original"> Original (no processing)</label>
             </div>
           </div>
+          <div class="field">
+            <div class="field-label">Playlist Display</div>
+            <div class="radio-group">
+              <label><input type="radio" name="profile-playlist" value="native"> Native playlist</label>
+              <label><input type="radio" name="profile-playlist" value="folder"> Folder (BoxSet)</label>
+              <label><input type="radio" name="profile-playlist" value="series"> Series (episodes)</label>
+            </div>
+            <div class="field-help">Native: full playlist UI (Infuse, Jellyfin web). Folder: browse-only for clients without a playlist screen (Swiftfin). Series: each playlist is a one-season show so Next/Previous step through it in order (SenPlayer).</div>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn" id="profile-editor-cancel">Cancel</button>

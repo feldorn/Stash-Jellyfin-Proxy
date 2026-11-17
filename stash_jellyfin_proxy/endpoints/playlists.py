@@ -306,7 +306,7 @@ async def list_playlists(request, start_index: int = 0, limit: int = 0) -> dict:
                 filter: {per_page: -1, sort: "name", direction: ASC}
             ) {
                 count
-                tags { id name scene_count image_path }
+                tags { id name scene_count image_path created_at updated_at }
             }
         }"""
         res = await stash_query(q, {"pid": [parent_id]})
@@ -329,7 +329,7 @@ async def get_playlist_item(request, tag_id: str) -> dict:
     if not await _is_playlist_tag(tag_id):
         return {}
     res = await stash_query(
-        """query PlaylistTag($id: ID!) { findTag(id: $id) { id name scene_count image_path } }""",
+        """query PlaylistTag($id: ID!) { findTag(id: $id) { id name scene_count image_path created_at updated_at } }""",
         {"id": tag_id},
     )
     tag = (res or {}).get("data", {}).get("findTag")
@@ -495,6 +495,21 @@ async def endpoint_playlist_user_remove(request):
     return Response(status_code=204)
 
 
+def _iso_jellyfin(ts) -> str:
+    """Stash RFC3339 ('2026-11-17T15:41:43-06:00') → Jellyfin UTC
+    ('2026-11-17T21:41:43.0000000Z'). '' if unparseable."""
+    if not ts:
+        return ""
+    import datetime as _dt
+    try:
+        d = _dt.datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return ""
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=_dt.timezone.utc)
+    return d.astimezone(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.0000000Z")
+
+
 def _playlist_item(tag: dict, item_type: str = "Playlist") -> dict:
     """Shape a Stash tag row as a Jellyfin playlist item.
 
@@ -506,21 +521,144 @@ def _playlist_item(tag: dict, item_type: str = "Playlist") -> dict:
     (see images.py "playlist-" handler), so we don't gate on whether
     Stash has an uploaded image_path for the tag itself."""
     pid = f"playlist-{tag['id']}"
+    name = tag.get("name") or "Untitled"
+    count = int(tag.get("scene_count") or 0)
     out = {
-        "Name": tag.get("name") or "Untitled",
+        "Name": name,
+        "SortName": name.lower(),
         "Id": pid,
         "ServerId": runtime.SERVER_ID,
         "Type": item_type,
         "IsFolder": True,
-        "ChildCount": int(tag.get("scene_count") or 0),
-        "RecursiveItemCount": int(tag.get("scene_count") or 0),
+        "ParentId": "root-playlists",
+        "ChildCount": count,
+        "RecursiveItemCount": count,
         "PrimaryImageAspectRatio": 0.6667,
         "ImageTags": {"Primary": "img"},
         "ImageBlurHashes": {"Primary": {"img": "000000"}},
         "BackdropImageTags": [],
+        # Fields a real Jellyfin 10.10 server sends on every playlist, so
+        # clients that sort/filter on them (DateCreated etc.) see the same shape.
+        "CanDelete": True,
+        "LocationType": "FileSystem",
+        "PlayAccess": "Full",
+        "UserData": {
+            "PlaybackPositionTicks": 0, "PlayCount": 0,
+            "IsFavorite": False, "Played": False,
+            "UnplayedItemCount": count, "Key": pid,
+        },
     }
+    created = _iso_jellyfin(tag.get("created_at"))
+    if created:
+        out["DateCreated"] = created
+    updated = _iso_jellyfin(tag.get("updated_at"))
+    if updated:
+        out["DateLastMediaAdded"] = updated
     if item_type == "Playlist":
         out["MediaType"] = "Video"  # Playlist requires MediaType for native UI
+    elif item_type == "Series":
+        # Series shape (playlist_as_series): no CollectionType, one season.
+        out["BackdropImageTags"] = ["img"]
+        out["ImageBlurHashes"]["Backdrop"] = {"img": "000000"}
     else:
         out["CollectionType"] = "movies"  # BoxSet needs this so Swiftfin enters it
     return out
+
+
+# ─── Playlist-as-Series shape (issue #29, playlist_as_series profiles) ──────
+#
+# SenPlayer only builds a Next/Previous queue for Episodes: it opens a Series,
+# loads /Shows/{seriesId}/Episodes?SeasonId=..., and steps through that list.
+# For profiles with playlist_as_series, a playlist is a Series (id
+# playlist-N) with exactly one Season (id plseason-N) whose Episodes are the
+# playlist scenes in stored order, IndexNumber = position.
+
+PLSEASON_PREFIX = "plseason-"
+
+
+def plseason_tag_id(raw: str) -> str:
+    """plseason-N → N ('' if not a numeric plseason id)."""
+    if not raw or not raw.startswith(PLSEASON_PREFIX):
+        return ""
+    rest = raw[len(PLSEASON_PREFIX):]
+    return rest if rest.isdigit() else ""
+
+
+async def _playlist_name(tag_id: str) -> str:
+    res = await stash_query(
+        """query PlaylistName($id: ID!) { findTag(id: $id) { name scene_count } }""",
+        {"id": tag_id},
+    )
+    tag = (res or {}).get("data", {}).get("findTag") or {}
+    return tag.get("name") or "Playlist"
+
+
+def _season_dto(tag_id: str, name: str, count: int) -> dict:
+    season_id = f"{PLSEASON_PREFIX}{tag_id}"
+    series_id = f"playlist-{tag_id}"
+    return {
+        "Name": name,
+        "SortName": "0001",
+        "Id": season_id,
+        "ServerId": runtime.SERVER_ID,
+        "Type": "Season",
+        "IsFolder": True,
+        "ParentId": series_id,
+        "SeriesId": series_id,
+        "SeriesName": name,
+        "IndexNumber": 1,
+        "ChildCount": count,
+        "RecursiveItemCount": count,
+        "ImageTags": {"Primary": "img"},
+        "ImageBlurHashes": {"Primary": {"img": "000000"}, "Backdrop": {"img": "000000"}},
+        "BackdropImageTags": ["img"],
+        "UserData": {
+            "PlaybackPositionTicks": 0, "PlayCount": 0,
+            "IsFavorite": False, "Played": False, "Key": season_id,
+        },
+    }
+
+
+async def playlist_series_seasons(tag_id: str) -> dict:
+    """/Shows/playlist-N/Seasons → the single synthetic season."""
+    if not await _is_playlist_tag(tag_id):
+        return {"Items": [], "TotalRecordCount": 0}
+    name = await _playlist_name(tag_id)
+    count = len(await ordered_playlist_scenes(tag_id, "id"))
+    return {"Items": [_season_dto(tag_id, name, count)], "TotalRecordCount": 1}
+
+
+async def playlist_season_item(tag_id: str) -> dict:
+    """Item detail for plseason-N ({} if not a playlist)."""
+    if not await _is_playlist_tag(tag_id):
+        return {}
+    name = await _playlist_name(tag_id)
+    count = len(await ordered_playlist_scenes(tag_id, "id"))
+    return _season_dto(tag_id, name, count)
+
+
+async def playlist_series_episodes(tag_id: str) -> dict:
+    """/Shows/playlist-N/Episodes → playlist scenes as ordered Episodes."""
+    if not await _is_playlist_tag(tag_id):
+        return {"Items": [], "TotalRecordCount": 0}
+    from stash_jellyfin_proxy.mapping.genre import genre_allowed_names
+    await genre_allowed_names()
+    name = await _playlist_name(tag_id)
+    series_id = f"playlist-{tag_id}"
+    season_id = f"{PLSEASON_PREFIX}{tag_id}"
+    scenes = await ordered_playlist_scenes(tag_id, _SCENE_FIELDS)
+    items = []
+    for pos, s in enumerate(scenes, start=1):
+        it = format_jellyfin_item(s, parent_id=season_id)
+        it.update({
+            "Type": "Episode",
+            "SeriesId": series_id,
+            "SeriesName": name,
+            "SeasonId": season_id,
+            "SeasonName": name,
+            "ParentIndexNumber": 1,
+            "IndexNumber": pos,
+            "PlaylistItemId": it.get("Id"),
+        })
+        items.append(it)
+    return {"Items": items, "TotalRecordCount": len(items)}

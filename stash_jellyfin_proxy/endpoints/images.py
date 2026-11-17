@@ -284,6 +284,10 @@ async def endpoint_image(request):
         img_data, content_type = generate_filter_icon("All Tags")
         return Response(content=img_data, media_type=content_type, headers=_ICON_CACHE_HEADERS)
 
+    if item_id.startswith("plseason-"):
+        # Playlist-as-Series season (issue #29) — same card as the playlist.
+        item_id = "playlist-" + item_id[len("plseason-"):]
+
     if item_id.startswith("playlist-"):
         # Playlist card: pick a random scene from the playlist, dim it,
         # overlay the playlist name. Falls back to a text-only filter
