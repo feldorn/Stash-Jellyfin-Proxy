@@ -308,6 +308,7 @@ def _profile_dict(p):
         "performerType": getattr(p, "performer_type", "BoxSet"),
         "posterFormat": getattr(p, "poster_format", "landscape"),
         "playlistMode": _playlist_mode(p),
+        "foldersAsSeries": bool(getattr(p, "folders_as_series", False)),
         "isDefault": p.name == "default",
     }
 
@@ -394,7 +395,7 @@ def _rewrite_player_sections(updated_sections):
         block.append(f"[{section}]\n")
         body = updated_sections[section]
         for key in ("user_agent_match", "performer_type", "poster_format",
-                    "playlist_native", "playlist_as_series"):
+                    "playlist_native", "playlist_as_series", "folders_as_series"):
             if key in body and body[key] != "":
                 block.append(f"{key} = {body[key]}\n")
         block.append("\n")
@@ -455,6 +456,8 @@ async def ui_api_players_save_profile(request):
     mode = str(body.get("playlistMode", "")).strip()
     if mode in _PLAYLIST_MODES:
         section.update(_PLAYLIST_MODES[mode])
+    if "foldersAsSeries" in body:
+        section["folders_as_series"] = "true" if body.get("foldersAsSeries") else "false"
     updated[f"player.{name}"] = section
     try:
         await asyncio.to_thread(_rewrite_player_sections, updated)

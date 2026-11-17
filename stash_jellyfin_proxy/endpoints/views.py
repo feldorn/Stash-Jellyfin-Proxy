@@ -331,8 +331,8 @@ async def endpoint_shows_nextup(request):
     await _warm_genre_snapshot()
     limit = int(request.query_params.get("limit") or request.query_params.get("Limit") or 20)
 
-    # Playlist-as-Series (issue #29): no NextUp semantics for a playlist.
-    if (request.query_params.get("SeriesId") or request.query_params.get("seriesId") or "").startswith("playlist-"):
+    # Playlist/Studio-as-Series (issue #29): no NextUp semantics for these.
+    if (request.query_params.get("SeriesId") or request.query_params.get("seriesId") or "").startswith(("playlist-", "studio-")):
         return JSONResponse({"Items": [], "TotalRecordCount": 0})
 
     now = _time.monotonic()
@@ -437,6 +437,9 @@ async def endpoint_shows_seasons(request):
     ParentIndexNumber (from title regex patterns). Scenes whose titles
     don't parse land in Season 0 ("Specials")."""
     series_id = request.path_params.get("series_id", "")
+    from stash_jellyfin_proxy.endpoints import folder_series as _fs
+    if _fs.is_folder_id(series_id):
+        return JSONResponse(await _fs.folder_series_seasons(series_id))
     if series_id.startswith("playlist-"):
         from stash_jellyfin_proxy.endpoints.playlists import (
             _strip_playlist_prefix, playlist_series_seasons,
@@ -520,6 +523,18 @@ async def endpoint_shows_episodes(request):
     series_id = ""
     studio_id = ""
     want_season: Optional[int] = None
+
+    from stash_jellyfin_proxy.endpoints import folder_series as _fs
+    if _fs.is_folder_id(path_id) or path_id.startswith(_fs.FSEASON_PREFIX):
+        if path_id.startswith(_fs.FSEASON_PREFIX):
+            parsed = _fs.parse_fseason(path_id)
+            if not parsed:
+                return JSONResponse({"Items": [], "TotalRecordCount": 0})
+            folder_id, want = parsed[0], path_id
+        else:
+            folder_id = path_id
+            want = request.query_params.get("SeasonId") or request.query_params.get("seasonId")
+        return JSONResponse(await _fs.folder_series_episodes(folder_id, want))
 
     if path_id.startswith(("playlist-", "plseason-")):
         from stash_jellyfin_proxy.endpoints.playlists import (

@@ -27,6 +27,9 @@ class Profile:
     # offers Next/Previous for Episodes (it walks /Shows/{id}/Episodes), so
     # this is the shape that gives it a working queue. Off by default.
     playlist_as_series: bool = False
+    # Issue #29: present Studio folders as a Series
+    # (seasons = scene year) for the same reason. Default on for SenPlayer.
+    folders_as_series: bool = False
 
 
 # Profiles whose UI doesn't render native Playlist items — exposed in compat
@@ -47,6 +50,8 @@ _PLAYLISTS_NON_NATIVE_PROFILES = frozenset({"swiftfin", "senplayer"})
 #               /Shows/{id}/Episodes). For Movie items in a folder/playlist it
 #               plays a queue of one — same on a real Jellyfin 10.10 server.
 _PLAYLISTS_AS_SERIES_PROFILES = frozenset({"senplayer"})
+# Same reasoning for Studio folders (folders_as_series). Tags stay as-is.
+_FOLDERS_AS_SERIES_PROFILES = frozenset({"senplayer"})
 
 
 # Fallback if [player.default] is missing from config (migration failure, etc.).
@@ -106,6 +111,9 @@ def load_profiles(sections: Dict[str, Dict[str, str]]) -> List[Profile]:
             playlist_native=playlist_native,
             playlist_as_series=_parse_bool(
                 body.get("playlist_as_series"), name in _PLAYLISTS_AS_SERIES_PROFILES
+            ),
+            folders_as_series=_parse_bool(
+                body.get("folders_as_series"), name in _FOLDERS_AS_SERIES_PROFILES
             ),
         ))
     profiles.append(default)

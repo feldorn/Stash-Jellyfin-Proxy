@@ -46,3 +46,9 @@ def playlist_as_series(request) -> bool:
     """True when this client gets playlists shaped as Series/Season/Episode
     (issue #29 — SenPlayer's only queue-capable shape)."""
     return resolve_from_request(request).playlist_as_series
+
+
+def folders_as_series(request) -> bool:
+    """True when this client gets studio- folders shaped as
+    Series/Season/Episode (issue #29 — SenPlayer's only queue-capable shape)."""
+    return resolve_from_request(request).folders_as_series

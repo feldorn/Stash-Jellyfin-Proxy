@@ -735,7 +735,7 @@ async function renderProfileList() {
           <div class="profile-name">[${escapeHtml(p.name)}]</div>
           <div style="color: var(--text-dim); font-size: 12px;">
             ${p.isDefault ? "— default —" : `match: ${escapeHtml(p.userAgentMatch || "(empty)")}`}
-            · ${escapeHtml(p.performerType)} · ${escapeHtml(p.posterFormat)} · playlists: ${escapeHtml(p.playlistMode || "native")}
+            · ${escapeHtml(p.performerType)} · ${escapeHtml(p.posterFormat)} · playlists: ${escapeHtml(p.playlistMode || "native")}${p.foldersAsSeries ? " · folders as series" : ""}
           </div>
         </div>
         <div class="profile-actions">
@@ -773,6 +773,7 @@ function openProfileEditor(name) {
 
   const plMode = existing ? (existing.playlistMode || "native") : "native";
   qsa('input[name=profile-playlist]').forEach((r) => r.checked = r.value === plMode);
+  qs("#profile-editor-folders-series").checked = !!(existing && existing.foldersAsSeries);
 
   modal.classList.add("open");
 }
@@ -799,6 +800,7 @@ async function saveProfileEditor() {
       performerType: perfRadio ? perfRadio.value : "BoxSet",
       posterFormat: posterRadio ? posterRadio.value : "landscape",
       playlistMode: playlistRadio ? playlistRadio.value : "native",
+      foldersAsSeries: qs("#profile-editor-folders-series").checked,
     });
     toast(`Profile ${name} saved.`, "success");
     closeProfileEditor();
