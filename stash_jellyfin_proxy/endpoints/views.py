@@ -819,6 +819,8 @@ async def endpoint_sessions(request):
         logger.debug(
             f"Session report {path} item={item_id} "
             f"PlaylistItemId={body.get('PlaylistItemId')!r} "
+            f"PlaylistIndex={body.get('PlaylistIndex')!r} "
+            f"PlaylistLength={body.get('PlaylistLength')!r} "
             f"NowPlayingQueue={[q.get('Id') for q in body.get('NowPlayingQueue') or [] if isinstance(q, dict)]} "
             f"keys={sorted(body.keys())}"
         )
