@@ -36,4 +36,19 @@ def playlist_item_type(request) -> str:
     "Playlist" for native renderers, "BoxSet" for compat clients — both shape
     a folder of scenes; Swiftfin/SenPlayer's BoxSet view navigates correctly
     while their Playlist view doesn't exist."""
-    return "Playlist" if resolve_from_request(request).playlist_native else "BoxSet"
+    profile = resolve_from_request(request)
+    if profile.playlist_as_series:
+        return "Series"
+    return "Playlist" if profile.playlist_native else "BoxSet"
+
+
+def playlist_as_series(request) -> bool:
+    """True when this client gets playlists shaped as Series/Season/Episode
+    (issue #29 — SenPlayer's only queue-capable shape)."""
+    return resolve_from_request(request).playlist_as_series
+
+
+def folders_as_series(request) -> bool:
+    """True when this client gets studio- folders shaped as
+    Series/Season/Episode (issue #29 — SenPlayer's only queue-capable shape)."""
+    return resolve_from_request(request).folders_as_series

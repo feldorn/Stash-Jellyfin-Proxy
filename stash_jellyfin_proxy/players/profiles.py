@@ -22,6 +22,14 @@ class Profile:
     # — Swiftfin and SenPlayer can browse + play but not manage, since their
     # UI doesn't render the native Playlist types.
     playlist_native: bool = True
+    # Issue #29 (experimental): present each playlist as a one-season Series
+    # whose Episodes are the playlist scenes in stored order. SenPlayer only
+    # offers Next/Previous for Episodes (it walks /Shows/{id}/Episodes), so
+    # this is the shape that gives it a working queue. Off by default.
+    playlist_as_series: bool = False
+    # Issue #29: present Studio folders as a Series
+    # (seasons = scene year) for the same reason. Default on for SenPlayer.
+    folders_as_series: bool = False
 
 
 # Profiles whose UI doesn't render native Playlist items — exposed in compat
@@ -34,6 +42,16 @@ class Profile:
 #               Browses fine when shaped as movies/BoxSet.
 #   SenPlayer:  closed-source; no Jellyfin-playlist UI per App Store / forum.
 _PLAYLISTS_NON_NATIVE_PROFILES = frozenset({"swiftfin", "senplayer"})
+
+# Profiles that get playlists shaped as Series → Season → Episodes when the
+# config doesn't pin `playlist_as_series` explicitly (issue #29).
+#
+#   SenPlayer:  builds a Next/Previous queue only for Episodes (walks
+#               /Shows/{id}/Episodes). For Movie items in a folder/playlist it
+#               plays a queue of one — same on a real Jellyfin 10.10 server.
+_PLAYLISTS_AS_SERIES_PROFILES = frozenset({"senplayer"})
+# Same reasoning for Studio folders (folders_as_series). Tags stay as-is.
+_FOLDERS_AS_SERIES_PROFILES = frozenset({"senplayer"})
 
 
 # Fallback if [player.default] is missing from config (migration failure, etc.).
@@ -71,6 +89,7 @@ def load_profiles(sections: Dict[str, Dict[str, str]]) -> List[Profile]:
         playlist_native=_parse_bool(
             default_cfg.get("playlist_native"), _HARDCODED_DEFAULT.playlist_native
         ),
+        playlist_as_series=_parse_bool(default_cfg.get("playlist_as_series"), False),
     )
 
     profiles: List[Profile] = []
@@ -90,6 +109,12 @@ def load_profiles(sections: Dict[str, Dict[str, str]]) -> List[Profile]:
             performer_type=body.get("performer_type", default.performer_type),
             poster_format=body.get("poster_format", default.poster_format),
             playlist_native=playlist_native,
+            playlist_as_series=_parse_bool(
+                body.get("playlist_as_series"), name in _PLAYLISTS_AS_SERIES_PROFILES
+            ),
+            folders_as_series=_parse_bool(
+                body.get("folders_as_series"), name in _FOLDERS_AS_SERIES_PROFILES
+            ),
         ))
     profiles.append(default)
     return profiles

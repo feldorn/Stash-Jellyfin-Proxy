@@ -1,6 +1,6 @@
 # Stash-Jellyfin Proxy
 
-**Version 7.3.10**
+**Version 7.4.0**
 
 A Python proxy server that lets Jellyfin-compatible media players browse and stream a [Stash](https://stashapp.cc/) library by emulating the Jellyfin HTTP API.
 
@@ -22,7 +22,7 @@ Per-client behavior (poster aspect, performer item type, library `CollectionType
 ### Library
 - **Full Stash integration**: Scenes, Performers, Studios, Groups, Tags
 - **Series detection**: studios tagged with `SERIES_TAG` (default `Series`) become a `Shows` library — Swiftfin renders native Series → Season → Episode navigation; other clients see a regular collection of "shows" (configurable per-profile)
-- **Playlists**: full create / rename / add / remove / delete from clients that expose playlist UI (Infuse, Jellyfin web). Backed by a Stash parent tag (`PLAYLIST_PARENT_TAG`, default `Playlists`) — each child tag is one playlist, its tagged scenes are its items. Swiftfin and SenPlayer get a read-only `BoxSet`-shaped view (their UI doesn't render the native Playlist type)
+- **Playlists**: full create / rename / add / remove / delete from clients that expose playlist UI (Infuse, Jellyfin web). Backed by a Stash parent tag (`PLAYLIST_PARENT_TAG`, default `Playlists`) — each child tag is one playlist, its tagged scenes are its items. Swiftfin gets a read-only `BoxSet`-shaped view (its UI doesn't render the native Playlist type); SenPlayer sees each playlist as a one-season show so Next/Previous work. Playlist order is persisted in `playlist_order.json` beside the config
 - **Tag-based libraries** (`TAG_GROUPS`): any Stash tag can become a top-level browsable folder
 - **Saved Filters**: browse your Stash saved filters as folders, with sort parameters translated to GraphQL
 - **Configurable Genres**: three modes for what shows up under "Genres" — every tag (`all_tags`), only descendants of a parent tag (`parent_tag`, default), or the top-N by scene count (`top_n`)
@@ -195,6 +195,16 @@ scene_poster_format = portrait
 series_collection_type = tvshows
 ```
 
+Playlist and folder shape can also be set per profile:
+
+| Key | Default | Effect |
+|---|---|---|
+| `playlist_native` | on (off for Swiftfin / SenPlayer) | Native `Playlist` type with full create/edit UI; otherwise a `BoxSet` folder |
+| `playlist_as_series` | on for SenPlayer | Each playlist is a one-season Series whose Episodes are its scenes, in playlist order |
+| `folders_as_series` | on for SenPlayer | Each Studio is a Series with one Season per scene year, Episodes in date order |
+
+The Players tab exposes these as **Playlist Display** (native / folder / series) and **Show Studio folders as series**.
+
 Unique UAs are logged to `<LOG_DIR>/ua_log.json` and surfaced in the Web UI for one-click profile creation.
 
 ### Performance / Logging / Security
@@ -270,6 +280,27 @@ Streaming uses `httpx.AsyncClient.send(stream=True)` + `aiter_bytes()` — byte 
 - **Series CollectionType is per-client**: only Swiftfin gets native `tvshows` navigation. Infuse and SenPlayer fall back to a flat BoxSet because their `tvshows` renderer shows a blank folder.
 
 ## Changelog
+
+### v7.4.0
+
+Closes [#29](https://github.com/feldorn/Stash-Jellyfin-Proxy/issues/29) — playlist order didn't stick, and SenPlayer had no Next/Previous inside a playlist.
+
+**Playlist ordering.** Stash tag memberships have no order, so the proxy now keeps playlist order in `playlist_order.json` beside the config. The tag is still the source of truth for *which* scenes are in a playlist; the stored order decides *where* they sit. New members go to the end (by scene id), and scenes no longer carrying the tag drop out automatically. The Jellyfin "Move" endpoint, previously a silent no-op, now reorders and saves (404 for a scene not in the playlist, 400 for a bad index). Applies to every client.
+
+**SenPlayer Next/Previous.** SenPlayer only builds a play queue for TV episodes; for anything else it plays one item and stops. That's SenPlayer behavior — confirmed identical against a real Jellyfin 10.10 server. So for SenPlayer the proxy now presents:
+
+- **Playlists** as a one-season show whose episodes are the playlist's scenes, in playlist order (`playlist_as_series`).
+- **Studios** as a show with one season per scene year ("Undated" for scenes without a date), episodes in date order (`folders_as_series`).
+
+Both are on by default for the `senplayer` profile and can be turned off in the Players tab. Tags and `TAG_GROUPS` libraries are unchanged — a show shape there either hid the all-scenes list or didn't give SenPlayer a usable path. Swiftfin and Infuse are unaffected.
+
+**Also.**
+- Players tab: new **Playlist Display** (native / folder / series) and **Show Studio folders as series** controls.
+- Saving a profile in the Players tab no longer drops `playlist_native` / `playlist_as_series`, and profile edits apply immediately (the User-Agent match cache wasn't being cleared).
+- Playlist items carry the same fields a real Jellyfin 10.10 server sends (`DateCreated`, `UserData`, `ParentId`, …).
+- Session start/stop logs now include the client-reported play queue and `PlaylistIndex` / `PlaylistLength` — useful when diagnosing client queue behavior.
+
+Note: Infuse's home-screen "Recent Playlists" row only appears for Plex servers — real Jellyfin doesn't get it either.
 
 ### v7.3.10
 

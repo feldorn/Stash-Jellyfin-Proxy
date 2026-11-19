@@ -284,6 +284,17 @@ async def endpoint_image(request):
         img_data, content_type = generate_filter_icon("All Tags")
         return Response(content=img_data, media_type=content_type, headers=_ICON_CACHE_HEADERS)
 
+    if item_id.startswith("fseason-"):
+        # Folder-as-Series season (issue #29) — reuse the studio/tag image.
+        from stash_jellyfin_proxy.endpoints.folder_series import parse_fseason
+        parsed = parse_fseason(item_id)
+        if parsed:
+            item_id = parsed[0]
+
+    if item_id.startswith("plseason-"):
+        # Playlist-as-Series season (issue #29) — same card as the playlist.
+        item_id = "playlist-" + item_id[len("plseason-"):]
+
     if item_id.startswith("playlist-"):
         # Playlist card: pick a random scene from the playlist, dim it,
         # overlay the playlist name. Falls back to a text-only filter

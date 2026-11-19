@@ -1349,23 +1349,15 @@ async def endpoint_items(request):
 
     elif parent_id and parent_id.startswith("playlist-"):
         # Playlist detail → scenes carrying that child tag.
-        from stash_jellyfin_proxy.endpoints.playlists import _strip_playlist_prefix, _is_playlist_tag
+        from stash_jellyfin_proxy.endpoints.playlists import (
+            _strip_playlist_prefix, _is_playlist_tag, ordered_playlist_scenes,
+        )
         tag_id = _strip_playlist_prefix(parent_id)
         if tag_id and await _is_playlist_tag(tag_id):
-            page = (start_index // limit) + 1
-            q = f"""query PlaylistScenes($tid: [ID!], $page: Int!, $per_page: Int!) {{
-                findScenes(
-                    scene_filter: {{tags: {{value: $tid, modifier: INCLUDES}}}},
-                    filter: {{page: $page, per_page: $per_page, sort: "updated_at", direction: DESC}}
-                ) {{
-                    count
-                    scenes {{ {scene_fields} }}
-                }}
-            }}"""
-            res = await stash_query(q, {"tid": [tag_id], "page": page, "per_page": limit})
-            data = (res or {}).get("data", {}).get("findScenes", {}) or {}
-            total_count = data.get("count", 0)
-            for scene in data.get("scenes") or []:
+            # Persisted playlist order (state/playlist_order), paged in Python.
+            all_scenes = await ordered_playlist_scenes(tag_id, scene_fields)
+            total_count = len(all_scenes)
+            for scene in all_scenes[start_index:start_index + limit]:
                 it = format_jellyfin_item(scene, parent_id=parent_id)
                 it["PlaylistItemId"] = it.get("Id")
                 items.append(it)
@@ -2297,6 +2289,11 @@ async def endpoint_items(request):
     if len(items) > 0 and total_count > start_index + len(items):
         logger.debug(f"More items available: next page would start at {start_index + len(items)}")
 
+    from stash_jellyfin_proxy.mapping.image_policy import folders_as_series
+    if folders_as_series(request):
+        from stash_jellyfin_proxy.endpoints.folder_series import as_series_shape
+        items = [as_series_shape(it) for it in items]
+
     response_data = {"Items": items, "TotalRecordCount": total_count, "StartIndex": start_index}
     return JSONResponse(response_data)
 
@@ -2767,6 +2764,21 @@ async def endpoint_item_details(request):
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": False, "Played": False, "Key": "root-playlists"}
         })
 
+    if item_id.startswith("fseason-"):
+        from stash_jellyfin_proxy.endpoints.folder_series import folder_season_item
+        season = await folder_season_item(item_id)
+        if not season:
+            return JSONResponse({"error": "Item not found"}, status_code=404)
+        return JSONResponse(season)
+
+    if item_id.startswith("plseason-"):
+        from stash_jellyfin_proxy.endpoints.playlists import plseason_tag_id, playlist_season_item
+        tag_id = plseason_tag_id(item_id)
+        season = await playlist_season_item(tag_id) if tag_id else {}
+        if not season:
+            return JSONResponse({"error": "Item not found"}, status_code=404)
+        return JSONResponse(season)
+
     if item_id.startswith("playlist-"):
         from stash_jellyfin_proxy.endpoints.playlists import _strip_playlist_prefix, get_playlist_item
         tag_id = _strip_playlist_prefix(item_id)
@@ -2846,6 +2858,10 @@ async def endpoint_item_details(request):
             },
         }
         out.update(packet)
+        from stash_jellyfin_proxy.mapping.image_policy import folders_as_series
+        if folders_as_series(request):
+            from stash_jellyfin_proxy.endpoints.folder_series import as_series_shape
+            as_series_shape(out)
         return JSONResponse(out)
 
     elif item_id == "root-performers":
@@ -3053,7 +3069,7 @@ async def endpoint_item_details(request):
         scene_count = tag.get("scene_count", 0)
         has_image = bool(tag.get("image_path"))
 
-        return JSONResponse({
+        out = {
             "Name": tag_name,
             "SortName": tag_name,
             "Id": item_id,
@@ -3068,7 +3084,8 @@ async def endpoint_item_details(request):
             "ChildCount": scene_count,
             "RecursiveItemCount": scene_count,
             "UserData": {"PlaybackPositionTicks": 0, "PlayCount": 0, "IsFavorite": tag.get("favorite", False), "Played": False, "Key": item_id}
-        })
+        }
+        return JSONResponse(out)
 
     elif item_id.startswith("tag-"):
         # Tag-based folder (from runtime.TAG_GROUPS config)
